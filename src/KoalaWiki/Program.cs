@@ -43,6 +43,13 @@ builder.Services.AddMapster();
 
 var app = builder.Build();
 
+// 添加自动迁移代码
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<KoalaDbAccess>();
+    dbContext.Database.Migrate();
+}
+
 app.UseCors("AllowAll");
 if (app.Environment.IsDevelopment())
 {
