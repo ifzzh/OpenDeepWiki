@@ -5,8 +5,7 @@ import { getWarehouseOverview } from '../../services';
 import { RepositoryView } from './RepositoryView';
 import { ServerLoadingErrorState } from '../../components/document/ServerComponents';
 
-// 这是服务器组件，用于获取数据
-export default async function RepositoryPage({ params }: { params: { owner: string, name: string } }) {
+export default async function RepositoryPage({ params }: any) {
   try {
     const response = await getWarehouseOverview(params.owner, params.name);
     
