@@ -26,7 +26,6 @@ export default function RootLayout({
               __html: `
               console.log('API_URL', '${apiUrl}');
               window.API_URL = '${apiUrl}';
-              
               `
           }}
           />

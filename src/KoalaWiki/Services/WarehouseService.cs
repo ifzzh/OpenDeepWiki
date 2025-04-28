@@ -73,6 +73,7 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
             entity.Name = string.Empty;
             entity.Description = string.Empty;
             entity.Version = string.Empty;
+            entity.Error = string.Empty;
             entity.Prompt = string.Empty;
             entity.Branch = string.Empty;
             entity.Type = "git";
@@ -83,6 +84,12 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
             await access.SaveChangesAsync();
 
             await warehouseStore.WriteAsync(entity);
+            
+            await context.Response.WriteAsJsonAsync(new
+            {
+                code = 200,
+                message = "提交成功"
+            });
         }
         catch (Exception e)
         {

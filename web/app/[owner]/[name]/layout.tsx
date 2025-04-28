@@ -1,4 +1,4 @@
-'use client';
+'use client'
 import { Layout, Typography, Spin, Space, theme, ConfigProvider, Flex } from 'antd';
 import { FolderOutlined, FileTextOutlined, GithubOutlined } from '@ant-design/icons';
 import Link from 'next/link';
@@ -8,7 +8,6 @@ import { documentCatalog } from '../../services/warehouseService';
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
 
-// Define the DocumentCatalogResponse type here since it's missing from the import
 interface DocumentCatalogResponse {
   key: string;
   label: string;

@@ -53,6 +53,21 @@ namespace KoalaWiki.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DocumentOverviews",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    DocumentId = table.Column<string>(type: "TEXT", nullable: false),
+                    Content = table.Column<string>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DocumentOverviews", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Documents",
                 columns: table => new
                 {
@@ -83,6 +98,7 @@ namespace KoalaWiki.Migrations
                     Type = table.Column<string>(type: "TEXT", nullable: false),
                     Branch = table.Column<string>(type: "TEXT", nullable: false),
                     Status = table.Column<byte>(type: "INTEGER", nullable: false),
+                    Error = table.Column<string>(type: "TEXT", nullable: false),
                     Prompt = table.Column<string>(type: "TEXT", nullable: false),
                     Version = table.Column<string>(type: "TEXT", nullable: false),
                     Model = table.Column<string>(type: "TEXT", nullable: false),
@@ -172,6 +188,16 @@ namespace KoalaWiki.Migrations
                 column: "Name");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DocumentOverviews_DocumentId",
+                table: "DocumentOverviews",
+                column: "DocumentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DocumentOverviews_Title",
+                table: "DocumentOverviews",
+                column: "Title");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Documents_CreatedAt",
                 table: "Documents",
                 column: "CreatedAt");
@@ -225,6 +251,9 @@ namespace KoalaWiki.Migrations
 
             migrationBuilder.DropTable(
                 name: "DocumentFileItemSources");
+
+            migrationBuilder.DropTable(
+                name: "DocumentOverviews");
 
             migrationBuilder.DropTable(
                 name: "Documents");

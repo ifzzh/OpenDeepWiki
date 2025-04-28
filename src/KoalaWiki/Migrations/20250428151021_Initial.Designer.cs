@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KoalaWiki.Migrations
 {
     [DbContext(typeof(KoalaDbAccess))]
-    [Migration("20250428073920_AddError")]
-    partial class AddError
+    [Migration("20250428151021_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

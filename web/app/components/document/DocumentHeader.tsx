@@ -43,9 +43,6 @@ const DocumentHeader: React.FC<DocumentHeaderProps> = ({
           </Title>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: token.marginSM }}>
-            <Text type="secondary" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ClockCircleOutlined /> 最后更新: {lastUpdated}
-            </Text>
             <Divider type="vertical" />
             <Tag color="blue">文档</Tag>
           </div>

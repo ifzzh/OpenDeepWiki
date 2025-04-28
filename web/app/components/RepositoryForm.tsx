@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { RepositoryFormValues } from '../types';
 import { submitWarehouse } from '../services';
 import { fetchOpenAIModels } from '../services/openaiService';
-import { ReloadOutlined } from '@ant-design/icons';
 
 interface RepositoryFormProps {
   open: boolean;

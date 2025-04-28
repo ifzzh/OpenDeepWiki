@@ -1,4 +1,3 @@
-'use client';
 import { useState, useEffect } from 'react';
 import { Modal, Form, Input, Button, message, Spin, Typography, Descriptions, Tag, Space, Result, Row, Col, theme } from 'antd';
 import { 
@@ -32,7 +31,6 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
   const [searched, setSearched] = useState(false);
   const { token } = useToken();
 
-  // 重置表单当模态窗口关闭时
   useEffect(() => {
     if (!open) {
       form.resetFields();
