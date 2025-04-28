@@ -63,20 +63,6 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
             {
                 throw new Exception("存在相同名称的渠道");
             }
-        
-            // 校验仓库地址是否正确
-            try
-            {
-                using var repo = new Repository(input.Address);
-                if (!repo.Network.Remotes.Any())
-                {
-                    throw new Exception("仓库地址不正确");
-                }
-            }
-            catch (Exception e)
-            {
-                throw new Exception("仓库地址不正确", e);
-            }
 
             // 删除旧的仓库
             var oldWarehouse = await access.Warehouses
