@@ -14,14 +14,36 @@ namespace KoalaWiki.KoalaWarehouse;
 
 public class DocumentsService
 {
+    /// <summary>
+    /// 解析指定目录下单.gitignore配置忽略的文件
+    /// </summary>
+    /// <returns></returns>
+    private string[] GetIgnoreFiles(string path)
+    {
+        var ignoreFilePath = Path.Combine(path, ".gitignore");
+        if (File.Exists(ignoreFilePath))
+        {
+            // 需要去掉注释
+            var lines = File.ReadAllLines(ignoreFilePath);
+            var ignoreFiles = lines.Where(x => !string.IsNullOrWhiteSpace(x) && !x.StartsWith("#"))
+                .Select(x => x.Trim()).ToArray();
+
+            return ignoreFiles;
+        }
+
+        return [];
+    }
+
     public async Task HandleAsync(Document document, Warehouse warehouse, KoalaDbAccess dbContext)
     {
         // 解析仓库的目录结构
         var path = document.GitPath;
 
+        var ignoreFiles = GetIgnoreFiles(path);
+
         var pathInfos = new List<PathInfo>();
         // 递归扫描目录所有文件和目录
-        ScanDirectory(path, pathInfos);
+        ScanDirectory(path, pathInfos, ignoreFiles);
 
         var kernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
             warehouse.OpenAIKey,
@@ -33,7 +55,7 @@ public class DocumentsService
 
         OpenAIPromptExecutionSettings settings = new()
         {
-            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
             ResponseFormat = typeof(DocumentResultCatalogue),
             Temperature = 0.5,
         };
@@ -42,7 +64,7 @@ public class DocumentsService
 
         foreach (var info in pathInfos)
         {
-            catalogue.Append($"文件绝对路径：{info.Path}\n");
+            catalogue.Append($"{info.Path}\n");
         }
 
 
@@ -69,6 +91,18 @@ public class DocumentsService
                        }))
         {
             str.Append(item);
+        }
+
+        // 可能需要先处理一下documentation_structure 有些模型不支持json
+        var regex = new Regex(@"<documentation_structure>(.*?)</documentation_structure>", RegexOptions.Singleline);
+        var match = regex.Match(str.ToString());
+
+        if (match.Success)
+        {
+            // 提取到的内容
+            var extractedContent = match.Groups[1].Value;
+            str.Clear();
+            str.Append(extractedContent);
         }
 
         var result = JsonSerializer.Deserialize<DocumentResultCatalogue>(str.ToString());
@@ -102,7 +136,7 @@ public class DocumentsService
                         var fileItem = await ProcessCatalogueItems(item, fileKernel, catalogue.ToString(), path);
                         documentFileItems.Add(fileItem);
                         success = true;
-                        
+
                         Log.Logger.Information("处理仓库；{path} ,处理标题：{name} 完成！", path, item.Name);
                     }
                     catch (Exception ex)
@@ -201,7 +235,7 @@ public class DocumentsService
 
         await foreach (var i in chat.GetStreamingChatMessageContentsAsync(history, new OpenAIPromptExecutionSettings()
                        {
-                           ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                           ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
                        }, kernel))
         {
             if (!string.IsNullOrEmpty(i.Content))
@@ -230,7 +264,7 @@ public class DocumentsService
             Description = string.Empty,
             Extra = new Dictionary<string, string>(),
             Metadata = new Dictionary<string, string>(),
-            Source = new List<DocumentFileItemSource>(),
+            Source = [],
             CommentCount = 0,
             RequestToken = 0,
             CreatedAt = DateTime.Now,
@@ -295,34 +329,80 @@ public class DocumentsService
         return "仓库没有README文件";
     }
 
-    private static readonly string[] IngoreFiles =
-        { ".git", ".idea", ".vscode", "node_modules", ".DS_Store", ".gitignore" };
-
-    // 递归方法，用于遍历目录
-    void ScanDirectory(string directoryPath, List<PathInfo> infoList)
+    void ScanDirectory(string directoryPath, List<PathInfo> infoList, string[] ignoreFiles)
     {
         // 遍历所有文件
-        infoList.AddRange(from file in Directory.GetFiles(directoryPath).Where(x => !x.StartsWith("."))
+        infoList.AddRange(from file in Directory.GetFiles(directoryPath).Where(file =>
+            {
+                var filename = Path.GetFileName(file);
+
+                // 支持*的匹配
+                foreach (var pattern in ignoreFiles)
+                {
+                    if (string.IsNullOrWhiteSpace(pattern) || pattern.StartsWith("#"))
+                        continue;
+
+                    var trimmedPattern = pattern.Trim();
+
+                    // 转换gitignore模式到正则表达式
+                    if (trimmedPattern.Contains('*'))
+                    {
+                        string regexPattern = "^" + Regex.Escape(trimmedPattern).Replace("\\*", ".*") + "$";
+                        if (Regex.IsMatch(filename, regexPattern, RegexOptions.IgnoreCase))
+                            return false;
+                    }
+                    else if (filename.Equals(trimmedPattern, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
             let fileInfo = new FileInfo(file)
             select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
 
         // 遍历所有目录，并递归扫描
         foreach (var directory in Directory.GetDirectories(directoryPath))
         {
-            // 忽略.开头的目录
-            if (directory.StartsWith("."))
+            var dirName = Path.GetFileName(directory);
+
+            // 支持通配符匹配目录
+            bool shouldIgnore = false;
+            foreach (var pattern in ignoreFiles)
             {
-                continue;
+                if (string.IsNullOrWhiteSpace(pattern) || pattern.StartsWith("#"))
+                    continue;
+
+                var trimmedPattern = pattern.Trim();
+
+                // 如果模式以/结尾，表示只匹配目录
+                bool directoryPattern = trimmedPattern.EndsWith("/");
+                if (directoryPattern)
+                    trimmedPattern = trimmedPattern.TrimEnd('/');
+
+                // 转换gitignore模式到正则表达式
+                if (trimmedPattern.Contains('*'))
+                {
+                    string regexPattern = "^" + Regex.Escape(trimmedPattern).Replace("\\*", ".*") + "$";
+                    if (Regex.IsMatch(dirName, regexPattern, RegexOptions.IgnoreCase))
+                    {
+                        shouldIgnore = true;
+                        break;
+                    }
+                }
+                else if (dirName.Equals(trimmedPattern, StringComparison.OrdinalIgnoreCase))
+                {
+                    shouldIgnore = true;
+                    break;
+                }
             }
 
-            // 忽略指定的目录
-            if (IngoreFiles.Any(x => directory.Contains(x)))
-            {
+            if (shouldIgnore)
                 continue;
-            }
 
             // 递归扫描子目录
-            ScanDirectory(directory, infoList);
+            ScanDirectory(directory, infoList, ignoreFiles);
         }
     }
 }

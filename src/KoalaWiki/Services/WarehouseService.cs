@@ -22,7 +22,7 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
         {
             address += ".git";
         }
-        
+
         var query = await access.Warehouses
             .AsNoTracking()
             .Where(x => x.Address == address)
@@ -48,7 +48,7 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
     /// <summary>
     /// 提交仓库
     /// </summary>
-    public async Task SubmitWarehouseAsync(WarehouseInput input,HttpContext context)
+    public async Task SubmitWarehouseAsync(WarehouseInput input, HttpContext context)
     {
         try
         {
@@ -56,10 +56,12 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
             {
                 input.Address += ".git";
             }
+
+            var value = await access.Warehouses.FirstOrDefaultAsync(x => x.Address == input.Address);
             // 判断这个仓库是否已经添加
-            if (await access.Warehouses.AnyAsync(x =>
-                    x.Address == input.Address &&
-                    (x.Status != WarehouseStatus.Completed || x.Status != WarehouseStatus.Pending)))
+            if (value.Status == WarehouseStatus.Completed || value.Status == WarehouseStatus.Pending ||
+                value.Status == WarehouseStatus.Processing)
+
             {
                 throw new Exception("存在相同名称的渠道");
             }
@@ -84,7 +86,7 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
             await access.SaveChangesAsync();
 
             await warehouseStore.WriteAsync(entity);
-            
+
             await context.Response.WriteAsJsonAsync(new
             {
                 code = 200,

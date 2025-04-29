@@ -33,12 +33,12 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
       setModelsFetching(true);
       const fetchedModels = await fetchOpenAIModels(endpoint, apiKey);
       setModels(fetchedModels);
-      
+
       // 如果有模型且当前未选择，自动选择第一个
       if (fetchedModels.length > 0 && !form.getFieldValue('model')) {
         form.setFieldValue('model', fetchedModels[0]);
       }
-      
+
       message.success('成功获取模型列表');
     } catch (error) {
       message.error('获取模型列表失败');
@@ -52,15 +52,15 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
     try {
       const values = await form.validateFields();
       setLoading(true);
-      
+
       // Call the API service
       const response = await submitWarehouse(values) as any;
-      
+
       if (response.data.code == 200) {
         message.success('仓库添加成功');
         onSubmit(values);
         form.resetFields();
-      }else{
+      } else {
         message.error(response.data.message)
       }
     } catch (error) {
@@ -82,6 +82,9 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
     <Modal
       title="添加仓库"
       open={open}
+      onClose={() => {
+        onCancel()
+      }}
       onCancel={onCancel}
       footer={[
         <Button key="cancel" onClick={onCancel} disabled={loading}>
@@ -91,9 +94,7 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
           提交
         </Button>,
       ]}
-      maskClosable={false}
       width={600}
-      destroyOnClose={true}
     >
       <Form
         form={form}
@@ -116,12 +117,13 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
           label="OpenAI 端点"
         >
           <Input
-          disabled
-          placeholder="请输入 OpenAI 端点" />
+            disabled
+            placeholder="请输入 OpenAI 端点" />
         </Form.Item>
 
         <Form.Item
           name="openAIKey"
+          rules={[{ required: true, message: '请输入 OpenAI 密钥' }]}
           label="OpenAI 密钥"
         >
           <Input.Password placeholder="请输入 OpenAI 密钥" />
@@ -133,32 +135,48 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
           rules={[{ required: true, message: '请选择使用的模型' }]}
         >
           <Select
-          options={[
-            {
-              label: 'gpt-4.1',
-              value: 'gpt-4.1',
-            },
-            {
-              label: 'gpt-4o',
-              value: 'gpt-4o',
-            },
-            {
-              label: 'gpt-4o-mini',
-              value: 'gpt-4o-mini',
-            },
-            {
-              label: 'gpt-4.1-mini',
-              value: 'gpt-4.1-mini',
-            },
-            {
-              label: 'o4-mini',
-              value: 'o4-mini',
-            },
-            {
-              label:'DeepSeek-V3',
-              value:'DeepSeek-V3',
-            },
-          ]}
+            options={[
+              {
+                label: 'gpt-4.1',
+                value: 'gpt-4.1',
+              },
+              {
+                label: 'gpt-4o',
+                value: 'gpt-4o',
+              },
+              {
+                label: 'gpt-4o-mini',
+                value: 'gpt-4o-mini',
+              },
+              {
+                label: 'gpt-4.1-mini',
+                value: 'gpt-4.1-mini',
+              },
+              {
+                label: 'gpt-4.1-nano',
+                value: 'gpt-4.1-nano',
+              },
+              {
+                label: 'QwQ-32B',
+                value: 'QwQ-32B',
+              },
+              {
+                label: 'o4-mini',
+                value: 'o4-mini',
+              },
+              {
+                label: 'o3-mini',
+                value: 'o3-mini',
+              },
+              {
+                label: 'doubao-1-5-pro-256k-250115',
+                value: 'doubao-1-5-pro-256k-250115',
+              },
+              {
+                label: 'DeepSeek-V3',
+                value: 'DeepSeek-V3',
+              },
+            ]}
           >
           </Select>
         </Form.Item>

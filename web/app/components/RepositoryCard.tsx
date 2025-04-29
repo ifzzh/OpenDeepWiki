@@ -24,7 +24,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
         const parts = address.replace('https://github.com/', '').split('/');
         return {
           owner: parts[0],
-          name: parts[1].split('.')[0]
+          name: parts[1].split('/')[0].replace('.git', '')
         }
       }
 

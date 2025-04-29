@@ -13,7 +13,7 @@ import RepositoryForm from './components/RepositoryForm';
 import RepositoryList from './components/RepositoryList';
 import LastRepoModal from './components/LastRepoModal';
 import { Repository, RepositoryFormValues } from './types';
-import { getWarehouse, submitWarehouse } from './services/warehouseService';
+import { getWarehouse, submitWarehouse,  } from './services/warehouseService';
 import { unstableSetRender } from 'antd';
 import { createRoot } from 'react-dom/client';
 
@@ -80,6 +80,11 @@ export default function Home() {
     setFormVisible(false);
   };
 
+  const handleLastRepoQuery = async () => {
+    // 打开 LastRepoModal 弹窗
+    setLastRepoModalVisible(true);
+  };
+
   const handlePageChange = (page: number, size?: number) => {
     setCurrentPage(page);
     if (size) setPageSize(size);
@@ -109,14 +114,6 @@ export default function Home() {
           </div>
           
           <Space>
-            <Tooltip title="查询上次提交仓库">
-              <Button 
-                type="text" 
-                icon={<HistoryOutlined />} 
-                style={{ color: 'white' }} 
-                onClick={() => setLastRepoModalVisible(true)}
-              />
-            </Tooltip>
             <Tooltip title="源码地址">
               <Button 
                 type="text" 
@@ -124,13 +121,6 @@ export default function Home() {
                 style={{ color: 'white' }} 
                 href="https://github.com/AIDotNet/koalawiki" 
                 target="_blank"
-              />
-            </Tooltip>
-            <Tooltip title="API文档">
-              <Button 
-                type="text" 
-                icon={<ApiOutlined />} 
-                style={{ color: 'white' }} 
               />
             </Tooltip>
           </Space>
@@ -160,6 +150,17 @@ export default function Home() {
                       >
                         添加新仓库
                       </Button>
+                      <Button 
+                        type="primary" 
+                        size="large" 
+                        style={{
+                          marginLeft:"20px"
+                        }}
+                        className="add-button"
+                        onClick={handleLastRepoQuery}
+                      >
+                        查询上次提交仓库
+                      </Button>
                     </div>
                   </Col>
                   <Col xs={24} md={8}>
@@ -176,13 +177,6 @@ export default function Home() {
                           title={<Typography.Text type="secondary">Git仓库</Typography.Text>} 
                           value={stats.gitRepos} 
                           prefix={<GithubOutlined style={{ color: 'var(--ant-color-primary)' }} />} 
-                        />
-                      </Col>
-                      <Col span={8}>
-                        <Statistic 
-                          title={<Typography.Text type="secondary">最后更新</Typography.Text>} 
-                          value={stats.lastUpdated} 
-                          prefix={<FileTextOutlined style={{ color: 'var(--ant-color-primary)' }} />} 
                         />
                       </Col>
                     </Row>

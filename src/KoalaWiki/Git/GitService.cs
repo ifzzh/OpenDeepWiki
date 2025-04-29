@@ -37,7 +37,10 @@ public class GitService
                 Depth = 1 // 浅克隆，仅获取最新提交
             }
         };
-        var repositoryName = Path.GetFileNameWithoutExtension(localPath);
+
+        var names = localPath.Split("/");
+        
+        var repositoryName = names[^1];
 
         // 判断仓库是否已经存在
         if (Directory.Exists(localPath))
