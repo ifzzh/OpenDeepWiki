@@ -1,12 +1,12 @@
 ﻿using FastService;
-using KoalaWiki.DbAccess;
+using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using LibGit2Sharp;
 using Microsoft.EntityFrameworkCore;
 
 namespace KoalaWiki.Services;
 
-public class DocumentCatalogService(KoalaDbAccess dbAccess) : FastApi
+public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
 {
     /// <summary>
     /// 获取目录列表

@@ -1,8 +1,9 @@
-using KoalaWiki.DbAccess;
+using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Git;
 using KoalaWiki.KoalaWarehouse;
+using KoalaWiki.Provider.PostgreSQL;
+using KoalaWiki.Provider.Sqlite;
 using Mapster;
-using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -34,10 +35,16 @@ builder.Services
 
 builder.Services.AddHostedService<WarehouseTask>();
 
-builder.Services.AddDbContext<KoalaDbAccess>(optionsBuilder =>
+if (builder.Configuration.GetConnectionString("type")?.Equals("postgres", StringComparison.OrdinalIgnoreCase) == true)
 {
-    optionsBuilder.UseSqlite(builder.Configuration.GetConnectionString("Default"));
-});
+    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+    AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+    builder.Services.AddPostgreSQLDbContext(builder.Configuration);
+}
+else
+{
+    builder.Services.AddSqliteDbContext(builder.Configuration);
+}
 
 builder.Services.AddMapster();
 
@@ -46,8 +53,8 @@ var app = builder.Build();
 // 添加自动迁移代码
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<KoalaDbAccess>();
-    dbContext.Database.Migrate();
+    var dbContext = scope.ServiceProvider.GetRequiredService<IKoalaWikiContext>();
+    await dbContext.RunMigrateAsync();
 }
 
 app.UseCors("AllowAll");

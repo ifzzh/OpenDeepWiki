@@ -1,5 +1,5 @@
 ﻿using FastService;
-using KoalaWiki.DbAccess;
+using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Dto;
 using KoalaWiki.Entities;
 using KoalaWiki.KoalaWarehouse;
@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KoalaWiki.Services;
 
-public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseStore warehouseStore) : FastApi
+public class WarehouseService(IKoalaWikiContext access, IMapper mapper, WarehouseStore warehouseStore) : FastApi
 {
     /// <summary>
     /// 查询上次提交的仓库

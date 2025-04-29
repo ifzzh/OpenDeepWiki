@@ -1,7 +1,8 @@
-﻿using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using KoalaWiki.DbAccess;
+using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using Microsoft.EntityFrameworkCore;
@@ -34,7 +35,7 @@ public class DocumentsService
         return [];
     }
 
-    public async Task HandleAsync(Document document, Warehouse warehouse, KoalaDbAccess dbContext, string gitRepository)
+    public async Task HandleAsync(Document document, Warehouse warehouse, IKoalaWikiContext dbContext, string gitRepository)
     {
         // 解析仓库的目录结构
         var path = document.GitPath;
@@ -181,7 +182,7 @@ public class DocumentsService
         // 递归处理目录层次结构
         ProcessCatalogueItems(result.Items, null, warehouse, document, documents);
 
-        var documentFileItems = new System.Collections.Concurrent.ConcurrentBag<DocumentFileItem>();
+        var documentFileItems = new ConcurrentBag<DocumentFileItem>();
 
         // 提供5个并发的信号量,很容易触发429错误
         var semaphore = new SemaphoreSlim(5);

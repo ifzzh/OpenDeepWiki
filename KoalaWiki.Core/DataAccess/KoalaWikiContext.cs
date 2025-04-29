@@ -1,11 +1,15 @@
-﻿using System.Text.Json;
+﻿using System.Collections.Generic;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using Microsoft.EntityFrameworkCore;
 
-namespace KoalaWiki.DbAccess;
+namespace KoalaWiki.Core.DataAccess;
 
-public class KoalaDbAccess(DbContextOptions<KoalaDbAccess> options) : DbContext(options)
+public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
+    : DbContext(options), IKoalaWikiContext where TContext : DbContext
 {
     public DbSet<Warehouse> Warehouses { get; set; }
 
@@ -18,6 +22,16 @@ public class KoalaDbAccess(DbContextOptions<KoalaDbAccess> options) : DbContext(
     public DbSet<DocumentFileItemSource> DocumentFileItemSources { get; set; }
 
     public DbSet<DocumentOverview> DocumentOverviews { get; set; }
+
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
+    {
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RunMigrateAsync()
+    {
+        await Database.MigrateAsync();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
