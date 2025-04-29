@@ -4,10 +4,8 @@ import { Suspense, useEffect, useState } from 'react';
 import { getWarehouseOverview } from '../../services';
 import { RepositoryView } from './RepositoryView';
 import { ServerLoadingErrorState } from '../../components/document/ServerComponents';
-import { headers } from 'next/headers';
-import { useRouter } from 'next/router'
 
-export default function RepositoryPage({ params }: { params: { owner: string; name: string } }) {
+export default function RepositoryPage({ params }: any) {
   try {
     const { owner, name } = params;
     
