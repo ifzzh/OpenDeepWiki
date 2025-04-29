@@ -34,11 +34,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Entities\" />
-      <Folder Include="Extensions\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <Content Update="plugins\CodeAnalysis\AnalyzeCatalogue\config.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
