@@ -59,8 +59,7 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
 
             var value = await access.Warehouses.FirstOrDefaultAsync(x => x.Address == input.Address);
             // 判断这个仓库是否已经添加
-            if (value.Status == WarehouseStatus.Completed || value.Status == WarehouseStatus.Pending ||
-                value.Status == WarehouseStatus.Processing)
+            if (value?.Status is WarehouseStatus.Completed or WarehouseStatus.Pending or WarehouseStatus.Processing)
 
             {
                 throw new Exception("存在相同名称的渠道");
@@ -79,6 +78,7 @@ public class WarehouseService(KoalaDbAccess access, IMapper mapper, WarehouseSto
             entity.Prompt = string.Empty;
             entity.Branch = string.Empty;
             entity.Type = "git";
+            entity.CreatedAt = DateTime.UtcNow;
 
             entity.Id = Guid.NewGuid().ToString();
             await access.Warehouses.AddAsync(entity);

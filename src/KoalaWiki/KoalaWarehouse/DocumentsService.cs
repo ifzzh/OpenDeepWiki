@@ -34,7 +34,7 @@ public class DocumentsService
         return [];
     }
 
-    public async Task HandleAsync(Document document, Warehouse warehouse, KoalaDbAccess dbContext)
+    public async Task HandleAsync(Document document, Warehouse warehouse, KoalaDbAccess dbContext, string gitRepository)
     {
         // 解析仓库的目录结构
         var path = document.GitPath;
@@ -47,11 +47,11 @@ public class DocumentsService
 
         var kernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
             warehouse.OpenAIKey,
-            warehouse.Model);
+            path, warehouse.Model);
         var plugin = kernel.Plugins["CodeAnalysis"]["AnalyzeCatalogue"];
 
         var fileKernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
-            warehouse.OpenAIKey, warehouse.Model, false);
+            warehouse.OpenAIKey, path, warehouse.Model, false);
 
         OpenAIPromptExecutionSettings settings = new()
         {
@@ -64,11 +64,42 @@ public class DocumentsService
 
         foreach (var info in pathInfos)
         {
-            catalogue.Append($"{info.Path}\n");
+            // 删除前缀 Constant.GitPath
+            var relativePath = info.Path.Replace(path, "").TrimStart('\\');
+            catalogue.Append($"{relativePath}\n");
+        }
+
+        var readme = await ReadMeFile(path);
+
+        if (string.IsNullOrEmpty(readme))
+        {
+            // 生成README
+            var generateReadmePlugin = kernel.Plugins["CodeAnalysis"]["GenerateReadme"];
+            var generateReadme = await fileKernel.InvokeAsync(generateReadmePlugin, new KernelArguments(
+                new OpenAIPromptExecutionSettings()
+                {
+                    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                    Temperature = 0.5,
+                })
+            {
+                ["catalogue"] = catalogue.ToString()
+            });
+
+            readme = generateReadme.ToString();
+            // 可能需要先处理一下documentation_structure 有些模型不支持json
+            var readmeRegex = new Regex(@"<readme>(.*?)</readme>", RegexOptions.Singleline);
+            var readmeMatch = readmeRegex.Match(readme);
+
+            if (readmeMatch.Success)
+            {
+                // 提取到的内容
+                var extractedContent = readmeMatch.Groups[1].Value;
+                readme = extractedContent;
+            }
         }
 
 
-        var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), path);
+        var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme);
 
         await dbContext.DocumentOverviews.Where(x => x.DocumentId == document.Id)
             .ExecuteDeleteAsync();
@@ -81,31 +112,70 @@ public class DocumentsService
             Id = Guid.NewGuid().ToString("N")
         });
 
+        DocumentResultCatalogue? result = null;
 
-        var str = new StringBuilder();
+        int retryCount = 0;
+        const int maxRetries = 5;
+        bool success = false;
+        Exception exception = null;
 
-        await foreach (var item in fileKernel.InvokeStreamingAsync(plugin, new KernelArguments(settings)
-                       {
-                           ["catalogue"] = catalogue.ToString(),
-                           ["readme"] = await ReadMeFile(path)
-                       }))
+        while (!success && retryCount < maxRetries)
         {
-            str.Append(item);
+            try
+            {
+                var str = new StringBuilder();
+
+                await foreach (var item in fileKernel.InvokeStreamingAsync(plugin, new KernelArguments(settings)
+                               {
+                                   ["catalogue"] = catalogue.ToString(),
+                                   ["readme"] = readme
+                               }))
+                {
+                    str.Append(item);
+                }
+
+                // 可能需要先处理一下documentation_structure 有些模型不支持json
+                var regex = new Regex(@"<documentation_structure>(.*?)</documentation_structure>",
+                    RegexOptions.Singleline);
+                var match = regex.Match(str.ToString());
+
+                if (match.Success)
+                {
+                    // 提取到的内容
+                    var extractedContent = match.Groups[1].Value;
+                    str.Clear();
+                    str.Append(extractedContent);
+                }
+
+                result = JsonSerializer.Deserialize<DocumentResultCatalogue>(str.ToString());
+
+                break;
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Warning("处理仓库；{path} ,处理标题：{name} 失败！", path, warehouse.Name);
+                exception = ex;
+                retryCount++;
+                if (retryCount >= maxRetries)
+                {
+                    Console.WriteLine($"处理 {warehouse.Name} 失败，已重试 {retryCount} 次，错误：{ex.Message}");
+                }
+                else
+                {
+                    // 等待一段时间后重试
+                    await Task.Delay(5000 * retryCount);
+                }
+            }
+            finally
+            {
+            }
         }
 
-        // 可能需要先处理一下documentation_structure 有些模型不支持json
-        var regex = new Regex(@"<documentation_structure>(.*?)</documentation_structure>", RegexOptions.Singleline);
-        var match = regex.Match(str.ToString());
-
-        if (match.Success)
+        if (result == null)
         {
-            // 提取到的内容
-            var extractedContent = match.Groups[1].Value;
-            str.Clear();
-            str.Append(extractedContent);
+            // 尝试多次处理失败直接异常
+            throw new Exception("处理失败，尝试五次无法成功：" + exception?.Message);
         }
-
-        var result = JsonSerializer.Deserialize<DocumentResultCatalogue>(str.ToString());
 
         var documents = new List<DocumentCatalog>();
         // 递归处理目录层次结构
@@ -113,8 +183,8 @@ public class DocumentsService
 
         var documentFileItems = new System.Collections.Concurrent.ConcurrentBag<DocumentFileItem>();
 
-        // 提供4个的锁
-        var semaphore = new SemaphoreSlim(10);
+        // 提供5个并发的信号量,很容易触发429错误
+        var semaphore = new SemaphoreSlim(5);
 
         var tasks = new List<Task>();
 
@@ -124,7 +194,7 @@ public class DocumentsService
             tasks.Add(Task.Run(async () =>
             {
                 int retryCount = 0;
-                const int maxRetries = 3;
+                const int maxRetries = 10;
                 bool success = false;
 
                 while (!success && retryCount < maxRetries)
@@ -133,14 +203,17 @@ public class DocumentsService
                     {
                         Log.Logger.Information("处理仓库；{path} ,处理标题：{name}", path, item.Name);
                         await semaphore.WaitAsync();
-                        var fileItem = await ProcessCatalogueItems(item, fileKernel, catalogue.ToString(), path);
+                        var fileItem = await ProcessCatalogueItems(item, fileKernel, catalogue.ToString(), readme,
+                            gitRepository);
                         documentFileItems.Add(fileItem);
                         success = true;
 
                         Log.Logger.Information("处理仓库；{path} ,处理标题：{name} 完成！", path, item.Name);
+                        semaphore.Release();
                     }
                     catch (Exception ex)
                     {
+                        semaphore.Release();
                         retryCount++;
                         if (retryCount >= maxRetries)
                         {
@@ -149,12 +222,11 @@ public class DocumentsService
                         else
                         {
                             // 等待一段时间后重试
-                            await Task.Delay(1000 * retryCount);
+                            await Task.Delay(5000 * retryCount);
                         }
                     }
                     finally
                     {
-                        semaphore.Release();
                     }
                 }
             }));
@@ -177,7 +249,7 @@ public class DocumentsService
     /// </summary>
     /// <returns></returns>
     private async Task<string> GenerateProjectOverview(Kernel kernel, string catalog,
-        string readmePath)
+        string readme)
     {
         var sr = new StringBuilder();
 
@@ -190,7 +262,7 @@ public class DocumentsService
         var history = new ChatHistory();
 
         history.AddUserMessage(Prompt.Overview.Replace("{{$catalogue}}", catalog)
-            .Replace("{{$readme}}", await ReadMeFile(readmePath)));
+            .Replace("{{$readme}}", readme));
 
         await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))
         {
@@ -220,14 +292,16 @@ public class DocumentsService
     /// 处理每一个标题产生文件内容
     /// </summary>
     private async Task<DocumentFileItem> ProcessCatalogueItems(DocumentCatalog catalog, Kernel kernel, string catalogue,
-        string readmePath)
+        string readme, string git_repository)
     {
         var chat = kernel.Services.GetService<IChatCompletionService>();
 
         var history = new ChatHistory();
 
-        history.AddUserMessage(Prompt.DefaultPrompt.Replace("{{$catalogue}}", catalogue)
-            .Replace("{{$readme}}", await ReadMeFile(readmePath))
+        history.AddUserMessage(Prompt.DefaultPrompt
+            .Replace("{{$catalogue}}", catalogue)
+            .Replace("{{$readme}}", readme)
+            .Replace("{{$git_repository}}", git_repository)
             .Replace("{{$title}}", catalog.Name));
 
 
@@ -326,7 +400,7 @@ public class DocumentsService
             return await File.ReadAllTextAsync(readmePath);
         }
 
-        return "仓库没有README文件";
+        return string.Empty;
     }
 
     void ScanDirectory(string directoryPath, List<PathInfo> infoList, string[] ignoreFiles)

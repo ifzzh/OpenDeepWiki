@@ -10,6 +10,10 @@ public static class Prompt
         
         You will be working with the following input variables:
         
+        <git_repository>
+        {{$git_repository}}
+        </git_repository>
+        
         <catalogue>
         {{$catalogue}}
         </catalogue>
@@ -27,43 +31,53 @@ public static class Prompt
            - Begin with a clear introduction, establishing the purpose and audience
            - Organize information in a logical manner to build understanding
            - Include comprehensive yet concise explanations with appropriate technical depth
-           - Create rich, detailed content that thoroughly addresses the document's purpose
+           - Create rich, detailed content that thoroughly addresses the document&#39;s purpose
         
         2. Code Structure Analysis
-           - Based on the title's objective, start by reading potentially relevant file contents from the catalogue
-           - Analyze the code structure and relationships
+           - Based on the title&#39;s objective, start by reading potentially relevant file contents from the catalogue
+           - To create a flowchart that explains code relationships using the Mermaid syntax in Markdown, it is necessary to strictly follow the Mermaid syntax.
            - Use Markdown syntax to create flowcharts illustrating code relationships
-           - Include system architecture diagrams or relevant component relationship diagrams
+           - Including the system architecture diagram or the relationship diagram of related components, as well as the code dependency association relationships in some current code files
            - Add tables to organize comparative information or specifications
         
         If you need to read and analyze the file content, you can use the file operation functions I provide
         
         Follow these steps to create the document:
         
-        1. Read the readme file content using the read_file function
+        1. Read the readme file content using the Use the provided file functions
         2. Analyze the readme content to understand the project overview
         3. Based on the title, identify relevant files from the catalogue
         4. For each relevant file:
-           a. Read the file content using the read_file function
+           a. Read the file content Use the provided file functions
            b. Analyze the code structure using the analyze_code function
            c. Extract key information and relationships
         5. Synthesize the gathered information into a well-structured document
         6. Create flowcharts and diagrams to illustrate code relationships and architecture
         7. Organize the content logically, using clear section headings
-        8. Ensure the document thoroughly addresses the title's objective
+        8. Ensure the document thoroughly addresses the title&#39;s objective
         
-        Your final document must be enclosed within <blog></blog> tags and should include:
+        Source Reference Guidelines:
+        - For each code file you read and analyze, include a reference link at the end of the related section
+        - Format source references using this pattern: 
+          Sources:
+          - [filename](git_repository_url/path/to/file)
+        - The git_repository value combined with the file path creates the complete source URL
+        - This helps readers trace information back to the original source code
+        - Include these references after each major section where you've analyzed specific files
         
-        1. A descriptive title that clearly conveys the document's purpose
+        Your final document must be enclosed within &lt;blog&gt;&lt;/blog&gt; tags and should include:
+        
+        1. A descriptive title that clearly conveys the document&#39;s purpose
         2. Logical section headings that effectively organize the information
         3. Comprehensive explanations of key concepts and processes
         4. Visual elements (flowcharts, diagrams) to enhance understanding
         5. Practical examples demonstrating the application of concepts
-        6. Rich, detailed content that thoroughly addresses the document's purpose
+        6. Rich, detailed content that thoroughly addresses the document&#39;s purpose
+        7. Proper source references for all analyzed code files
         
         Remember to use Markdown syntax for formatting, including headers, lists, code blocks, and tables. Ensure that all visual elements are properly described and integrated into the text.
         
-        Begin your document creation process now, and present your final output within the <blog> tags. Your output should consist of only the final document; do not include any intermediate steps or thought processes.                       
+        Begin your document creation process now, and present your final output within the <blog> tags. Your output should consist of only the final document; do not include any intermediate steps or thought processes.
         """;
     
     public const string Overview =

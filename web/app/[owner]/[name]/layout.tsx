@@ -1,10 +1,37 @@
 'use client'
-import { Layout, Typography, Spin, Space, theme, ConfigProvider, Flex } from 'antd';
-import { FolderOutlined, FileTextOutlined, GithubOutlined } from '@ant-design/icons';
+import {
+  Layout,
+  Typography,
+  Spin,
+  Space,
+  theme,
+  ConfigProvider,
+  Flex,
+  Avatar,
+  Breadcrumb,
+  Divider,
+  Button,
+  FloatButton,
+  Dropdown
+} from 'antd';
+import {
+  FolderOutlined,
+  FileTextOutlined,
+  GithubOutlined,
+  HomeOutlined,
+  BookOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  MoreOutlined,
+  ShareAltOutlined,
+  EditOutlined,
+  SettingOutlined
+} from '@ant-design/icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { documentCatalog } from '../../services/warehouseService';
+
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
 
@@ -16,7 +43,6 @@ interface DocumentCatalogResponse {
   children?: DocumentCatalogResponse[];
 }
 
-// 递归生成菜单项
 const generateMenuItems = (
   data: DocumentCatalogResponse,
   parentKey: string = '',
@@ -54,16 +80,17 @@ export default function RepositoryLayout({
   const pathname = usePathname();
   const { token } = theme.useToken();
 
-  // 从路由路径解析 owner 和 name
   const pathParts = pathname.split('/').filter(Boolean);
-  const owner = pathParts[0] || '';
-  const name = pathParts[1] || '';
+  const owner = params.owner || pathParts[0] || '';
+  const name = params.name || pathParts[1] || '';
+  const currentPath = pathParts.slice(2).join('/');
 
-  const [docItems, setDocItems] = useState<any[]>([]);
+  const [catalogData, setCatalogData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // 根据路径判断当前选中的菜单项
   const selectedKey = pathname.includes('/') ? 'docs' : 'overview';
 
   useEffect(() => {
@@ -73,9 +100,8 @@ export default function RepositoryLayout({
       setLoading(true);
       try {
         const response = await documentCatalog(owner, name);
-        setDocItems(response.data);
-        // Set a mock last updated date - in production this would come from API
-        setLastUpdated(`27 April 2025 (e96b16)`);
+        setCatalogData(response.data);
+        setLastUpdated(response.data.lastUpdate);
       } catch (error) {
         console.error('Failed to fetch document catalog:', error);
       } finally {
@@ -86,29 +112,62 @@ export default function RepositoryLayout({
     fetchDocumentCatalog();
   }, [owner, name, selectedKey]);
 
+  // Check if the screen size is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  // Automatically collapse sidebar on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setCollapsed(true);
+    }
+  }, [isMobile]);
+
   const renderSidebarItem = (item: DocumentCatalogResponse, level = 0) => {
     const isActive = pathname.includes(`/${item.url}`);
+
     const style = {
-      padding: '8px 24px',
-      paddingLeft: `${24 + level * 16}px`,
-      color: isActive ? token.colorBgSpotlight : token.colorTextSecondary,
+      padding: `${token.paddingXS}px ${token.paddingLG}px`,
+      paddingLeft: `${token.paddingLG + level * token.paddingMD}px`,
+      color: isActive ? token.colorPrimary : token.colorText,
       cursor: 'pointer',
-      backgroundColor: isActive ? token.colorBgTextHover : 'transparent',
-      transition: 'all 0.3s',
-      display: 'block',
+      backgroundColor: isActive ? token.colorBgTextActive : 'transparent',
+      transition: `all ${token.motionDurationMid}`,
+      display: 'flex',
+      alignItems: 'center',
       textDecoration: 'none',
       fontWeight: isActive ? 500 : 400,
-      margin: '4px 0',
-      borderRadius: token.borderRadiusSM,
+      margin: `${token.marginXS}px 0`,
+      borderRadius: token.borderRadiusLG,
+      fontSize: token.fontSizeSM,
+      lineHeight: token.lineHeight,
+    };
+
+    const iconStyle = {
+      marginRight: token.marginXS,
+      fontSize: token.fontSizeSM,
     };
 
     return (
       <div key={item.key}>
         {item.children?.length ? (
           <>
-            <div style={style}>
-              {item.label}
-            </div>
+            <Link
+              href={`/${owner}/${name}/${item.url}`}
+              style={style}>
+              <FolderOutlined style={iconStyle} />
+              <span>{item.label}</span>
+            </Link>
             {item.children.sort((a, b) => a.order - b.order).map(child =>
               renderSidebarItem(child, level + 1)
             )}
@@ -118,12 +177,66 @@ export default function RepositoryLayout({
             href={`/${owner}/${name}/${item.url}`}
             style={style}
           >
-            {item.label}
+            <FileTextOutlined style={iconStyle} />
+            <span>{item.label}</span>
           </Link>
         )}
       </div>
     );
   };
+
+  const generateBreadcrumb = () => {
+    const items = [
+      {
+        title: <Link href="/"><HomeOutlined /></Link>,
+      },
+      {
+        title: <Link href={`/${owner}`}>{owner}</Link>,
+      },
+      {
+        title: <Link href={`/${owner}/${name}`}>{name}</Link>,
+      }
+    ];
+
+    if (currentPath) {
+      items.push({
+        title: <span>{currentPath}</span>,
+      });
+    }
+
+    return items;
+  };
+
+  // Define floating menu items
+  const floatingMenuItems = [
+    {
+      key: 'edit',
+      label: '编辑文档',
+      icon: <EditOutlined />,
+      onClick: () => {
+        // Implement edit action
+        console.log('Edit document');
+      }
+    },
+    {
+      key: 'share',
+      label: '分享文档',
+      icon: <ShareAltOutlined />,
+      onClick: () => {
+        // Implement share action
+        console.log('Share document');
+      }
+    },
+    {
+      key: 'settings',
+      label: '文档设置',
+      icon: <SettingOutlined />,
+      onClick: () => {
+        // Implement settings action
+        console.log('Document settings');
+      }
+    }
+  ];
 
   return (
     <ConfigProvider
@@ -132,7 +245,11 @@ export default function RepositoryLayout({
           Layout: {
             headerBg: token.colorBgElevated,
             siderBg: token.colorBgContainer,
+            bodyBg: token.colorBgLayout,
           },
+          FloatButton: {
+            colorPrimary: token.colorPrimary,
+          }
         },
       }}
     >
@@ -144,38 +261,67 @@ export default function RepositoryLayout({
           width: '100%',
           zIndex: 1000,
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          boxShadow: token.boxShadow
+          boxShadow: token.boxShadowSecondary
         }}>
-          <Flex align="center" style={{ height: '100%', padding: `0 ${token.paddingLG}px` }}>
-            <span style={{ display: 'flex', alignItems: 'center' }}>
-              <Space size={token.sizeMD}>
-                <GithubOutlined style={{ fontSize: token.fontSizeHeading4, color: token.colorPrimary }} />
-                <Title
-                  level={4}
-                  style={{
-                    margin: 0,
-                    color: token.colorText,
-                    fontSize: token.fontSizeHeading4,
-                    lineHeight: 1.2,
-                    letterSpacing: '0.5px',
-                    fontWeight: token.fontWeightStrong
-                  }}
-                >
-                  <span style={{ fontSize: token.fontSizeHeading4, color: token.colorPrimary }}>
-                    {owner}
-                    /
-                    {name}
-                  </span>
-                </Title>
-              </Space>
-            </span>
+          <Flex align="center" justify="space-between" style={{ height: '100%', padding: `0 ${token.paddingLG}px` }}>
+            <Flex align="center" gap={token.marginSM}>
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+                style={{
+                  fontSize: token.fontSizeLG,
+                  marginRight: token.marginXS,
+                }}
+              />
+              <BookOutlined style={{ fontSize: token.fontSizeHeading3, color: token.colorPrimary }} />
+              <Title
+                level={4}
+                onClick={() => {
+                  catalogData?.git && window.open(catalogData.git, '_blank');
+                }}
+                style={{
+                  margin: 0,
+                  color: token.colorText,
+                  fontSize: token.fontSizeHeading4,
+                  lineHeight: 1.2,
+                  cursor: catalogData?.git ? 'pointer' : 'default',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ color: token.colorPrimary }}>
+                  {owner}
+                </span>
+                <span style={{ margin: `0 ${token.marginXXS}px`, color: token.colorTextSecondary }}>/</span>
+                <span>{name}</span>
+                {catalogData?.git && (
+                  <GithubOutlined style={{ marginLeft: token.marginSM, fontSize: token.fontSizeLG }} />
+                )}
+              </Title>
+            </Flex>
+
+            <Space>
+              {lastUpdated && (
+                <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                  最近更新: {lastUpdated}
+                </Text>
+              )}
+            </Space>
           </Flex>
         </Header>
+
         <Layout style={{ marginTop: 64 }}>
           <Sider
             width={260}
+            collapsible
+            collapsed={collapsed}
+            onCollapse={setCollapsed}
+            trigger={null}
+            breakpoint="lg"
+            collapsedWidth={0}
             style={{
-              background: token.colorBgElevated,
+              background: token.colorBgContainer,
               overflow: 'auto',
               height: 'calc(100vh - 64px)',
               position: 'fixed',
@@ -183,55 +329,71 @@ export default function RepositoryLayout({
               top: 64,
               bottom: 0,
               borderRight: `1px solid ${token.colorBorderSecondary}`,
+              transition: `all ${token.motionDurationMid}`,
+              zIndex: 999,
             }}
           >
             <div style={{ padding: `${token.paddingMD}px 0` }}>
-              <Text
-                type="secondary"
-                style={{
-                  padding: `0 ${token.paddingLG}px`,
-                  display: 'block',
-                  fontSize: token.fontSizeSM,
-                  opacity: 0.8
-                }}
+              <Flex
+                vertical
+                gap={token.marginSM}
+                style={{ padding: `0 ${token.paddingXS}px` }}
               >
-                Last updated: {lastUpdated}
-              </Text>
-
-              <div style={{ marginTop: token.marginMD }}>
                 <Link
                   href={`/${owner}/${name}`}
                   style={{
                     padding: `${token.paddingXS}px ${token.paddingLG}px`,
-                    color: pathname === `/${owner}/${name}` ? token.colorBgSpotlight : token.colorTextSecondary,
-                    backgroundColor: pathname === `/${owner}/${name}` ? token.colorBgTextHover : 'transparent',
-                    fontWeight: pathname === `/${owner}/${name}` ? token.fontWeightStrong : 400,
-                    display: 'block',
+                    color: pathname === `/${owner}/${name}` ? token.colorPrimary : token.colorText,
+                    backgroundColor: pathname === `/${owner}/${name}` ? token.colorBgTextActive : 'transparent',
+                    fontWeight: pathname === `/${owner}/${name}` ? 500 : 400,
+                    display: 'flex',
+                    alignItems: 'center',
                     textDecoration: 'none',
-                    margin: `${token.marginXS}px 0`,
-                    borderRadius: token.borderRadiusSM,
+                    borderRadius: token.borderRadiusLG,
+                    marginBottom: token.marginXS,
                   }}
                 >
-                  Overview
+                  <HomeOutlined style={{ marginRight: token.marginXS }} />
+                  <span>概览</span>
                 </Link>
 
+                <Divider style={{ margin: `${token.marginXS}px 0` }} />
+
                 {loading ? (
-                  <div style={{ padding: token.paddingLG, textAlign: 'center' }}>
+                  <Flex justify="center" align="center" style={{ padding: token.paddingMD }}>
                     <Spin size="small" />
-                  </div>
+                  </Flex>
                 ) : (
-                  docItems.map(item => renderSidebarItem(item))
+                  catalogData?.items?.map(item => renderSidebarItem(item))
                 )}
-              </div>
+              </Flex>
             </div>
           </Sider>
+
           <Content style={{
-            marginLeft: 260,
+            marginLeft: collapsed ? 0 : 260,
             padding: token.paddingLG,
-            background: token.colorBgLayout,
-            minHeight: 'calc(100vh - 64px)'
+            background: token.colorBgContainer,
+            minHeight: 'calc(100vh - 64px)',
+            transition: `all ${token.motionDurationMid}`,
+            position: 'relative',
           }}>
-            {children}
+            <Breadcrumb
+              items={generateBreadcrumb()}
+              style={{
+                marginBottom: token.marginLG,
+                fontSize: token.fontSizeSM
+              }}
+            />
+
+            <div style={{
+              background: token.colorBgContainer,
+              padding: token.paddingLG,
+              borderRadius: token.borderRadiusLG,
+              boxShadow: token.boxShadowTertiary
+            }}>
+              {children}
+            </div>
           </Content>
         </Layout>
       </Layout>

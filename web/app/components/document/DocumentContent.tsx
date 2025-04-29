@@ -45,6 +45,10 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
       });
   };
 
+  const customRender = (node: any) => {
+    return node;
+  };
+
   return (
     <div ref={contentRef} style={{
       background: token.colorBgContainer,
@@ -54,11 +58,13 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
     }}>
       <div className="markdown-content">
         <Markdown
-          fullFeaturedCodeBlock
           enableImageGallery
           enableLatex
           enableMermaid
           enableCustomFootnotes
+          allowHtml
+          customRender={customRender}
+          title={document?.title}
           remarkPlugins={[remarkGfm, remarkToc, remarkMath]}
           rehypePlugins={[rehypeRaw, rehypeSlug, rehypeKatex]}
         >
@@ -184,14 +190,14 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
           background: rgba(0,0,0,0.03);
           padding: 2px 4px;
           border-radius: 2px;
-          font-size: 14px;
+          font-size: 14px !important;
         }
         
         .markdown-content pre > code {
           background: transparent;
           padding: 0;
           border: none;
-          font-size: 14px;
+          font-size: 14px !important;
         }
 
         /* 列表样式匹配图片效果 */

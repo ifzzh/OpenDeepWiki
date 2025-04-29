@@ -63,7 +63,7 @@ public class WarehouseTask(
 
                 await dbContext.SaveChangesAsync(stoppingToken);
 
-                await documentsService.HandleAsync(document, value, dbContext);
+                await documentsService.HandleAsync(document, value, dbContext,value.Address);
 
                 // 更新仓库状态
                 await dbContext.Warehouses.Where(x => x.Id == value.Id)

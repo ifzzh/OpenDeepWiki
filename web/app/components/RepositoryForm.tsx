@@ -117,7 +117,6 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
           label="OpenAI 端点"
         >
           <Input
-            disabled
             placeholder="请输入 OpenAI 端点" />
         </Form.Item>
 
@@ -151,10 +150,6 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
               {
                 label: 'gpt-4.1-mini',
                 value: 'gpt-4.1-mini',
-              },
-              {
-                label: 'gpt-4.1-nano',
-                value: 'gpt-4.1-nano',
               },
               {
                 label: 'QwQ-32B',

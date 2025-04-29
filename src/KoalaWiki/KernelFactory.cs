@@ -13,6 +13,7 @@ public class KernelFactory
 {
     public static Kernel GetKernel(string chatEndpoint,
         string chatApiKey,
+        string gitPath,
         string model = "gpt-4.1", bool isCodeAnalysis = true)
     {
         var kernelBuilder = Kernel.CreateBuilder();
@@ -25,11 +26,11 @@ public class KernelFactory
                 //添加重试试
                 AllowAutoRedirect = true,
                 MaxAutomaticRedirections = 5,
-                MaxConnectionsPerServer = 100,
+                MaxConnectionsPerServer = 200,
             })
             {
                 // 添加重试
-                Timeout = TimeSpan.FromSeconds(120),
+                Timeout = TimeSpan.FromSeconds(16000),
             });
 
         if (isCodeAnalysis)
@@ -38,7 +39,10 @@ public class KernelFactory
                 "CodeAnalysis"));
         }
 
-        kernelBuilder.Plugins.AddFromType<FileFunction>("FileFunctions");
+        //
+        // 添加文件函数
+        var fileFunction = new FileFunction(gitPath);
+        kernelBuilder.Plugins.AddFromObject(fileFunction);
 
         var kernel = kernelBuilder.Build();
 

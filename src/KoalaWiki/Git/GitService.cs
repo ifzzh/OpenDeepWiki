@@ -14,8 +14,8 @@ public class GitService
         var organization = segments[1].Trim('/');
         var repositoryName = segments[2].Trim('/').Replace(".git", "");
 
-        // 拼接本地路径
-        var repositoryPath = Path.Combine("/repositories", organization, repositoryName);
+        // 拼接本地路径，默认使用"/repositories"，
+        var repositoryPath = Path.Combine(Constant.GitPath, organization, repositoryName);
         return (repositoryPath, organization);
     }
 
@@ -38,9 +38,9 @@ public class GitService
             }
         };
 
-        var names = localPath.Split("/");
+        var names = repositoryUrl.Split('/');
         
-        var repositoryName = names[^1];
+        var repositoryName = names[^1].Replace(".git", "");
 
         // 判断仓库是否已经存在
         if (Directory.Exists(localPath))

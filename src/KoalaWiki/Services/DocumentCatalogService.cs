@@ -15,7 +15,7 @@ public class DocumentCatalogService(KoalaDbAccess dbAccess) : FastApi
     /// <param name="name"></param>
     /// <returns></returns>
     /// <exception cref="NotFoundException"></exception>
-    public async Task<List<object>> GetDocumentCatalogsAsync(string organizationName, string name)
+    public async Task<object> GetDocumentCatalogsAsync(string organizationName, string name)
     {
         var query = await dbAccess.Warehouses
             .AsNoTracking()
@@ -28,11 +28,44 @@ public class DocumentCatalogService(KoalaDbAccess dbAccess) : FastApi
             throw new NotFoundException("仓库不存在");
         }
 
-        var document = await dbAccess.DocumentCatalogs
+        var document = await dbAccess.Documents
+            .AsNoTracking()
+            .Where(x => x.WarehouseId == query.Id)
+            .FirstOrDefaultAsync();
+
+        var documentCatalogs = await dbAccess.DocumentCatalogs
             .Where(x => x.WarehouseId == query.Id)
             .ToListAsync();
 
-        return BuildDocumentTree(document);
+        string lastUpdate;
+
+        // 如果最近更新时间是今天那么只需要显示小时
+        if (document?.LastUpdate != null)
+        {
+            var time = DateTime.Now - document.LastUpdate;
+            lastUpdate = time.Days == 0 ? $"{time.Hours}小时前" : $"{time.Days}天前";
+
+            // 如果超过7天，显示日期
+            if (time.Days > 7)
+            {
+                lastUpdate = document.LastUpdate.ToString("yyyy-MM-dd");
+            }
+        }
+        else
+        {
+            lastUpdate = "刚刚";
+        }
+
+        return new
+        {
+            items = BuildDocumentTree(documentCatalogs),
+            lastUpdate,
+            document?.Description,
+            git = query.Address,
+            document?.LikeCount,
+            document?.Status,
+            document?.CommentCount
+        };
     }
 
     /// <summary>
