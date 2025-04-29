@@ -1,22 +1,45 @@
-import { Suspense } from 'react';
+'use client'
+
+import { Suspense, useEffect, useState } from 'react';
 import { getWarehouseOverview } from '../../services';
 import { RepositoryView } from './RepositoryView';
 import { ServerLoadingErrorState } from '../../components/document/ServerComponents';
 import { headers } from 'next/headers';
+import { useRouter } from 'next/router'
 
-export default async function RepositoryPage() {
+export default function RepositoryPage({ params }: { params: { owner: string; name: string } }) {
   try {
-    const headersList = await headers();
-    const host = headersList.get('host');
-    const url = headersList.get('x-url') || headersList.get('referer') || `https://${host}`;
+    const { owner, name } = params;
+    
+    if (!owner || !name) {
+      throw new Error('Missing owner or repository name');
+    }
+    const [response, setResponse] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const data = await getWarehouseOverview(owner, name);
+          setResponse(data);
+        } catch (err) {
+          setError(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchData();
+    }, [owner, name]);
 
-    const apiUrl = new URL(url);
+    if (loading) {
+      return <ServerLoadingErrorState loading={true} owner={owner} name={name} />;
+    }
 
-    const pathParts = apiUrl.pathname.split('/').filter(Boolean);
-    const owner = pathParts[0] || '';
-    const name = pathParts[1] || '';
-
-    const response = await getWarehouseOverview(owner, name);
+    if (error) {
+      return <ServerLoadingErrorState loading={false} error={'抱歉，获取仓库信息时发生错误'} owner={""} name={""} />;
+    }
 
     // 如果获取数据失败，显示错误信息
     if (!response.success || !response.data) {
