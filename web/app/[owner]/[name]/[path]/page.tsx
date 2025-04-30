@@ -6,7 +6,6 @@ import 'katex/dist/katex.min.css';
 
 // 导入封装好的组件
 import {
-  DocumentHeader,
   DocumentContent,
   DocumentSidebar,
   MobileDocumentDrawer,
@@ -14,7 +13,8 @@ import {
   DocumentStyles,
   extractHeadings,
   createAnchorItems,
-  initializeMermaid
+  initializeMermaid,
+  SourceFiles
 } from '../../../components/document';
 
 // 导入文档服务
@@ -29,20 +29,8 @@ export default function DocumentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [headings, setHeadings] = useState<{key: string, title: string, level: number, id: string}[]>([]);
-  const [diagramsRendered, setDiagramsRendered] = useState(false);
   const { token } = useToken();
-  
-  // 文档最后更新时间
-  const lastUpdated = useMemo(() => {
-    if (document?.updatedAt) {
-      return new Date(document.updatedAt).toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    }
-    return '最近更新';
-  }, [document]);
+
   
   // 生成目录锚点项
   const anchorItems = useMemo(() => {
@@ -85,7 +73,6 @@ export default function DocumentPage() {
   return (
     <div className="doc-page-container" style={{ backgroundColor: token.colorBgLayout, minHeight: '100vh' }}>
       <Row 
-        gutter={[0, 16]} 
         style={{ 
           padding: { xs: '8px', sm: '16px', md: '24px' }[token.screenSM],
           maxWidth: '1600px',
@@ -104,6 +91,21 @@ export default function DocumentPage() {
           </Col>
         ) : (
           <>
+            {/* 源文件组件 */}
+            {document?.fileSource && document.fileSource.length > 0 && (
+              <Col style={{
+                backgroundColor: token.colorBgElevated,
+              }} span={24}>
+                <SourceFiles
+                  fileSource={document.fileSource}
+                  owner={owner as string}
+                  git={document.address}
+                  name={name as string}
+                  token={token}
+                />
+              </Col>
+            )}
+            
             {/* 主要内容区 */}
             <Col xs={24} sm={24} md={18} lg={18} xl={18}>
               <DocumentContent
