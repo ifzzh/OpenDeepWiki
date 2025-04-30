@@ -21,6 +21,8 @@ public interface IKoalaWikiContext
 
     public DbSet<DocumentOverview> DocumentOverviews { get; set; }
     
+    public DbSet<DocumentCommitRecord> DocumentCommitRecords { get; set; }
+    
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken());
 
     Task RunMigrateAsync();

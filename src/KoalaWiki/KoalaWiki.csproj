@@ -25,6 +25,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.SemanticKernel" Version="1.47.0" />
         <PackageReference Include="Microsoft.SemanticKernel.Connectors.Postgres" Version="1.47.0-preview" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Scalar.AspNetCore" Version="2.2.1" />
         <PackageReference Include="Serilog" Version="4.2.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
@@ -43,6 +44,9 @@
       <Content Update="plugins\CodeAnalysis\GenerateReadme\config.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="plugins\CodeAnalysis\CommitAnalyze\config.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -50,6 +54,9 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="plugins\CodeAnalysis\GenerateReadme\skprompt.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="plugins\CodeAnalysis\CommitAnalyze\skprompt.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>

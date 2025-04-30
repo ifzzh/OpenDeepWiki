@@ -5,11 +5,14 @@ using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
+using LibGit2Sharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Newtonsoft.Json;
 using Serilog;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace KoalaWiki.KoalaWarehouse;
 
@@ -99,19 +102,50 @@ public class DocumentsService
                 readme = extractedContent;
             }
         }
-        
-        var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme, gitRepository);
 
-        await dbContext.DocumentOverviews.Where(x => x.DocumentId == document.Id)
+        await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
             .ExecuteDeleteAsync();
 
-        await dbContext.DocumentOverviews.AddAsync(new DocumentOverview()
+
+        // 开始生成
+        var (git, committer) = await GenerateUpdateLogAsync(document.GitPath, readme,
+            warehouse.Address,
+            kernel);
+
+        await dbContext.DocumentCommitRecords.AddAsync(new DocumentCommitRecord()
         {
-            Content = overview,
-            Title = "",
-            DocumentId = document.Id,
-            Id = Guid.NewGuid().ToString("N")
+            WarehouseId = warehouse.Id,
+            CreatedAt = DateTime.Now,
+            Author = committer,
+            Id = Guid.NewGuid().ToString("N"),
+            CommitMessage = git,
+            LastUpdate = DateTime.Now,
         });
+
+        if (await dbContext.DocumentOverviews.AnyAsync(x => x.DocumentId == document.Id) == false)
+        {
+            var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme, gitRepository);
+
+            // 可能需要先处理一下documentation_structure 有些模型不支持json
+            var regex = new Regex(@"<blog>(.*?)</blog>",
+                RegexOptions.Singleline);
+            var match = regex.Match(overview);
+
+            if (match.Success)
+            {
+                // 提取到的内容
+                overview = match.Groups[1].Value;
+            }
+
+            await dbContext.DocumentOverviews.AddAsync(new DocumentOverview()
+            {
+                Content = overview,
+                Title = "",
+                DocumentId = document.Id,
+                Id = Guid.NewGuid().ToString("N")
+            });
+        }
+
 
         DocumentResultCatalogue? result = null;
 
@@ -124,7 +158,7 @@ public class DocumentsService
         {
             try
             {
-                var str = new StringBuilder();
+                var str = string.Empty;
 
                 await foreach (var item in fileKernel.InvokeStreamingAsync(plugin, new KernelArguments(settings)
                                {
@@ -132,7 +166,7 @@ public class DocumentsService
                                    ["readme"] = readme
                                }))
                 {
-                    str.Append(item);
+                    str += item;
                 }
 
                 // 可能需要先处理一下documentation_structure 有些模型不支持json
@@ -143,12 +177,11 @@ public class DocumentsService
                 if (match.Success)
                 {
                     // 提取到的内容
-                    var extractedContent = match.Groups[1].Value;
-                    str.Clear();
-                    str.Append(extractedContent);
+                    str = match.Groups[1].Value;
                 }
 
-                result = JsonSerializer.Deserialize<DocumentResultCatalogue>(str.ToString());
+
+                result = JsonConvert.DeserializeObject<DocumentResultCatalogue>(str.ToString().Trim());
 
                 break;
             }
@@ -180,12 +213,14 @@ public class DocumentsService
 
         var documents = new List<DocumentCatalog>();
         // 递归处理目录层次结构
-        ProcessCatalogueItems(result.Items, null, warehouse, document, documents);
+        ProcessCatalogueItems(result.items, null, warehouse, document, documents);
 
         var documentFileItems = new ConcurrentBag<DocumentFileItem>();
 
+        var documentFileSource = new ConcurrentDictionary<string, List<string>>();
+
         // 提供5个并发的信号量,很容易触发429错误
-        var semaphore = new SemaphoreSlim(5);
+        var semaphore = new SemaphoreSlim(10);
 
         var tasks = new List<Task>();
 
@@ -198,6 +233,10 @@ public class DocumentsService
                 const int maxRetries = 10;
                 bool success = false;
 
+                // 收集所有引用源文件
+                var files = new List<string>();
+                DocumentContext.DocumentStore = new DocumentStore();
+
                 while (!success && retryCount < maxRetries)
                 {
                     try
@@ -208,6 +247,10 @@ public class DocumentsService
                             gitRepository);
                         documentFileItems.Add(fileItem);
                         success = true;
+
+                        files.AddRange(DocumentContext.DocumentStore.Files);
+
+                        documentFileSource.TryAdd(fileItem.Id, files);
 
                         Log.Logger.Information("处理仓库；{path} ,处理标题：{name} 完成！", path, item.Name);
                         semaphore.Release();
@@ -236,13 +279,89 @@ public class DocumentsService
         // 等待所有任务完成
         await Task.WhenAll(tasks);
 
+
         // 将解析的目录结构保存到数据库
         await dbContext.DocumentCatalogs.AddRangeAsync(documents);
 
-
         await dbContext.DocumentFileItems.AddRangeAsync(documentFileItems);
+        // 批量添加fileSource
+
+        foreach (var source in documentFileSource)
+        {
+            // warehouse.Address是仓库地址
+            foreach (var fileItem in source.Value)
+            {
+                await dbContext.DocumentFileItemSources.AddAsync(new DocumentFileItemSource()
+                {
+                    Address = fileItem,
+                    DocumentFileItemId = source.Key,
+                    Name = fileItem,
+                    Id = Guid.NewGuid().ToString("N"),
+                });
+            }
+        }
+
 
         await dbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// 生成更新日志
+    /// </summary>
+    public async Task<(string content, string committer)> GenerateUpdateLogAsync(string gitPath,
+        string readme, string git_repository, Kernel kernel)
+    {
+        // 读取git log
+        using var repo = new Repository(gitPath, new RepositoryOptions());
+
+        var log = repo.Commits
+            .OrderByDescending(x => x.Committer.When)
+            // 只要最近的10条
+            .Take(20)
+            .OrderBy(x => x.Committer.When)
+            .ToList();
+
+        string commitMessage = string.Empty;
+        foreach (var commit in log)
+        {
+            commitMessage += "提交人：" + commit.Committer.Name + "\n提交内容\n<message>\n" + commit.Message +
+                             "<message>";
+
+            // commitMessage += "修改文件列表\n<file>\n";
+            // // 扫码更改的文件
+            // commit.Tree.Select(x => x.Path).ToList().ForEach(x => { commitMessage += x + "\n"; });
+            // commitMessage += "</file>";
+
+            commitMessage += "\n提交时间：" + commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss") + "\n";
+        }
+
+        var plugin = kernel.Plugins["CodeAnalysis"]["CommitAnalyze"];
+
+        var str = string.Empty;
+        await foreach (var item in kernel.InvokeStreamingAsync(plugin, new KernelArguments()
+                       {
+                           ["readme"] = readme,
+                           ["git_repository"] = git_repository,
+                           ["commit_message"] = commitMessage
+                       }))
+        {
+            str += item;
+        }
+
+        // 可能需要先处理一下documentation_structure 有些模型不支持json
+        var regex = new Regex(@"<changelog>(.*?)</changelog>",
+            RegexOptions.Singleline);
+        var match = regex.Match(str.ToString());
+
+        if (match.Success)
+        {
+            // 提取到的内容
+            str = match.Groups[1].Value;
+        }
+
+        // 获取最近一次提交
+        var lastCommit = log.First();
+        return (str, lastCommit.Committer.Name);
     }
 
     /// <summary>
@@ -373,8 +492,54 @@ public class DocumentsService
 
             documents.Add(documentItem);
 
-            ProcessCatalogueItems(item.children.SelectMany(x => x.Items).ToList(), documentItem.Id, warehouse, document,
+            ProcessCatalogueItems(item.children.ToList(), documentItem.Id, warehouse, document,
                 documents);
+        }
+    }
+
+    private void ProcessCatalogueItems(List<DocumentResultCatalogueChildItem> items, string parentId,
+        Warehouse warehouse, Document document, List<DocumentCatalog> documents)
+    {
+        int order = 0; // 创建排序计数器
+        foreach (var item in items)
+        {
+            var documentItem = new DocumentCatalog
+            {
+                WarehouseId = warehouse.Id,
+                Description = item.title,
+                Id = Guid.NewGuid().ToString("N"),
+                Name = item.name,
+                Url = item.title,
+                DucumentId = document.Id,
+                ParentId = parentId,
+                Order = order++
+            };
+
+            documents.Add(documentItem);
+            ProcessCatalogueItems1(item.children.ToList(), documentItem.Id, warehouse, document,
+                documents);
+        }
+    }
+
+    private void ProcessCatalogueItems1(List<DocumentResultCatalogueChildItem1> items, string parentId,
+        Warehouse warehouse, Document document, List<DocumentCatalog> documents)
+    {
+        int order = 0; // 创建排序计数器
+        foreach (var item in items)
+        {
+            var documentItem = new DocumentCatalog
+            {
+                WarehouseId = warehouse.Id,
+                Description = item.title,
+                Id = Guid.NewGuid().ToString("N"),
+                Name = item.name,
+                Url = item.title,
+                DucumentId = document.Id,
+                ParentId = parentId,
+                Order = order++
+            };
+
+            documents.Add(documentItem);
         }
     }
 
@@ -412,6 +577,12 @@ public class DocumentsService
             {
                 var filename = Path.GetFileName(file);
 
+                if (file.StartsWith("."))
+                {
+                    // 忽略以.开头的文件
+                    return false;
+                }
+
                 // 支持*的匹配
                 foreach (var pattern in ignoreFiles)
                 {
@@ -442,6 +613,10 @@ public class DocumentsService
         foreach (var directory in Directory.GetDirectories(directoryPath))
         {
             var dirName = Path.GetFileName(directory);
+
+            // 过滤.开头目录
+            if (dirName.StartsWith("."))
+                continue;
 
             // 支持通配符匹配目录
             bool shouldIgnore = false;
@@ -481,27 +656,4 @@ public class DocumentsService
             ScanDirectory(directory, infoList, ignoreFiles);
         }
     }
-}
-
-public class DocumentResultCatalogue
-{
-    public List<DocumentResultCatalogueItem> Items { get; set; } = new List<DocumentResultCatalogueItem>();
-}
-
-public class DocumentResultCatalogueItem
-{
-    public string name { get; set; }
-
-    public string title { get; set; }
-
-    public List<DocumentResultCatalogue> children { get; set; }
-}
-
-public class PathInfo
-{
-    public string Path { get; set; }
-
-    public string Name { get; set; }
-
-    public string Type { get; set; }
 }

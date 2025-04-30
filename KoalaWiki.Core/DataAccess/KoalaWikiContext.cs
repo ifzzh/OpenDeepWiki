@@ -22,6 +22,8 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
     public DbSet<DocumentFileItemSource> DocumentFileItemSources { get; set; }
 
     public DbSet<DocumentOverview> DocumentOverviews { get; set; }
+    
+    public DbSet<DocumentCommitRecord> DocumentCommitRecords { get; set; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
     {
@@ -148,6 +150,19 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasIndex(x => x.DocumentId);
 
             options.HasIndex(x => x.Title);
+        });
+
+        modelBuilder.Entity<DocumentCommitRecord>(options =>
+        {
+            options.HasKey(x => x.Id);
+
+            options.Property(x => x.CommitMessage).IsRequired();
+            
+            options.Property(x => x.Author).IsRequired();
+
+            options.HasIndex(x => x.WarehouseId);
+
+            options.HasIndex(x => x.CommitId);
         });
     }
 }

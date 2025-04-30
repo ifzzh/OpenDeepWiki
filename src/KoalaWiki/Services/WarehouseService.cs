@@ -45,6 +45,26 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         };
     }
 
+    public async Task<DocumentCommitRecord?> GetChangeLogAsync(string owner, string name)
+    {
+        var warehouse = await access.Warehouses
+            .AsNoTracking()
+            .Where(x => x.Name == name && x.OrganizationName == owner)
+            .FirstOrDefaultAsync();
+
+        // 如果没有找到仓库，返回空列表
+        if (warehouse == null)
+        {
+            throw new NotFoundException("仓库不存在");
+        }
+
+        
+        var commit = await access.DocumentCommitRecords.FirstOrDefaultAsync(x => x.WarehouseId == warehouse.Id);
+
+
+        return commit;
+    }
+
     /// <summary>
     /// 提交仓库
     /// </summary>

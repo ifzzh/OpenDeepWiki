@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using KoalaWiki.KoalaWarehouse;
 using Microsoft.SemanticKernel;
 
 namespace KoalaWiki.Functions;
@@ -11,6 +12,11 @@ public class FileFunction(string gitPath)
     {
         try
         {
+            if (DocumentContext.DocumentStore?.Files != null)
+            {
+                DocumentContext.DocumentStore.Files.Add(filePath);
+            }
+
             filePath = Path.Combine(gitPath, filePath.TrimStart('/'));
             Console.WriteLine($"Reading file: {filePath}");
             await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);

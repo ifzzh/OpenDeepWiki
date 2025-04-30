@@ -45,25 +45,3 @@ Your output should be a documentation structure that:
 3. Provides clear navigation between related components
 4. Highlights core functionality and entry points
 5. Maintains consistent metadata formatting requirements
-
-Present your final output as a hierarchical structure using markdown-style lists. Each item should include the `title` and `name` as specified in the requirements. Use indentation to represent the hierarchy levels. For example:
-
-```
-{
-  "Items": [
-    {
-      "name": "Getting Started Guide",
-      "title": "getting-started",
-      "children": [
-        {
-          "name": "Installation Instructions",
-          "title": "installation,
-          "children": []
-        }
-      ]
-    }
-  ]
-}
-```
-
-Begin your analysis and documentation generation now. Present your final output within <documentation_structure> tags.

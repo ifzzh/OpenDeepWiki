@@ -17,24 +17,24 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
     /// <exception cref="NotFoundException"></exception>
     public async Task<object> GetDocumentCatalogsAsync(string organizationName, string name)
     {
-        var query = await dbAccess.Warehouses
+        var warehouse = await dbAccess.Warehouses
             .AsNoTracking()
             .Where(x => x.Name == name && x.OrganizationName == organizationName)
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
-        if (query == null)
+        if (warehouse == null)
         {
             throw new NotFoundException("仓库不存在");
         }
 
         var document = await dbAccess.Documents
             .AsNoTracking()
-            .Where(x => x.WarehouseId == query.Id)
+            .Where(x => x.WarehouseId == warehouse.Id)
             .FirstOrDefaultAsync();
 
         var documentCatalogs = await dbAccess.DocumentCatalogs
-            .Where(x => x.WarehouseId == query.Id)
+            .Where(x => x.WarehouseId == warehouse.Id)
             .ToListAsync();
 
         string lastUpdate;
@@ -61,10 +61,10 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             items = BuildDocumentTree(documentCatalogs),
             lastUpdate,
             document?.Description,
-            git = query.Address,
+            git = warehouse.Address,
             document?.LikeCount,
             document?.Status,
-            document?.CommentCount
+            document?.CommentCount,
         };
     }
 
@@ -97,11 +97,18 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             throw new NotFoundException("文件不存在");
         }
 
+        // 找到所有引用文件
+        var fileSource = await dbAccess.DocumentFileItemSources.Where(x => x.DocumentFileItemId == item.Id)
+            .ToListAsync();
+
         //md
         await httpContext.Response.WriteAsJsonAsync(new
         {
             content = item.Content,
             title = item.Title,
+            fileSource,
+            address = query?.Address.Replace(".git", string.Empty),
+            query?.Branch,
         });
     }
 

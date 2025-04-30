@@ -65,6 +65,21 @@ public static class Prompt
         - This helps readers trace information back to the original source code
         - Include these references after each major section where you've analyzed specific files
         
+        ## Syntax Format
+        To reference specific code lines from a file in a Git repository, use the following format:
+        
+        Sources:
+           - [filename](git_repository_url/path/to/file#L1-L10)
+        
+        ## Components
+        - `[filename]`: The display name for the linked file
+        - `(git_repository_url/path/to/file#L1-L10)`: The URL with line selection parameters
+          - `git_repository_url`: The base URL of the Git repository
+          - `/path/to/file`: The file path within the repository
+          - `#L1-L10`: Line selection annotation
+            - `L1`: Starting line number
+            - `L10`: Ending line number
+            
         Your final document must be enclosed within &lt;blog&gt;&lt;/blog&gt; tags and should include:
         
         1. A descriptive title that clearly conveys the document&#39;s purpose
@@ -87,7 +102,7 @@ Always respond in 中文
 You are tasked with analyzing a software project's structure and generating a comprehensive overview. Your primary responsibility is to understand and document the project's architecture, components and relationships based on provided information.
 
 <system_parameters>
-IMPORTANT: All file reading and data collection MUST be performed EXCLUSIVELY using the system-provided functions. Do not attempt to access or read files through any other means.
+All data analysis requires the use of the provided file functions to read the corresponding file contents for analysis.
 </system_parameters>
 
 <git_repository>
@@ -101,12 +116,41 @@ Input source:
 {{$readme}}
 </readme>
 
-Required analysis points:
-1. Project purpose and vision statement
-2. Core objectives and measurable goals
-3. Key features and functionality specifications 
-4. Technical architecture patterns and design principles
-5. Target users and intended use case scenarios
+
+<analysis_structure>
+# Comprehensive Project Analysis Framework
+
+## 1. Project Structure Analysis
+- Identify core components and map their relationships
+- Document code organization principles and design patterns
+- Generate visual representation of project architecture
+- Analyze file distribution and module organization
+
+## 2. Configuration Management
+- Examine environment configuration files and variables
+- Review build system and deployment configuration
+- Document external service integration points and dependencies
+- Identify configuration patterns and potential improvements
+
+## 3. Dependency Analysis
+- List external dependencies with version requirements
+- Map internal module dependencies and coupling patterns
+- Generate project management dependencies using the Mermaid syntax in Markdown
+- Highlight critical dependencies and potential vulnerabilities
+
+## 4. Project-Specific Analysis
+- [FRAMEWORK]: Analyze framework-specific patterns and implementation
+- [PROJECT_TYPE]: Evaluate specialized components for Web/Mobile/Backend/ML
+- [CUSTOM]: Identify project-specific patterns and architectural decisions
+- [PERFORMANCE]: Assess performance considerations unique to this project
+
+## 5. Conclusion and Recommendations
+- Summarize project architecture and key characteristics
+- Identify architectural strengths and potential improvement areas
+- Provide actionable recommendations for enhancing code organization
+- Outline next steps for project evolution and maintenance
+</analysis_structure>
+
 
 PHASE 2: CATALOGUE STRUCTURE ANALYSIS
 Input source:
@@ -114,11 +158,14 @@ Input source:
 {{$catalogue}}
 </catalogue>
 
-Required analysis points:
-1. Core component identification and relationship mapping
-2. Codebase organization principles and patterns
-3. Configuration and environment files location
-4. Main entry points and critical module paths
+
+<section_adaptation>
+Dynamically adjust analysis based on detected project characteristics:
+- For **frontend projects**: Include UI component hierarchy, state management, and routing analysis
+- For **backend services**: Analyze API structure, data flow, and service boundaries
+- For **data-intensive applications**: Examine data models, transformations, and storage patterns
+- For **monorepos**: Map cross-project dependencies and shared utility usage
+</section_adaptation>
 
 PHASE 3: DETAILED COMPONENT ANALYSIS
 For each key file identified in PHASE 2:
@@ -143,6 +190,21 @@ Source Reference Guidelines:
 - This helps readers trace information back to the original source code
 - Include these references after each major section where you've analyzed specific files
 
+## Syntax Format
+To reference specific code lines from a file in a Git repository, use the following format:
+
+Sources:
+   - [filename](git_repository_url/path/to/file#L1-L10)
+
+## Components
+- `[filename]`: The display name for the linked file
+- `(git_repository_url/path/to/file#L1-L10)`: The URL with line selection parameters
+  - `git_repository_url`: The base URL of the Git repository
+  - `/path/to/file`: The file path within the repository
+  - `#L1-L10`: Line selection annotation
+    - `L1`: Starting line number
+    - `L10`: Ending line number
+    
 </analysis_phases>
 
 <output_requirements>

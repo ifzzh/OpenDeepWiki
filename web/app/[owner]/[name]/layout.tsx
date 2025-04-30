@@ -147,7 +147,7 @@ export default function RepositoryLayout({
       alignItems: 'center',
       textDecoration: 'none',
       fontWeight: isActive ? 500 : 400,
-      margin: `${token.marginXS}px 0`,
+      margin: `5px 0`,
       borderRadius: token.borderRadiusLG,
       fontSize: token.fontSizeSM,
       lineHeight: token.lineHeight,
@@ -263,8 +263,8 @@ export default function RepositoryLayout({
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
           boxShadow: token.boxShadowSecondary
         }}>
-          <Flex align="center" justify="space-between" style={{ height: '100%', padding: `0 ${token.paddingLG}px` }}>
-            <Flex align="center" gap={token.marginSM}>
+          <Flex align="center" justify="space-between" style={{ height: '100%' }}>
+            <Flex align="center" >
               <Button
                 type="text"
                 icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -357,7 +357,7 @@ export default function RepositoryLayout({
                   <span>概览</span>
                 </Link>
 
-                <Divider style={{ margin: `${token.marginXS}px 0` }} />
+                <Divider style={{ margin: `0`, padding: '0' }} />
 
                 {loading ? (
                   <Flex justify="center" align="center" style={{ padding: token.paddingMD }}>
@@ -366,6 +366,23 @@ export default function RepositoryLayout({
                 ) : (
                   catalogData?.items?.map(item => renderSidebarItem(item))
                 )}
+
+                <Link
+                  href={`/${owner}/${name}/changelog`}
+                  style={{
+                    padding: `${token.paddingXS}px ${token.paddingLG}px`,
+                    color: pathname === `/${owner}/${name}/changelog` ? token.colorPrimary : token.colorText,
+                    backgroundColor: pathname === `/${owner}/${name}/changelog` ? token.colorBgTextActive : 'transparent',
+                    fontWeight: pathname === `/${owner}/${name}/changelog` ? 500 : 400,
+                    display: 'flex',
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                    borderRadius: token.borderRadiusLG,
+                    marginBottom: token.marginXS,
+                  }}
+                >
+                  <span>更新日志</span>
+                </Link>
               </Flex>
             </div>
           </Sider>

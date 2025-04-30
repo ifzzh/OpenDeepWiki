@@ -112,6 +112,42 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                     b.ToTable("DocumentCatalogs");
                 });
 
+            modelBuilder.Entity("KoalaWiki.Entities.DocumentCommitRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Author")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CommitId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CommitMessage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime>("LastUpdate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("WarehouseId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommitId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("DocumentCommitRecords");
+                });
+
             modelBuilder.Entity("KoalaWiki.Entities.DocumentFile.DocumentFileItem", b =>
                 {
                     b.Property<string>("Id")

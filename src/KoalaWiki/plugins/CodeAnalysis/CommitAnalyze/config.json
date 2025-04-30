@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "type": "completion",
-  "description": "根据仓库描述和仓库目录结构，分析仓库的功能和结构，给出目录结构的分析结果",
+  "description": "git仓库提交记录分析",
   "execution_settings": {
     "default": {
       "max_tokens": 32768,
@@ -34,8 +34,13 @@
   },
   "input_variables": [
     {
-      "name": "catalogue",
-      "description": "仓库目录结构",
+      "name": "commit_message",
+      "description": "Git提交记录",
+      "required": true
+    },
+    {
+      "name": "git_repository",
+      "description": "仓库地址",
       "required": true
     },
     {

@@ -104,4 +104,17 @@ export async function getLastWarehouse(address:string){
   });
 }
 
+/**
+ * 获取更新日志
+ * 此函数可在服务器组件中使用
+ */
+export async function getChangeLog(owner:string, name:string){
+  // @ts-ignore
+  return fetchApi<any>(API_URL + '/api/Warehouse/ChangeLog?owner=' + owner + '&name=' + name, {
+    method: 'GET',
+    // 添加缓存控制使其适用于服务器组件
+    cache: 'no-store'
+  });
+}
+
 
