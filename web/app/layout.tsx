@@ -12,7 +12,8 @@ export default function RootLayout({
   }: {
     children: React.ReactNode
   }) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    // 从环境变量NEXT_PUBLIC_API_URL读取
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ||  process.env.API_URL || '';
     
     return (
       <html lang="zh-CN">
@@ -25,7 +26,6 @@ export default function RootLayout({
               __html: `
               console.log('API_URL', '${apiUrl}');
               window.API_URL = '${apiUrl}';
-              
               `
           }}
           />

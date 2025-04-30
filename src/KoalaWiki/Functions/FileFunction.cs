@@ -3,7 +3,7 @@ using Microsoft.SemanticKernel;
 
 namespace KoalaWiki.Functions;
 
-public class FileFunction
+public class FileFunction(string gitPath)
 {
     [KernelFunction, Description("读取指定的文件内容")]
     public async Task<string> ReadFileAsync(
@@ -11,6 +11,7 @@ public class FileFunction
     {
         try
         {
+            filePath = Path.Combine(gitPath, filePath.TrimStart('/'));
             Console.WriteLine($"Reading file: {filePath}");
             await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             using var reader = new StreamReader(stream);
@@ -35,6 +36,7 @@ public class FileFunction
     {
         try
         {
+            filePath = Path.Combine(gitPath, filePath.TrimStart('/'));
             Console.WriteLine($"Reading file from line {startLine}: {filePath}");
             var lines = await File.ReadAllLinesAsync(filePath);
             return string.Join(Environment.NewLine, lines.Skip(startLine));

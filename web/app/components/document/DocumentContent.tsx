@@ -1,12 +1,12 @@
-'use client';
-import React, { useEffect, useRef } from 'react';
-import { Markdown } from '@lobehub/ui';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkToc from 'remark-toc';
 import remarkMath from 'remark-math';
 import rehypeSlug from 'rehype-slug';
 import rehypeKatex from 'rehype-katex';
+
+import React, { useEffect, useRef } from 'react';
+import { Markdown } from '@lobehub/ui';
 import { Card, Divider, Space, Tag, Typography } from 'antd';
 import { BookOutlined, LinkOutlined } from '@ant-design/icons';
 import mermaid from 'mermaid';
@@ -45,6 +45,10 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
       });
   };
 
+  const customRender = (node: any) => {
+    return node;
+  };
+
   return (
     <div ref={contentRef} style={{
       background: token.colorBgContainer,
@@ -54,8 +58,13 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
     }}>
       <div className="markdown-content">
         <Markdown
-          fullFeaturedCodeBlock
+          enableImageGallery
+          enableLatex
           enableMermaid
+          enableCustomFootnotes
+          allowHtml
+          customRender={customRender}
+          title={document?.title}
           remarkPlugins={[remarkGfm, remarkToc, remarkMath]}
           rehypePlugins={[rehypeRaw, rehypeSlug, rehypeKatex]}
         >
@@ -64,7 +73,6 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
       </div>
       
       <style jsx global>{`
-        /* 优化Markdown样式，使其符合图片效果 */
         .markdown-content h1,
         .markdown-content h2,
         .markdown-content h3,
@@ -182,14 +190,14 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
           background: rgba(0,0,0,0.03);
           padding: 2px 4px;
           border-radius: 2px;
-          font-size: 14px;
+          font-size: 14px !important;
         }
         
         .markdown-content pre > code {
           background: transparent;
           padding: 0;
           border: none;
-          font-size: 14px;
+          font-size: 14px !important;
         }
 
         /* 列表样式匹配图片效果 */

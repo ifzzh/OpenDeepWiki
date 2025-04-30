@@ -1,5 +1,3 @@
-import { fetchApi } from './api';
-
 /**
  * Fetches available models from OpenAI API
  */

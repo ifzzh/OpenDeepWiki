@@ -1,4 +1,4 @@
-﻿using KoalaWiki.DbAccess;
+﻿using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.Git;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +19,7 @@ public class WarehouseTask(
 
         await using (var scope = service.CreateAsyncScope())
         {
-            var dbContext = scope.ServiceProvider.GetService<KoalaDbAccess>();
+            var dbContext = scope.ServiceProvider.GetService<IKoalaWikiContext>();
 
             var warehouses = await dbContext!.Warehouses
                 .Where(x => x.Status == WarehouseStatus.Pending)
@@ -36,7 +36,7 @@ public class WarehouseTask(
             var value = await warehouseStore.ReadAsync(stoppingToken);
             var scope = service.CreateAsyncScope();
 
-            var dbContext = scope.ServiceProvider.GetService<KoalaDbAccess>();
+            var dbContext = scope.ServiceProvider.GetService<IKoalaWikiContext>();
 
             try
             {
@@ -63,7 +63,7 @@ public class WarehouseTask(
 
                 await dbContext.SaveChangesAsync(stoppingToken);
 
-                await documentsService.HandleAsync(document, value, dbContext);
+                await documentsService.HandleAsync(document, value, dbContext,value.Address);
 
                 // 更新仓库状态
                 await dbContext.Warehouses.Where(x => x.Id == value.Id)

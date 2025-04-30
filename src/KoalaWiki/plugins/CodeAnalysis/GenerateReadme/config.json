@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "type": "completion",
+  "description": "根据仓库目录结构，分析仓库的功能和结构，生成属于仓库的Readme",
+  "execution_settings": {
+    "default": {
+      "temperature": 0.5
+    }
+  },
+  "input_variables": [
+    {
+      "name": "catalogue",
+      "description": "仓库目录结构",
+      "required": true
+    }
+  ]
+}

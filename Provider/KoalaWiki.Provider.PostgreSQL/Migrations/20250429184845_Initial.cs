@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace KoalaWiki.Migrations
+namespace KoalaWiki.Provider.PostgreSQL.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration
@@ -15,15 +15,15 @@ namespace KoalaWiki.Migrations
                 name: "DocumentCatalogs",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Url = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false),
-                    ParentId = table.Column<string>(type: "TEXT", nullable: true),
-                    Order = table.Column<int>(type: "INTEGER", nullable: false),
-                    DucumentId = table.Column<string>(type: "TEXT", nullable: false),
-                    WarehouseId = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Url = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    ParentId = table.Column<string>(type: "text", nullable: true),
+                    Order = table.Column<int>(type: "integer", nullable: false),
+                    DucumentId = table.Column<string>(type: "text", nullable: false),
+                    WarehouseId = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,18 +34,18 @@ namespace KoalaWiki.Migrations
                 name: "DocumentFileItems",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    Title = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false),
-                    Content = table.Column<string>(type: "TEXT", nullable: false),
-                    CommentCount = table.Column<long>(type: "INTEGER", nullable: false),
-                    Size = table.Column<long>(type: "INTEGER", nullable: false),
-                    DocumentCatalogId = table.Column<string>(type: "TEXT", nullable: false),
-                    RequestToken = table.Column<int>(type: "INTEGER", nullable: false),
-                    ResponseToken = table.Column<int>(type: "INTEGER", nullable: false),
-                    Metadata = table.Column<string>(type: "TEXT", nullable: false),
-                    Extra = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    CommentCount = table.Column<long>(type: "bigint", nullable: false),
+                    Size = table.Column<long>(type: "bigint", nullable: false),
+                    DocumentCatalogId = table.Column<string>(type: "text", nullable: false),
+                    RequestToken = table.Column<int>(type: "integer", nullable: false),
+                    ResponseToken = table.Column<int>(type: "integer", nullable: false),
+                    Metadata = table.Column<string>(type: "text", nullable: false),
+                    Extra = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -53,18 +53,33 @@ namespace KoalaWiki.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DocumentOverviews",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    DocumentId = table.Column<string>(type: "text", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DocumentOverviews", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Documents",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    WarehouseId = table.Column<string>(type: "TEXT", nullable: false),
-                    LastUpdate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false),
-                    LikeCount = table.Column<long>(type: "INTEGER", nullable: false),
-                    CommentCount = table.Column<long>(type: "INTEGER", nullable: false),
-                    GitPath = table.Column<string>(type: "TEXT", nullable: false),
-                    Status = table.Column<byte>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    WarehouseId = table.Column<string>(type: "text", nullable: false),
+                    LastUpdate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    LikeCount = table.Column<long>(type: "bigint", nullable: false),
+                    CommentCount = table.Column<long>(type: "bigint", nullable: false),
+                    GitPath = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<byte>(type: "smallint", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -75,20 +90,21 @@ namespace KoalaWiki.Migrations
                 name: "Warehouses",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    OrganizationName = table.Column<string>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false),
-                    Address = table.Column<string>(type: "TEXT", nullable: false),
-                    Type = table.Column<string>(type: "TEXT", nullable: false),
-                    Branch = table.Column<string>(type: "TEXT", nullable: false),
-                    Status = table.Column<byte>(type: "INTEGER", nullable: false),
-                    Prompt = table.Column<string>(type: "TEXT", nullable: false),
-                    Version = table.Column<string>(type: "TEXT", nullable: false),
-                    Model = table.Column<string>(type: "TEXT", nullable: false),
-                    OpenAIKey = table.Column<string>(type: "TEXT", nullable: false),
-                    OpenAIEndpoint = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    OrganizationName = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false),
+                    Type = table.Column<string>(type: "text", nullable: false),
+                    Branch = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<byte>(type: "smallint", nullable: false),
+                    Error = table.Column<string>(type: "text", nullable: false),
+                    Prompt = table.Column<string>(type: "text", nullable: false),
+                    Version = table.Column<string>(type: "text", nullable: false),
+                    Model = table.Column<string>(type: "text", nullable: false),
+                    OpenAIKey = table.Column<string>(type: "text", nullable: false),
+                    OpenAIEndpoint = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -99,11 +115,11 @@ namespace KoalaWiki.Migrations
                 name: "DocumentFileItemSources",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    DocumentFileItemId = table.Column<string>(type: "TEXT", nullable: false),
-                    Address = table.Column<string>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    DocumentFileItemId = table.Column<string>(type: "text", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -172,6 +188,16 @@ namespace KoalaWiki.Migrations
                 column: "Name");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DocumentOverviews_DocumentId",
+                table: "DocumentOverviews",
+                column: "DocumentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DocumentOverviews_Title",
+                table: "DocumentOverviews",
+                column: "Title");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Documents_CreatedAt",
                 table: "Documents",
                 column: "CreatedAt");
@@ -225,6 +251,9 @@ namespace KoalaWiki.Migrations
 
             migrationBuilder.DropTable(
                 name: "DocumentFileItemSources");
+
+            migrationBuilder.DropTable(
+                name: "DocumentOverviews");
 
             migrationBuilder.DropTable(
                 name: "Documents");

@@ -1,4 +1,3 @@
-'use client';
 import { message } from 'antd';
 
 interface ApiResponse<T> {
