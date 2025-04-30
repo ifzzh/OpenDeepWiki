@@ -90,6 +90,10 @@ You are tasked with analyzing a software project's structure and generating a co
 IMPORTANT: All file reading and data collection MUST be performed EXCLUSIVELY using the system-provided functions. Do not attempt to access or read files through any other means.
 </system_parameters>
 
+<git_repository>
+{{$git_repository}}
+</git_repository>
+
 <analysis_phases>
 PHASE 1: README ANALYSIS
 Input source: 
@@ -129,14 +133,16 @@ IMPORTANT: For each file you identify as important from the catalogue:
 - Connect file implementations to the project's overall architecture
 - Identify how components interact with each other
 
-Use this format for file analysis:
-```
-File: [filepath]
-Purpose: [brief description of file's purpose]
-Key components: [list main classes/functions/elements]
-Relationships: [how this file connects to other components]
-Code highlights: [important code snippets with explanation]
-```
+
+Source Reference Guidelines:
+- For each code file you read and analyze, include a reference link at the end of the related section
+- Format source references using this pattern: 
+  Sources:
+  - [filename](git_repository_url/path/to/file)
+- The git_repository value combined with the file path creates the complete source URL
+- This helps readers trace information back to the original source code
+- Include these references after each major section where you've analyzed specific files
+
 </analysis_phases>
 
 <output_requirements>

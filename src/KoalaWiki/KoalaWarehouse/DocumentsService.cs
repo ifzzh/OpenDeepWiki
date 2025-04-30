@@ -35,7 +35,8 @@ public class DocumentsService
         return [];
     }
 
-    public async Task HandleAsync(Document document, Warehouse warehouse, IKoalaWikiContext dbContext, string gitRepository)
+    public async Task HandleAsync(Document document, Warehouse warehouse, IKoalaWikiContext dbContext,
+        string gitRepository)
     {
         // 解析仓库的目录结构
         var path = document.GitPath;
@@ -98,9 +99,8 @@ public class DocumentsService
                 readme = extractedContent;
             }
         }
-
-
-        var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme);
+        
+        var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme, gitRepository);
 
         await dbContext.DocumentOverviews.Where(x => x.DocumentId == document.Id)
             .ExecuteDeleteAsync();
@@ -250,7 +250,7 @@ public class DocumentsService
     /// </summary>
     /// <returns></returns>
     private async Task<string> GenerateProjectOverview(Kernel kernel, string catalog,
-        string readme)
+        string readme, string gitRepository)
     {
         var sr = new StringBuilder();
 
@@ -263,6 +263,7 @@ public class DocumentsService
         var history = new ChatHistory();
 
         history.AddUserMessage(Prompt.Overview.Replace("{{$catalogue}}", catalog)
+            .Replace("{{$git_repository}}", gitRepository)
             .Replace("{{$readme}}", readme));
 
         await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))
