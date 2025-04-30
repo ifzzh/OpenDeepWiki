@@ -25,6 +25,21 @@ public class Warehouse : Entity<string>
     public string Address { get; set; }
 
     /// <summary>
+    /// 私有化git账号
+    /// </summary>
+    public string? GitUserName { get; set; }
+
+    /// <summary>
+    /// 私有化git密码
+    /// </summary>
+    public string? GitPassword { get; set; }
+
+    /// <summary>
+    ///  私有化git邮箱
+    /// </summary>
+    public string? Email { get; set; }
+
+    /// <summary>
     /// 仓库类型
     /// </summary>
     public string Type { get; set; }
@@ -38,7 +53,7 @@ public class Warehouse : Entity<string>
     /// 仓库状态
     /// </summary>
     public WarehouseStatus Status { get; set; }
-    
+
     /// <summary>
     /// 错误信息
     /// </summary>

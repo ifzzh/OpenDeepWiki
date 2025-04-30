@@ -22,4 +22,19 @@ public class WarehouseInput
     /// OpenAI 端点
     /// </summary>
     public string OpenAIEndpoint { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 私有化git账号
+    /// </summary>
+    public string? GitUserName { get; set; }
+
+    /// <summary>
+    /// 私有化git密码
+    /// </summary>
+    public string? GitPassword { get; set; }
+    
+    /// <summary>
+    ///  私有化git邮箱
+    /// </summary>
+    public string? Email { get; set; }
 }

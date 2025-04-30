@@ -278,8 +278,17 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Email")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Error")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GitPassword")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GitUserName")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Model")

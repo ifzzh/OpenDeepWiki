@@ -25,6 +25,9 @@ public class GitService
     /// <returns></returns>
     public GitRepositoryInfo PullRepository(
         [Description("仓库地址")] string repositoryUrl,
+        string userName = "",
+        string password = "",
+        string email = "",
         [Description("分支")] string branch = "master")
     {
         var (localPath, organization) = GetRepositoryPath(repositoryUrl);
@@ -33,7 +36,8 @@ public class GitService
         {
             FetchOptions =
             {
-                Depth = 0
+                CertificateCheck = (certificate, chain, errors) => true,
+                Depth = 0,
             }
         };
 
@@ -58,11 +62,35 @@ public class GitService
             var commitMessage = repo.Head.Tip.Message;
 
             return new GitRepositoryInfo(localPath, repositoryName, organization, branchName, commitTime.ToString(),
-                commitAuthor, commitMessage,version);
+                commitAuthor, commitMessage, version);
         }
         else
         {
-            var str = Repository.Clone(repositoryUrl, localPath, cloneOptions);
+            if (string.IsNullOrEmpty(userName))
+            {
+                var str = Repository.Clone(repositoryUrl, localPath, cloneOptions);
+            }
+            else
+            {
+                var info = Directory.CreateDirectory(localPath);
+
+                cloneOptions = new CloneOptions
+                {
+                    FetchOptions =
+                    {
+                        Depth = 0,
+                        CertificateCheck = (certificate, chain, errors) => true,
+                        CredentialsProvider = (_url, _user, _cred) =>
+                            new UsernamePasswordCredentials
+                            {
+                                Username = userName, // 对于Token认证，Username可以随便填
+                                Password = password
+                            }
+                    }
+                };
+
+                Repository.Clone(repositoryUrl, localPath, cloneOptions);
+            }
 
             // 获取当前仓库的git分支
             using var repo = new Repository(localPath);
@@ -77,7 +105,7 @@ public class GitService
             var commitMessage = repo.Head.Tip.Message;
 
             return new GitRepositoryInfo(localPath, repositoryName, organization, branchName, commitTime.ToString(),
-                commitAuthor, commitMessage,version);
+                commitAuthor, commitMessage, version);
         }
     }
 }

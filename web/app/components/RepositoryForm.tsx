@@ -1,4 +1,4 @@
-import { Button, Form, Input, Modal, Select, message, Spin, Space } from 'antd';
+import { Button, Form, Input, Modal, Select, message, Spin, Space, Switch } from 'antd';
 import { useState, useEffect } from 'react';
 import { RepositoryFormValues } from '../types';
 import { submitWarehouse } from '../services';
@@ -19,6 +19,7 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [modelsFetching, setModelsFetching] = useState(false);
   const [models, setModels] = useState<string[]>([]);
+  const [enableGitAuth, setEnableGitAuth] = useState(false);
 
   // 当 API 密钥或端点变更时，尝试获取模型列表
   const handleApiConfigChange = async () => {
@@ -75,8 +76,19 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
   useEffect(() => {
     if (!open) {
       setModels([]);
+      setEnableGitAuth(false);
     }
   }, [open]);
+
+  const handleGitAuthChange = (checked: boolean) => {
+    setEnableGitAuth(checked);
+    if (!checked) {
+      form.setFieldsValue({
+        gitUserName: undefined,
+        gitPassword: undefined
+      });
+    }
+  };
 
   return (
     <Modal
@@ -103,6 +115,7 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
           type: 'git',
           branch: 'main',
           openAIEndpoint: 'https://api.token-ai.cn/v1',
+          enableGitAuth: false,
         }}
       >
         <Form.Item
@@ -112,6 +125,46 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
         >
           <Input placeholder="请输入仓库地址" />
         </Form.Item>
+
+        <Form.Item
+          name="enableGitAuth"
+          label="启用私有化Git验证"
+          valuePropName="checked"
+        >
+          <Switch onChange={handleGitAuthChange} />
+        </Form.Item>
+
+        {enableGitAuth && (
+          <>
+            <Form.Item
+              name="gitUserName"
+              label="Git用户名"
+              rules={[{ required: enableGitAuth, message: '请输入Git用户名' }]}
+            >
+              <Input placeholder="请输入Git用户名" />
+            </Form.Item>
+
+            <Form.Item
+              name="gitPassword"
+              label="Git密码"
+              rules={[{ required: enableGitAuth, message: '请输入Git密码' }]}
+            >
+              <Input.Password placeholder="请输入Git密码" />
+            </Form.Item>
+
+            <Form.Item
+              name="email"
+              label="Git邮箱"
+              rules={[
+                { required: enableGitAuth, message: '请输入Git邮箱' },
+                { type: 'email', message: '请输入有效的邮箱地址' }
+              ]}
+            >
+              <Input placeholder="请输入Git邮箱" />
+            </Form.Item>
+          </>
+        )}
+
         <Form.Item
           name="openAIEndpoint"
           label="OpenAI 端点"
