@@ -15,6 +15,9 @@ public class DocumentResultCatalogueItem
     [Description("Lowercase, hyphenated slugs for URL paths (e.g., \"api-reference\")")]
     public string title { get; set; }
     
+    [Description("A short description of the document directory")]
+    public string prompt {get; set;}
+    
     public List<DocumentResultCatalogueChildItem> children { get; set; } = new();
 }
 
@@ -26,6 +29,9 @@ public class DocumentResultCatalogueChildItem
     [Description("Lowercase, hyphenated slugs for URL paths (e.g., \"api-reference\")")]
     public string title { get; set; }
     
+    [Description("A short description of the document directory")]
+    public string prompt {get; set;}
+
     public List<DocumentResultCatalogueChildItem1> children { get; set; } = new();
 }
 
@@ -37,4 +43,8 @@ public class DocumentResultCatalogueChildItem1
     
     [Description("Lowercase, hyphenated slugs for URL paths (e.g., \"api-reference\")")]
     public string title { get; set; }
+    
+    [Description("A short description of the document directory")]
+    public string prompt {get; set;}
+
 }
