@@ -1,4 +1,6 @@
-﻿namespace KoalaWiki.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace KoalaWiki.Entities;
 
 public class DocumentCatalog : Entity<string>
 {
@@ -31,4 +33,7 @@ public class DocumentCatalog : Entity<string>
     public string DucumentId { get; set; } = string.Empty;
     
     public string WarehouseId { get; set; } = string.Empty;
+    
+    [NotMapped]
+    public string Prompt { get; set; } = string.Empty;
 }

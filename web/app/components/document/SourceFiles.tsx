@@ -20,6 +20,7 @@ interface SourceFilesProps {
   name: string;
   token: any;
   git:string;
+  branch?: string;
 }
 
 const SourceFiles: React.FC<SourceFilesProps> = ({
@@ -27,7 +28,8 @@ const SourceFiles: React.FC<SourceFilesProps> = ({
   owner,
   name,
   token,
-  git
+  git,
+  branch,
 }) => {
   const [activeKey, setActiveKey] = useState<string | string[]>([]);
 
@@ -63,7 +65,7 @@ const SourceFiles: React.FC<SourceFilesProps> = ({
           renderItem={(item) => (
             <List.Item style={{ padding: `${token.paddingXXS}px 0` }}>
               <Link 
-                href={`${git}/blob/main/${item.address}`}
+                href={`${git}/blob/${branch}/${item.address}`}
                 target="_blank"
                 style={{ 
                   color: token.colorPrimary,

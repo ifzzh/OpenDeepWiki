@@ -53,17 +53,9 @@ public class DocumentsService
         var kernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
             warehouse.OpenAIKey,
             path, warehouse.Model);
-        var plugin = kernel.Plugins["CodeAnalysis"]["AnalyzeCatalogue"];
 
         var fileKernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
             warehouse.OpenAIKey, path, warehouse.Model, false);
-
-        OpenAIPromptExecutionSettings settings = new()
-        {
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-            ResponseFormat = typeof(DocumentResultCatalogue),
-            Temperature = 0.5,
-        };
 
         var catalogue = new StringBuilder();
 
@@ -158,13 +150,25 @@ public class DocumentsService
         {
             try
             {
-                var str = string.Empty;
+                var chat = kernel.Services.GetService<IChatCompletionService>();
 
-                await foreach (var item in fileKernel.InvokeStreamingAsync(plugin, new KernelArguments(settings)
-                               {
-                                   ["catalogue"] = catalogue.ToString(),
-                                   ["readme"] = readme
-                               }))
+                var str = string.Empty;
+                var history = new ChatHistory();
+                history.AddUserMessage(Prompt.AnalyzeCatalogue
+                    .Replace("{{$catalogue}}", catalogue.ToString())
+                    .Replace("{{$readme}}", readme));
+                history.AddAssistantMessage(
+                    "好的下面我会开始先读取相关文件开始分析，我将要使用您提供的ReadFile函数来读取文件内容，加入分析上文中提到的文件内容，并且还会分析读取的文件的依赖关系，然后加入解析，是否现在开始？");
+                history.AddUserMessage("是的，请开始");
+
+
+                await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history,
+                                   new OpenAIPromptExecutionSettings()
+                                   {
+                                       ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                                       Temperature = 0.5,
+                                       ResponseFormat = typeof(DocumentResultCatalogue),
+                                   }, kernel))
                 {
                     str += item;
                 }
@@ -421,6 +425,7 @@ public class DocumentsService
 
         history.AddUserMessage(Prompt.DefaultPrompt
             .Replace("{{$catalogue}}", catalogue)
+            .Replace("{{$prompt}}", catalog.Prompt)
             .Replace("{{$readme}}", readme)
             .Replace("{{$git_repository}}", git_repository)
             .Replace("{{$title}}", catalog.Name));
@@ -487,6 +492,7 @@ public class DocumentsService
                 Url = item.title,
                 DucumentId = document.Id,
                 ParentId = parentId,
+                Prompt = item.prompt,
                 Order = order++ // 为当前层级的每个项目设置顺序值并递增
             };
 
@@ -512,6 +518,7 @@ public class DocumentsService
                 Url = item.title,
                 DucumentId = document.Id,
                 ParentId = parentId,
+                Prompt = item.prompt,
                 Order = order++
             };
 
@@ -535,6 +542,7 @@ public class DocumentsService
                 Name = item.name,
                 Url = item.title,
                 DucumentId = document.Id,
+                Prompt = item.prompt,
                 ParentId = parentId,
                 Order = order++
             };
