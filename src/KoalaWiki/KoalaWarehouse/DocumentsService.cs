@@ -287,6 +287,9 @@ public class DocumentsService
         // 将解析的目录结构保存到数据库
         await dbContext.DocumentCatalogs.AddRangeAsync(documents);
 
+        //修复Mermaid语法错误
+        RepairMermaid(kernel, documentFileItems);
+
         await dbContext.DocumentFileItems.AddRangeAsync(documentFileItems);
         // 批量添加fileSource
 
@@ -307,6 +310,81 @@ public class DocumentsService
 
 
         await dbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Mermaid可能存在语法错误，使用大模型进行修复
+    /// </summary>
+    /// <param name="kernel"></param>
+    /// <param name="documentFileItems"></param>
+    private void RepairMermaid(Kernel kernel, ConcurrentBag<DocumentFileItem> documentFileItems)
+    {
+        foreach (var fileItem in documentFileItems)
+        {
+            try
+            {
+                string markdown = fileItem.Content;
+                //这个markdown里面含有一部分mermaid语法，但是可能有错误，我需要提取 ``` mermaid  ```的节点，并重新使用大模型进行检查并替换
+                //我的提示词是：检查mermaid语法是否有错误，并帮我修复，仅返回修复后的markdown内容：
+
+                // 使用正则表达式匹配markdown中的mermaid代码块
+                var regex = new Regex(@"```mermaid\s*([\s\S]*?)```", RegexOptions.Multiline);
+                var matches = regex.Matches(markdown);
+
+                if (matches.Count > 0)
+                {
+                    var chat = kernel.GetRequiredService<IChatCompletionService>();
+
+                    foreach (Match match in matches)
+                    {
+                        string mermaidContent = match.Groups[1].Value.Trim();
+                        string originalBlock = match.Value;
+
+                        try
+                        {
+                            var history = new ChatHistory();
+
+                            history.AddUserMessage(Prompt.RepairMermaid
+                                .Replace("{{$mermaidContent}}", mermaidContent));
+
+                            var settings = new OpenAIPromptExecutionSettings
+                            {
+                                Temperature = 0
+                            };
+
+                            var response = chat.GetChatMessageContentAsync(history, settings, kernel).Result;
+
+                            if (!string.IsNullOrEmpty(response?.Content))
+                            {
+                                // 提取修复后的mermaid代码（去除可能的```mermaid和```）
+                                string fixedContent = response.Content.Trim();
+                                fixedContent = Regex.Replace(fixedContent, @"^```mermaid\s*", "", RegexOptions.Multiline);
+                                fixedContent = Regex.Replace(fixedContent, @"\s*```$", "", RegexOptions.Multiline);
+
+                                // 创建新的mermaid代码块
+                                string newBlock = $"```mermaid\n{fixedContent}\n```";
+
+                                // 替换原始内容
+                                markdown = markdown.Replace(originalBlock, newBlock);
+                                Log.Information("修复mermaid");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // 发生错误时记录但继续处理其他mermaid块
+                            Log.Error($"修复Mermaid语法时出错: {ex.Message}");
+                        }
+                    }
+
+                    // 更新文件内容
+                    fileItem.Content = markdown;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "修复mermaid语法失败");
+            }
+        }
     }
 
     /// <summary>

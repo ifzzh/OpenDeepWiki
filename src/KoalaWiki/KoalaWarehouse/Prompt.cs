@@ -333,4 +333,29 @@ Generate a comprehensive project overview using Markdown syntax that includes:
 Format the final output within <blog> tags using proper Markdown hierarchy and formatting.
 </output_requirements>
 """;
+
+    public const string RepairMermaid =
+        @"<prompt>
+<task
+Verify the Mermaid syntax and return the corrected code
+</task>
+<instruction>
+Check the following Mermaid syntax for errors. If any error is found, repair it. Only the correct Mermaid code is returned, without any explanation or additional text.
+- Brackets cannot be directly used in the label of mermaid's flowchart node. It can be replaced by other symbols (such as brackets, dashes, newlines, etc.)
+- For example, E[外部系统(RMS/BPM/PSA)]  should be changed to E[""外部系统(RMS/BPM/PSA)""]
+- For example, E --|数据库/缓存|  should be changed to E -->|数据库/缓存| , and -- 实现 --> should be changed to --|实现|-->
+- The subgraph should be in English, for example  subgraph 工厂与事件处理 should be changed to subgraph FactoryAndEventHandler  and The end must be followed by a blank line or a new line, and cannot be directly followed by other content
+- RedisCache --> ""ICache"" in classDiagram should be RedisCache --> ICache
+</instruction>
+<input>
+```mermaid
+{{$mermaidContent}}
+```
+</input>
+<output_format>
+```mermaid
+[corrected mermaid code here]
+```
+</output_format>
+</prompt>";
 }
