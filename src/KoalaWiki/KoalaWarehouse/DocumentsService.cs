@@ -97,13 +97,13 @@ public class DocumentsService
 
         await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
             .ExecuteDeleteAsync();
-
-
+        
+        
         // 开始生成
         var (git, committer) = await GenerateUpdateLogAsync(document.GitPath, readme,
             warehouse.Address,
             kernel);
-
+        
         await dbContext.DocumentCommitRecords.AddAsync(new DocumentCommitRecord()
         {
             WarehouseId = warehouse.Id,
@@ -113,22 +113,22 @@ public class DocumentsService
             CommitMessage = git,
             LastUpdate = DateTime.Now,
         });
-
+        
         if (await dbContext.DocumentOverviews.AnyAsync(x => x.DocumentId == document.Id) == false)
         {
             var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme, gitRepository);
-
+        
             // 可能需要先处理一下documentation_structure 有些模型不支持json
             var regex = new Regex(@"<blog>(.*?)</blog>",
                 RegexOptions.Singleline);
             var match = regex.Match(overview);
-
+        
             if (match.Success)
             {
                 // 提取到的内容
                 overview = match.Groups[1].Value;
             }
-
+        
             await dbContext.DocumentOverviews.AddAsync(new DocumentOverview()
             {
                 Content = overview,
@@ -157,10 +157,6 @@ public class DocumentsService
                 history.AddUserMessage(Prompt.AnalyzeCatalogue
                     .Replace("{{$catalogue}}", catalogue.ToString())
                     .Replace("{{$readme}}", readme));
-                history.AddAssistantMessage(
-                    "好的下面我会开始先读取相关文件开始分析，我将要使用您提供的ReadFile函数来读取文件内容，加入分析上文中提到的文件内容，并且还会分析读取的文件的依赖关系，然后加入解析，是否现在开始？");
-                history.AddUserMessage("是的，请开始");
-
 
                 await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history,
                                    new OpenAIPromptExecutionSettings()
@@ -168,7 +164,8 @@ public class DocumentsService
                                        ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                                        Temperature = 0.5,
                                        ResponseFormat = typeof(DocumentResultCatalogue),
-                                   }, kernel))
+                                       MaxTokens = GetMaxTokens(warehouse.Model)
+                                   }, fileKernel))
                 {
                     str += item;
                 }
@@ -310,6 +307,20 @@ public class DocumentsService
 
 
         await dbContext.SaveChangesAsync();
+    }
+
+    private int GetMaxTokens(string model)
+    {
+        return model switch
+        {
+            "DeepSeek-V3" => 16384,
+            "gpt-4.1-mini" => 32768,
+            "gpt-4.1" => 32768,
+            "gpt-4o" => 16384,
+            "o4-mini" => 100000,
+            "o3-mini" => 100000,
+            _ => 16384
+        };
     }
 
     /// <summary>
