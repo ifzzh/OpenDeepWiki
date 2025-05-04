@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
@@ -14,12 +13,23 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Newtonsoft.Json;
 using Serilog;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace KoalaWiki.KoalaWarehouse;
 
 public class DocumentsService
 {
+    private static readonly int TaskMaxSizePerUser = 5;
+
+    static DocumentsService()
+    {
+        // 读取环境变量
+        var maxSize = Environment.GetEnvironmentVariable("TASK_MAX_SIZE_PER_USER");
+        if (!string.IsNullOrEmpty(maxSize) && int.TryParse(maxSize, out var maxSizeInt))
+        {
+            TaskMaxSizePerUser = maxSizeInt;
+        }
+    }
+
     /// <summary>
     /// 解析指定目录下单.gitignore配置忽略的文件
     /// </summary>
@@ -236,7 +246,7 @@ public class DocumentsService
         var documentFileSource = new ConcurrentDictionary<string, List<string>>();
 
         // 提供5个并发的信号量,很容易触发429错误
-        var semaphore = new SemaphoreSlim(10);
+        var semaphore = new SemaphoreSlim(TaskMaxSizePerUser);
 
         var tasks = new List<Task>();
 
@@ -246,14 +256,14 @@ public class DocumentsService
             tasks.Add(Task.Run(async () =>
             {
                 int retryCount = 0;
-                const int maxRetries = 10;
+                const int retries = 10;
                 bool success = false;
 
                 // 收集所有引用源文件
                 var files = new List<string>();
                 DocumentContext.DocumentStore = new DocumentStore();
 
-                while (!success && retryCount < maxRetries)
+                while (!success && retryCount < retries)
                 {
                     try
                     {
@@ -275,7 +285,7 @@ public class DocumentsService
                     {
                         semaphore.Release();
                         retryCount++;
-                        if (retryCount >= maxRetries)
+                        if (retryCount >= retries)
                         {
                             Console.WriteLine($"处理 {item.Name} 失败，已重试 {retryCount} 次，错误：{ex.Message}");
                         }
@@ -319,7 +329,6 @@ public class DocumentsService
                 });
             }
         }
-
 
         await dbContext.SaveChangesAsync();
     }
@@ -405,7 +414,8 @@ public class DocumentsService
 
                             if (!needsRepair)
                             {
-                                continue;;
+                                continue;
+                                ;
                             }
 
 
