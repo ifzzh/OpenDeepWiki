@@ -7,7 +7,7 @@
       - KOALAWIKI_REPOSITORIES=/repositories
       - TaskMaxSizePerUser=5 # 每个用户AI处理文档生成的最大数量
     volumes:
-      - ./repositories:/repositories
+      - ./repositories:/app/repositories
       - ./data:/data
     build:
       context: .
