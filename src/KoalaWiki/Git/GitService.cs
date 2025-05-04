@@ -5,7 +5,7 @@ namespace KoalaWiki.Git;
 
 public class GitService
 {
-    private (string localPath, string organization) GetRepositoryPath(string repositoryUrl)
+    private static (string localPath, string organization) GetRepositoryPath(string repositoryUrl)
     {
         // 解析仓库地址
         var uri = new Uri(repositoryUrl);
@@ -23,11 +23,10 @@ public class GitService
     /// 拉取指定仓库
     /// </summary>
     /// <returns></returns>
-    public GitRepositoryInfo PullRepository(
+    public static GitRepositoryInfo PullRepository(
         [Description("仓库地址")] string repositoryUrl,
         string userName = "",
         string password = "",
-        string email = "",
         [Description("分支")] string branch = "master")
     {
         var (localPath, organization) = GetRepositoryPath(repositoryUrl);

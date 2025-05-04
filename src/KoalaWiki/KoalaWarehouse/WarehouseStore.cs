@@ -5,8 +5,8 @@ namespace KoalaWiki.KoalaWarehouse;
 public class WarehouseStore
 {
 
-    private readonly Channel<Entities.Warehouse> warehouseChannel =
-        Channel.CreateBounded<Entities.Warehouse>(new BoundedChannelOptions(100)
+    private readonly Channel<Entities.Warehouse> _warehouseChannel =
+        Channel.CreateBounded<Entities.Warehouse>(new BoundedChannelOptions(10000)
         {
             FullMode = BoundedChannelFullMode.Wait // 当通道满时，写入操作会等待
         });
@@ -26,7 +26,7 @@ public class WarehouseStore
 
         try
         {
-            await warehouseChannel.Writer.WriteAsync(warehouse, cancellationToken);
+            await _warehouseChannel.Writer.WriteAsync(warehouse, cancellationToken);
             return true;
         }
         catch (OperationCanceledException)
@@ -48,7 +48,7 @@ public class WarehouseStore
     {
         try
         {
-            return await warehouseChannel.Reader.ReadAsync(cancellationToken);
+            return await _warehouseChannel.Reader.ReadAsync(cancellationToken);
         }
         catch (OperationCanceledException)
         {
