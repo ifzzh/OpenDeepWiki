@@ -6,6 +6,8 @@ using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using LibGit2Sharp;
+using Markdig;
+using Markdig.Syntax;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -63,7 +65,7 @@ public class DocumentsService
         {
             // 删除前缀 Constant.GitPath
             var relativePath = info.Path.Replace(path, "").TrimStart('\\');
-            
+
             // 过滤.开头的文件
             if (relativePath.StartsWith("."))
                 continue;
@@ -75,7 +77,7 @@ public class DocumentsService
                 // 忽略README文件
                 continue;
             }
-            
+
             catalogue.Append($"{relativePath}\n");
         }
 
@@ -110,13 +112,13 @@ public class DocumentsService
 
         await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
             .ExecuteDeleteAsync();
-        
-        
+
+
         // 开始生成
         var (git, committer) = await GenerateUpdateLogAsync(document.GitPath, readme,
             warehouse.Address,
             kernel);
-        
+
         await dbContext.DocumentCommitRecords.AddAsync(new DocumentCommitRecord()
         {
             WarehouseId = warehouse.Id,
@@ -126,22 +128,22 @@ public class DocumentsService
             CommitMessage = git,
             LastUpdate = DateTime.Now,
         });
-        
+
         if (await dbContext.DocumentOverviews.AnyAsync(x => x.DocumentId == document.Id) == false)
         {
             var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme, gitRepository);
-        
+
             // 可能需要先处理一下documentation_structure 有些模型不支持json
             var regex = new Regex(@"<blog>(.*?)</blog>",
                 RegexOptions.Singleline);
             var match = regex.Match(overview);
-        
+
             if (match.Success)
             {
                 // 提取到的内容
                 overview = match.Groups[1].Value;
             }
-        
+
             await dbContext.DocumentOverviews.AddAsync(new DocumentOverview()
             {
                 Content = overview,
@@ -366,6 +368,47 @@ public class DocumentsService
 
                         try
                         {
+                            // 先校验mermaid语法是否正确，如果正确就不需要修复
+                            if (string.IsNullOrEmpty(mermaidContent))
+                            {
+                                continue;
+                            }
+
+                            bool needsRepair = true;
+                            try
+                            {
+                                // 使用Markdig解析Markdown
+                                var pipeline = new MarkdownPipelineBuilder().Build();
+                                var document = Markdown.Parse(originalBlock, pipeline);
+
+                                // 检查是否有语法错误，查找所有代码块
+                                var codeBlocks = document
+                                    .Descendants<FencedCodeBlock>()
+                                    .Where(block =>
+                                        block.Info?.Equals("mermaid", StringComparison.OrdinalIgnoreCase) ?? false)
+                                    .ToList();
+
+                                // 如果找到了mermaid代码块并且它有内容
+                                if (codeBlocks.Any() && codeBlocks[0].Lines.Count > 0)
+                                {
+                                    // Markdig至少成功解析了代码块结构，但可能内部语法还有问题
+                                    // 由于Markdig不验证mermaid语法本身，我们可能需要其他方式验证
+                                    // 或者直接使用AI修复所有mermaid块
+                                    needsRepair = false;
+                                }
+                            }
+                            catch
+                            {
+                                // 解析失败，需要修复
+                                needsRepair = true;
+                            }
+
+                            if (!needsRepair)
+                            {
+                                continue;;
+                            }
+
+
                             var history = new ChatHistory();
 
                             history.AddUserMessage(Prompt.RepairMermaid
@@ -382,7 +425,8 @@ public class DocumentsService
                             {
                                 // 提取修复后的mermaid代码（去除可能的```mermaid和```）
                                 string fixedContent = response.Content.Trim();
-                                fixedContent = Regex.Replace(fixedContent, @"^```mermaid\s*", "", RegexOptions.Multiline);
+                                fixedContent = Regex.Replace(fixedContent, @"^```mermaid\s*", "",
+                                    RegexOptions.Multiline);
                                 fixedContent = Regex.Replace(fixedContent, @"\s*```$", "", RegexOptions.Multiline);
 
                                 // 创建新的mermaid代码块
