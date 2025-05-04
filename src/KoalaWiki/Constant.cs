@@ -2,5 +2,5 @@
 
 public static class Constant
 {
-    public const string GitPath = "/repositories";
+    public static string GitPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "repositories");
 }
