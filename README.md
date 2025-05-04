@@ -5,92 +5,170 @@
   <h3>AI驱动的代码知识库</h3>
 </div>
 
-## 📖 项目介绍
 
-KoalaWiki 是一个强大的AI驱动代码知识库平台，可以自动分析您的代码仓库，生成详细的文档和见解，帮助开发团队更深入地理解代码结构和工作原理。无论是新加入团队的开发人员快速上手，还是项目维护者梳理代码逻辑，KoalaWiki 都能提供智能化的辅助。
+# 项目介绍
 
-## ✨ 核心功能
+KoalaWiki 是一个基于 AI 驱动的代码知识库平台，旨在自动分析代码仓库并生成详细可视化文档，帮助团队成员快速理解项目结构与实现原理。  
+- 目标：  
+  - 为新成员提供快速上手文档  
+  - 为维护者梳理项目逻辑  
+  - 为开发团队提供智能化代码洞见  
+- 核心受众：  
+  - 后端/前端开发者  
+  - 项目架构师  
+  - 技术文档编写者  
 
-- **仓库管理**：支持添加和管理多个Git代码仓库
-- **AI代码分析**：利用先进的AI技术分析代码结构和关系
-- **自动文档生成**：自动为代码库生成详细的文档
-- **知识库导航**：直观的目录树结构，便于浏览和查找
-- **支持多种模型**：集成OpenAI等多种AI模型，灵活配置
+# 技术架构
 
-## 🔧 技术栈
+## 组件拆解
 
-### 后端
-- .NET 9.0
-- Microsoft Semantic Kernel
-- Entity Framework Core
-- FastService API
-- SQLite 数据库
-- LibGit2Sharp
+- 前端（Next.js + React + Ant Design + TypeScript）  
+- 后端（.NET 9 + FastService API + Semantic Kernel + EF Core + SQLite/PostgreSQL）  
+- 数据存储（SQLite 或 PostgreSQL，可动态切换）  
+- AI 服务层（基于 OpenAI 等模型的代码分析插件）
 
-### 前端
-- Next.js 15.3
-- React 19
-- Ant Design 5.24
-- TypeScript
-- Markdown 渲染支持
+## 设计模式
 
-## 🚀 快速开始
+- 依赖注入（ASP.NET Core DI）  
+- 仓储模式（通过 `WarehouseStore` 管理分析任务）  
+- 托管服务（`WarehouseTask` 用于后台任务调度）  
+- 插件化架构（CodeAnalysis 插件目录）  
 
-### 系统要求
-- .NET 9.0 SDK
-- Node.js 18+
+## 系统关系与数据流
 
-### 后端安装
-```bash
-# 克隆仓库
-git clone https://github.com/AIDotNet/koalawiki.git
-cd koalawiki
-
-# 启动后端API
-cd src/KoalaWiki
-dotnet run
+```mermaid
+flowchart TD
+  Client[浏览器] -->|HTTP/REST| API[FastService API]
+  API -->|调用服务| Biz[业务逻辑层]
+  Biz -->|访问| Db[EF Core DbContext]
+  Db --> E[(SQLite/PostgreSQL)]
+  Biz -->|触发| AI[AI 分析插件]
+  AI -->|返回| Biz
 ```
 
-### 前端安装
-```bash
-# 进入前端目录
-cd web
+# 实现细节
 
-# 安装依赖
-npm install
+## 1. 主入口程序
 
-# 启动开发服务器
-npm run dev
+`Program.cs` 配置了日志、DI、数据库上下文及 OpenAPI 接口。
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+builder.Services.AddSerilog(Log.Logger);
+builder.Services.AddOpenApi().WithFast();
+builder.Services.AddSingleton<WarehouseStore>();
+builder.Services.AddHostedService<WarehouseTask>();
+// 根据配置选择 Sqlite 或 PostgreSQL
+if (builder.Configuration.GetConnectionString("type")?.Equals("postgres", StringComparison.OrdinalIgnoreCase) == true)
+    builder.Services.AddPostgreSQLDbContext(...);
+else
+    builder.Services.AddSqliteDbContext(...);
+var app = builder.Build();
+await dbContext.RunMigrateAsync();
+app.UseCors("AllowAll");
+app.MapFast();
+app.Run();
 ```
 
-应用将在 http://localhost:3000 启动。
+Sources:  
+- [Program.cs](https://github.com/239573049/KoalaWiki/blob/master/src/KoalaWiki/Program.cs#L1-L40)
 
-## 🖥️ 使用说明
+## 2. 数据访问扩展
 
-1. **添加仓库**：点击"添加新仓库"按钮，填写Git仓库地址、分支等信息
-2. **配置AI模型**：选择合适的AI模型和配置参数 
-3. **浏览知识库**：仓库分析完成后，可通过导航树浏览代码文档
-4. **查看代码解析**：查看AI生成的代码结构分析和文档说明
+`ServiceExtensions.cs` 通过泛型方法统一注册 EF Core 上下文：
 
-## 🤝 参与贡献
+```csharp
+public static IServiceCollection AddDataAccess<TContext>(...)
+    where TContext : KoalaWikiContext<TContext>
+{
+    services.AddDbContext<IKoalaWikiContext, TContext>(configureContext);
+    return services;
+}
+```
 
-欢迎参与KoalaWiki项目的开发！您可以通过以下方式贡献：
+Sources:  
+- [ServiceExtensions.cs](https://github.com/239573049/KoalaWiki/blob/master/KoalaWiki.Core/ServiceExtensions.cs#L1-L20)
 
-1. 提交Issue报告问题或建议新功能
-2. 提交Pull Request贡献代码
-3. 改进文档和用户指南
+## 3. 配置管理
 
-## 📄 许可证
+- `appsettings.json`：数据库类型、连接字符串、日志级别等  
+- `appsettings.Development.json`：开发环境覆盖  
+- Docker 支持：`Dockerfile` & `docker-compose.yml`  
 
-本项目采用 [MIT 许可证](LICENSE)。
+```json
+{
+  "ConnectionStrings": {
+    "Type": "sqlite",
+    "Default": "Data Source=/data/KoalaWiki.db"
+  }
+}
+```
 
-## 📚 相关资源
+Sources:  
+- [appsettings.json](https://github.com/239573049/KoalaWiki/blob/master/src/KoalaWiki/appsettings.json#L1-L15)
 
-- [项目博客](https://github.com/AIDotNet/koalawiki/blog)
-- [API文档](https://github.com/AIDotNet/koalawiki/api-docs)
-- [使用教程](https://github.com/AIDotNet/koalawiki/tutorials)
+## 4. 外部依赖
 
----
+- .NET 9.0, EF Core, LibGit2Sharp  
+- Next.js 15, React 19, Ant Design 5  
+- OpenAI SDK (通过 `KoalaHttpClientHander` 与 AI 模型对接)  
+
+# 关键功能
+
+## 仓库管理
+
+- 添加多仓库，维护分支与凭据  
+- UI 表单组件：`RepositoryForm.tsx`、`RepositoryList.tsx`  
+- 服务层：`GitService` 提供仓库信息抓取  
+
+```mermaid
+graph LR
+  UI[RepositoryForm] --> API[POST /repos]
+  API --> GitService
+  GitService --> LibGit2Sharp
+  GitService --> DbContext
+```
+
+## AI 代码分析
+
+- 插件目录：`src/KoalaWiki/plugins/CodeAnalysis`  
+- 核心流程：拉取代码 → 分析 AST/依赖 → 生成 Markdown/图表  
+
+```mermaid
+stateDiagram-v2
+  [*] --> Fetch: 克隆仓库
+  Fetch --> Analyze: 执行 AI 分析
+  Analyze --> Generate: 生成文档
+  Generate --> [*]
+```
+
+## 自动文档生成
+
+- 基于 Mapster 映射 DTO  
+- 生成 `PageDto`、`WarehouseInput` 等输出  
+
+## 知识库导航
+
+- 前端目录树组件：`DirectoryTree.tsx`  
+- 根据分析结果动态渲染侧边栏及文档页面  
+
+```mermaid
+graph TD
+  DirectoryTree --> DocumentSidebar
+  DocumentSidebar --> DocumentContent
+  DocumentContent --> MermaidUtils
+```
+
+# 总结与建议
+
+KoalaWiki 通过 .NET 与前端现代栈深度结合，实现了端到端的代码仓库智能分析与展示。  
+- 强项：插件化、灵活的数据库支持、丰富的可视化组件  
+- 改进：  
+  - 增加单元测试覆盖  
+  - 提升大仓库分析性能（分块/流式处理）  
+  - 支持更多语言（目前主要聚焦 C#）
+
 
 <div align="center">
   <sub>由 ❤️ AIDotNet 团队开发</sub>
