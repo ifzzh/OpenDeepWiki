@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Text;
 using KoalaWiki.KoalaWarehouse;
 using Microsoft.SemanticKernel;
 
@@ -98,14 +99,32 @@ public class FileFunction(string gitPath)
     [KernelFunction, Description("从指定行数开始读取文件内容")]
     public async Task<string> ReadFileFromLineAsync(
         [Description("文件路径")] string filePath,
-        [Description("开始行号")] int startLine = 0)
+        [Description("开始行号")] int startLine = 0,
+        [Description("结束行号")] int endLine = 5)
     {
         try
         {
             filePath = Path.Combine(gitPath, filePath.TrimStart('/'));
             Console.WriteLine($"Reading file from line {startLine}: {filePath}");
             var lines = await File.ReadAllLinesAsync(filePath);
-            return string.Join(Environment.NewLine, lines.Skip(startLine));
+
+            if (startLine < 0 || startLine >= lines.Length)
+            {
+                return $"Invalid start line: {startLine}";
+            }
+
+            if (endLine < startLine || endLine >= lines.Length)
+            {
+                return $"Invalid end line: {endLine}";
+            }
+
+            var result = new StringBuilder();
+            for (var i = startLine; i <= endLine; i++)
+            {
+                result.AppendLine(lines[i]);
+            }
+
+            return result.ToString();
         }
         catch (Exception ex)
         {

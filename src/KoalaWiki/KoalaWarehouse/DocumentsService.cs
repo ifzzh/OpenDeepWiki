@@ -63,6 +63,19 @@ public class DocumentsService
         {
             // 删除前缀 Constant.GitPath
             var relativePath = info.Path.Replace(path, "").TrimStart('\\');
+            
+            // 过滤.开头的文件
+            if (relativePath.StartsWith("."))
+                continue;
+
+            if (relativePath.Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                relativePath.Equals("README.txt", StringComparison.OrdinalIgnoreCase) ||
+                relativePath.Equals("README", StringComparison.OrdinalIgnoreCase))
+            {
+                // 忽略README文件
+                continue;
+            }
+            
             catalogue.Append($"{relativePath}\n");
         }
 
@@ -704,6 +717,8 @@ public class DocumentsService
                 return true;
             })
             let fileInfo = new FileInfo(file)
+            // 超过1M的文件不处理
+            where fileInfo.Length < 1024 * 1024 * 1
             select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
 
         // 遍历所有目录，并递归扫描
