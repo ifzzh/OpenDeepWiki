@@ -771,8 +771,50 @@ public class DocumentsService
                 return true;
             })
             let fileInfo = new FileInfo(file)
-            // 超过1M的文件不处理
             where fileInfo.Length < 1024 * 1024 * 1
+            where !file.EndsWith(".png", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".so", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".class", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".o", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".a", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".tar", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".bz2", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".xz", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".flac", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".aac", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".avi", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".mkv", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".mov", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".doc", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".xls", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".css", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".scss", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".less", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".htm", StringComparison.OrdinalIgnoreCase)
+                  // 过滤.ico
+            where !file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
             select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
 
         // 遍历所有目录，并递归扫描
