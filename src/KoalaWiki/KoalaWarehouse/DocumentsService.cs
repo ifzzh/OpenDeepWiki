@@ -104,7 +104,9 @@ public class DocumentsService
                     Temperature = 0.5,
                 })
             {
-                ["catalogue"] = catalogue.ToString()
+                ["catalogue"] = catalogue.ToString(),
+                ["git_repository"] = gitRepository,
+                ["branch"] = warehouse.Branch
             });
 
             readme = generateReadme.ToString();
@@ -127,6 +129,7 @@ public class DocumentsService
         // 开始生成
         var (git, committer) = await GenerateUpdateLogAsync(document.GitPath, readme,
             warehouse.Address,
+            warehouse.Branch,
             kernel);
 
         await dbContext.DocumentCommitRecords.AddAsync(new DocumentCommitRecord()
@@ -141,7 +144,8 @@ public class DocumentsService
 
         if (await dbContext.DocumentOverviews.AnyAsync(x => x.DocumentId == document.Id) == false)
         {
-            var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme, gitRepository);
+            var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme, gitRepository,
+                warehouse.Branch);
 
             // 可能需要先处理一下documentation_structure 有些模型不支持json
             var regex = new Regex(@"<blog>(.*?)</blog>",
@@ -188,8 +192,7 @@ public class DocumentsService
                                    {
                                        ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                                        Temperature = 0.5,
-                                       ResponseFormat = typeof(DocumentResultCatalogue),
-                                       MaxTokens = GetMaxTokens(warehouse.Model)
+                                       MaxTokens = GetMaxTokens(warehouse.Model),
                                    }, fileKernel))
                 {
                     str.Append(item);
@@ -258,7 +261,7 @@ public class DocumentsService
             tasks.Add(Task.Run(async () =>
             {
                 int retryCount = 0;
-                const int retries = 10;
+                const int retries = 5;
                 bool success = false;
 
                 // 收集所有引用源文件
@@ -269,10 +272,10 @@ public class DocumentsService
                 {
                     try
                     {
-                        Log.Logger.Information("处理仓库；{path} ,处理标题：{name}", path, item.Name);
                         await semaphore.WaitAsync();
+                        Log.Logger.Information("处理仓库；{path} ,处理标题：{name}", path, item.Name);
                         var fileItem = await ProcessCatalogueItems(item, fileKernel, catalogue.ToString(), readme,
-                            gitRepository);
+                            gitRepository, warehouse.Branch);
                         documentFileItems.Add(fileItem);
                         success = true;
 
@@ -294,7 +297,7 @@ public class DocumentsService
                         else
                         {
                             // 等待一段时间后重试
-                            await Task.Delay(5000 * retryCount);
+                            await Task.Delay(10000 * retryCount);
                         }
                     }
                     finally
@@ -343,6 +346,7 @@ public class DocumentsService
         return model switch
         {
             "DeepSeek-V3" => 16384,
+            "QwQ-32B" => 8192,
             "gpt-4.1-mini" => 32768,
             "gpt-4.1" => 32768,
             "gpt-4o" => 16384,
@@ -474,7 +478,7 @@ public class DocumentsService
     /// 生成更新日志
     /// </summary>
     public async Task<(string content, string committer)> GenerateUpdateLogAsync(string gitPath,
-        string readme, string git_repository, Kernel kernel)
+        string readme, string git_repository, string branch, Kernel kernel)
     {
         // 读取git log
         using var repo = new Repository(gitPath, new RepositoryOptions());
@@ -507,16 +511,16 @@ public class DocumentsService
                        {
                            ["readme"] = readme,
                            ["git_repository"] = git_repository,
-                           ["commit_message"] = commitMessage
+                           ["commit_message"] = commitMessage,
+                           ["branch"] = branch
                        }))
         {
             str += item;
         }
 
-        // 可能需要先处理一下documentation_structure 有些模型不支持json
         var regex = new Regex(@"<changelog>(.*?)</changelog>",
             RegexOptions.Singleline);
-        var match = regex.Match(str.ToString());
+        var match = regex.Match(str);
 
         if (match.Success)
         {
@@ -534,7 +538,7 @@ public class DocumentsService
     /// </summary>
     /// <returns></returns>
     private async Task<string> GenerateProjectOverview(Kernel kernel, string catalog,
-        string readme, string gitRepository)
+        string readme, string gitRepository, string branch)
     {
         var sr = new StringBuilder();
 
@@ -548,6 +552,7 @@ public class DocumentsService
 
         history.AddUserMessage(Prompt.Overview.Replace("{{$catalogue}}", catalog)
             .Replace("{{$git_repository}}", gitRepository)
+            .Replace("{{$branch}}", branch)
             .Replace("{{$readme}}", readme));
 
         await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))
@@ -578,7 +583,7 @@ public class DocumentsService
     /// 处理每一个标题产生文件内容
     /// </summary>
     private async Task<DocumentFileItem> ProcessCatalogueItems(DocumentCatalog catalog, Kernel kernel, string catalogue,
-        string readme, string git_repository)
+        string readme, string git_repository, string branch)
     {
         var chat = kernel.Services.GetService<IChatCompletionService>();
 
@@ -589,6 +594,7 @@ public class DocumentsService
             .Replace("{{$prompt}}", catalog.Prompt)
             .Replace("{{$readme}}", readme)
             .Replace("{{$git_repository}}", git_repository)
+            .Replace("{{$branch}}", branch)
             .Replace("{{$title}}", catalog.Name));
 
 
@@ -817,7 +823,7 @@ public class DocumentsService
                   !file.EndsWith(".less", StringComparison.OrdinalIgnoreCase)
             where !file.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
                   !file.EndsWith(".htm", StringComparison.OrdinalIgnoreCase)
-                  // 过滤.ico
+            // 过滤.ico
             where !file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) &&
                   !file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
             select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
