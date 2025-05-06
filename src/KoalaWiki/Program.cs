@@ -2,6 +2,7 @@ using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Git;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.Memory;
+using KoalaWiki.Options;
 using KoalaWiki.Provider.PostgreSQL;
 using KoalaWiki.Provider.Sqlite;
 using Mapster;
@@ -14,6 +15,30 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .WriteTo.Console()
     .CreateLogger();
+
+#region Options
+
+OpenAIOptions.ChatModel = builder.Configuration.GetValue<string>("ChatModel");
+OpenAIOptions.ChatApiKey = builder.Configuration.GetValue<string>("ChatApiKey");
+OpenAIOptions.Endpoint = builder.Configuration.GetValue<string>("Endpoint");
+OpenAIOptions.EmbeddingModel = builder.Configuration.GetValue<string>("EmbeddingModel");
+
+OpenAIOptions.EmbeddingApiKey = builder.Configuration.GetValue<string>("EmbeddingApiKey");
+OpenAIOptions.EmbeddingEndpoint = builder.Configuration.GetValue<string>("EmbeddingEndpoint");
+
+// 如果embedding没有设置则使用默认的
+if (string.IsNullOrEmpty(OpenAIOptions.EmbeddingApiKey))
+{
+	OpenAIOptions.EmbeddingApiKey = OpenAIOptions.ChatApiKey;
+}
+
+if (string.IsNullOrEmpty(OpenAIOptions.EmbeddingEndpoint))
+{
+	OpenAIOptions.EmbeddingEndpoint = OpenAIOptions.Endpoint;
+}
+
+#endregion
+
 
 builder.Services.AddSerilog(Log.Logger);
 

@@ -175,6 +175,9 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsEmbedded")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Metadata")
                         .IsRequired()
                         .HasColumnType("text");
@@ -296,19 +299,10 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                     b.Property<string>("GitUserName")
                         .HasColumnType("text");
 
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<bool>("IsEmbedded")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OpenAIEndpoint")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OpenAIKey")
                         .IsRequired()
                         .HasColumnType("text");
 

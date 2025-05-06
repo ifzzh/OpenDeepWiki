@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
+using KoalaWiki.Options;
 using LibGit2Sharp;
 using Markdig;
 using Markdig.Syntax;
@@ -62,12 +63,12 @@ public class DocumentsService
         // 递归扫描目录所有文件和目录
         ScanDirectory(path, pathInfos, ignoreFiles);
 
-        var kernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
-            warehouse.OpenAIKey,
-            path, warehouse.Model);
+        var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey,
+            path, OpenAIOptions.ChatModel);
 
-        var fileKernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
-            warehouse.OpenAIKey, path, warehouse.Model, false);
+        var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
 
         var catalogue = new StringBuilder();
 
@@ -192,7 +193,7 @@ public class DocumentsService
                                    {
                                        ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                                        Temperature = 0.5,
-                                       MaxTokens = GetMaxTokens(warehouse.Model),
+                                       MaxTokens = GetMaxTokens(OpenAIOptions.ChatModel),
                                    }, fileKernel))
                 {
                     str.Append(item);

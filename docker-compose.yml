@@ -7,6 +7,12 @@
       - KOALAWIKI_REPOSITORIES=/repositories
       - TaskMaxSizePerUser=5 # 每个用户AI处理文档生成的最大数量
       - REPAIR_MERMAID=1 # 是否进行Mermaid修复，1修复，其余不修复
+      - EmbeddingModel=text-embedding-3-small # Embedding模型
+      - EmbeddingApiKey=  #为空则使用ChatApiKey
+      - EmbeddingEndpoint= # 为空则使用Endpoint
+      - ChatModel=DeepSeek-V3 # 必须要支持function的模型
+      - ChatApiKey= #您的APIkey
+      - Endpoint=https://api.token-ai.cn/v1
     volumes:
       - ./repositories:/app/repositories
       - ./data:/data

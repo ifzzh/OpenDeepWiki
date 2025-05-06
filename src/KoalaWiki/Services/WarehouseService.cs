@@ -57,10 +57,8 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         {
             throw new NotFoundException("仓库不存在");
         }
-
         
         var commit = await access.DocumentCommitRecords.FirstOrDefaultAsync(x => x.WarehouseId == warehouse.Id);
-
 
         return commit;
     }
