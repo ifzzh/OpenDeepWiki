@@ -311,8 +311,11 @@ public class DocumentsService
         // 将解析的目录结构保存到数据库
         await dbContext.DocumentCatalogs.AddRangeAsync(documents);
 
-        //修复Mermaid语法错误
-        RepairMermaid(kernel, documentFileItems);
+        if (Environment.GetEnvironmentVariable("REPAIR_MERMAID") == "1")
+        {
+            //修复Mermaid语法错误
+            RepairMermaid(kernel, documentFileItems);
+        }
 
         await dbContext.DocumentFileItems.AddRangeAsync(documentFileItems);
         // 批量添加fileSource
