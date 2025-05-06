@@ -177,7 +177,7 @@ public class DocumentsService
             {
                 var chat = kernel.Services.GetService<IChatCompletionService>();
 
-                StringBuilder str = StringBuilder;
+                StringBuilder str = new StringBuilder();
                 var history = new ChatHistory();
                 history.AddUserMessage(Prompt.AnalyzeCatalogue
                     .Replace("{{$catalogue}}", catalogue.ToString())
