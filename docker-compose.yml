@@ -6,6 +6,7 @@
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
       - TaskMaxSizePerUser=5 # 每个用户AI处理文档生成的最大数量
+      - REPAIR_MERMAID=1 # 是否进行Mermaid修复，1修复，其余不修复
     volumes:
       - ./repositories:/app/repositories
       - ./data:/data
