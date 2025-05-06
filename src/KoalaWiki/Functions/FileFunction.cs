@@ -7,10 +7,10 @@ namespace KoalaWiki.Functions;
 
 public class FileFunction(string gitPath)
 {
-    [KernelFunction, Description("读取指定的文件内容")]
-    [return: Description("返回字典，key是目录名称")]
+    [KernelFunction, Description("Read the specified file content")]
+    [return: Description("Return the dictionary. The key is the directory name")]
     public async Task<Dictionary<string, string>> ReadFilesAsync(
-        [Description("文件路径")] string[] filePaths)
+        [Description("File Path")] string[] filePaths)
     {
         try
         {
@@ -53,9 +53,9 @@ public class FileFunction(string gitPath)
         }
     }
 
-    [KernelFunction, Description("读取指定的文件内容")]
+    [KernelFunction, Description("Read the specified file content")]
     public async Task<string> ReadFileAsync(
-        [Description("文件路径")] string filePath)
+        [Description("File Path")] string filePath)
     {
         try
         {
@@ -96,11 +96,11 @@ public class FileFunction(string gitPath)
     /// 从指定行数开始读取文件内容
     /// </summary>
     /// <returns></returns>
-    [KernelFunction, Description("从指定行数开始读取文件内容")]
+    [KernelFunction, Description("Read the file content from the specified number of lines")]
     public async Task<string> ReadFileFromLineAsync(
-        [Description("文件路径")] string filePath,
-        [Description("开始行号")] int startLine = 0,
-        [Description("结束行号")] int endLine = 5)
+        [Description("File Path")] string filePath,
+        [Description("Start Line Number")] int startLine = 0,
+        [Description("End Line Number")] int endLine = 5)
     {
         try
         {
