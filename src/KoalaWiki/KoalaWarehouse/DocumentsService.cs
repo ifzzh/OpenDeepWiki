@@ -177,7 +177,7 @@ public class DocumentsService
             {
                 var chat = kernel.Services.GetService<IChatCompletionService>();
 
-                var str = string.Empty;
+                StringBuilder str = StringBuilder;
                 var history = new ChatHistory();
                 history.AddUserMessage(Prompt.AnalyzeCatalogue
                     .Replace("{{$catalogue}}", catalogue.ToString())
@@ -192,7 +192,7 @@ public class DocumentsService
                                        MaxTokens = GetMaxTokens(warehouse.Model)
                                    }, fileKernel))
                 {
-                    str += item;
+                    str.Append(item);
                 }
 
                 // 可能需要先处理一下documentation_structure 有些模型不支持json
@@ -203,7 +203,9 @@ public class DocumentsService
                 if (match.Success)
                 {
                     // 提取到的内容
-                    str = match.Groups[1].Value;
+                    var extractedContent = match.Groups[1].Value;
+                    str.Clear();
+                    str.Append(extractedContent);
                 }
 
 
