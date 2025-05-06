@@ -34,6 +34,5 @@ public class TextParagraph
     [VectorStoreRecordData]
     public string Text { get; init; }
     
-    [VectorStoreRecordVector(1536)]
     public ReadOnlyMemory<float> TextEmbedding { get; set; }
 }

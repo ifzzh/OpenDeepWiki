@@ -2,13 +2,14 @@
 
 public class CompletionsInput
 {
-    public string Owner { get; set; }
-
-    public string Name { get; set; }
-
+    /// <summary>
+    /// 关联id
+    /// </summary>
+    public string ChatShareMessageId { get; set; }
+    
     public string Question { get; set; }
 
-    public List<CompletionsMessageInput> Messages { get; set; } = new List<CompletionsMessageInput>();
+    public List<CompletionsMessageInput> Messages { get; set; } = [];
 }
 
 public class CompletionsMessageInput

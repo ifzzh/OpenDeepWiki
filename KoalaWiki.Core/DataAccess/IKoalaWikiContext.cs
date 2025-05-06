@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using KoalaWiki.Domains;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,6 @@ namespace KoalaWiki.Core.DataAccess;
 
 public interface IKoalaWikiContext
 {
-    
     public DbSet<Warehouse> Warehouses { get; set; }
 
     public DbSet<DocumentCatalog> DocumentCatalogs { get; set; }
@@ -20,9 +20,13 @@ public interface IKoalaWikiContext
     public DbSet<DocumentFileItemSource> DocumentFileItemSources { get; set; }
 
     public DbSet<DocumentOverview> DocumentOverviews { get; set; }
-    
+
     public DbSet<DocumentCommitRecord> DocumentCommitRecords { get; set; }
-    
+
+    public DbSet<ChatShareMessage> ChatShareMessages { get; set; }
+
+    public DbSet<ChatShareMessageItem> ChatShareMessageItems { get; set; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken());
 
     Task RunMigrateAsync();

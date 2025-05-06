@@ -25,6 +25,12 @@ OpenAIOptions.EmbeddingModel = builder.Configuration.GetValue<string>("Embedding
 
 OpenAIOptions.EmbeddingApiKey = builder.Configuration.GetValue<string>("EmbeddingApiKey");
 OpenAIOptions.EmbeddingEndpoint = builder.Configuration.GetValue<string>("EmbeddingEndpoint");
+OpenAIOptions.AnalysisModel = builder.Configuration.GetValue<string>("AnalysisModel");
+// 如果没设置分析模型则使用默认的
+if (string.IsNullOrEmpty(OpenAIOptions.AnalysisModel))
+{
+    OpenAIOptions.AnalysisModel = OpenAIOptions.ChatModel;
+}
 
 // 如果embedding没有设置则使用默认的
 if (string.IsNullOrEmpty(OpenAIOptions.EmbeddingApiKey))

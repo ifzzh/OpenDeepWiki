@@ -171,16 +171,18 @@ public class DocumentsService
 
         DocumentResultCatalogue? result = null;
 
-        int retryCount = 0;
+        var retryCount = 0;
         const int maxRetries = 5;
-        bool success = false;
-        Exception exception = null;
+        Exception? exception = null;
 
-        while (!success && retryCount < maxRetries)
+        while (retryCount < maxRetries)
         {
             try
             {
-                var chat = kernel.Services.GetService<IChatCompletionService>();
+                var analysisModel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+                    OpenAIOptions.ChatApiKey, path, OpenAIOptions.AnalysisModel, false);
+
+                var chat = analysisModel.Services.GetService<IChatCompletionService>();
 
                 StringBuilder str = new StringBuilder();
                 var history = new ChatHistory();
@@ -194,7 +196,7 @@ public class DocumentsService
                                        ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                                        Temperature = 0.5,
                                        MaxTokens = GetMaxTokens(OpenAIOptions.ChatModel),
-                                   }, fileKernel))
+                                   }, analysisModel))
                 {
                     str.Append(item);
                 }
@@ -597,7 +599,6 @@ public class DocumentsService
             .Replace("{{$git_repository}}", git_repository)
             .Replace("{{$branch}}", branch)
             .Replace("{{$title}}", catalog.Name));
-
 
         var sr = new StringBuilder();
 

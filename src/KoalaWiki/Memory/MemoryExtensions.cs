@@ -1,5 +1,6 @@
 using System.ClientModel;
 using Azure.AI.OpenAI;
+using KoalaWiki.Functions;
 using KoalaWiki.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.Sqlite;

@@ -89,13 +89,12 @@ public class MemoryTask(IVectorStore vectorStore, IServiceProvider service) : Ba
 
                 foreach (var chunk in textChunks)
                 {
-
                     var embeddingValue =
                         await _embeddingRetryPolicy.ExecuteAsync(() => embedding.GenerateEmbeddingAsync(chunk));
 
                     // 获取当前向量维度
                     var dimension = embeddingValue.Length;
-                    vectorStoreRecordCollection ??= await GetCollection(task.Id, dimension);
+                    vectorStoreRecordCollection ??= await GetCollection(vectorStore, task.Id, dimension);
 
                     var id = file.Id;
                     // 判断当前fileitem是否存在
@@ -153,27 +152,134 @@ public class MemoryTask(IVectorStore vectorStore, IServiceProvider service) : Ba
         }
     }
 
-    private async Task<IVectorStoreRecordCollection<string, TextParagraph>?> GetCollection(string name, int dimension)
+    public static async Task<List<TextParagraph>> Search(IVectorStore vectorStore, string name, string warehouseId,
+        ReadOnlyMemory<float> embedding, double score = 0.5)
+    {
+        var texts = new List<TextParagraph>();
+        var dimension = embedding.Length;
+        if (dimension == 1536)
+        {
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph1536>("koala" + name);
+            await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
+
+            await foreach (var item in vectorStoreRecordCollection.SearchEmbeddingAsync(embedding, 5,
+                               new VectorSearchOptions<TextParagraph1536>()
+                               {
+                                   Filter = paragraph => paragraph.WarehouseId == warehouseId,
+                                   IncludeVectors = true,
+                               }))
+            {
+                if (item.Score > score)
+                {
+                    texts.Add(item.Record);
+                }
+            }
+        }
+        else if (dimension == 2048)
+        {
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph2048>("koala" + name);
+            await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
+            await foreach (var item in vectorStoreRecordCollection.SearchEmbeddingAsync(embedding, 5,
+                               new VectorSearchOptions<TextParagraph2048>()
+                               {
+                                   Filter = paragraph => paragraph.WarehouseId == warehouseId,
+                                   IncludeVectors = true,
+                               }))
+            {
+                if (item.Score > score)
+                {
+                    texts.Add(item.Record);
+                }
+            }
+        }
+        else if (dimension == 768)
+        {
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph768>("koala" + name);
+            await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
+            await foreach (var item in vectorStoreRecordCollection.SearchEmbeddingAsync(embedding, 5,
+                               new VectorSearchOptions<TextParagraph768>()
+                               {
+                                   Filter = paragraph => paragraph.WarehouseId == warehouseId,
+                                   IncludeVectors = true,
+                               }))
+            {
+                if (item.Score > score)
+                {
+                    texts.Add(item.Record);
+                }
+            }
+        }
+        else if (dimension == 1024)
+        {
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph1024>("koala" + name);
+
+            await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
+            await foreach (var item in vectorStoreRecordCollection.SearchEmbeddingAsync(embedding, 5,
+                               new VectorSearchOptions<TextParagraph1024>()
+                               {
+                                   Filter = paragraph => paragraph.WarehouseId == warehouseId,
+                                   IncludeVectors = true,
+                               }))
+            {
+                if (item.Score > score)
+                {
+                    texts.Add(item.Record);
+                }
+            }
+        }
+        else if (dimension == 512)
+        {
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph512>("koala" + name);
+            await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
+            await foreach (var item in vectorStoreRecordCollection.SearchEmbeddingAsync(embedding, 5,
+                               new VectorSearchOptions<TextParagraph512>()
+                               {
+                                   Filter = paragraph => paragraph.WarehouseId == warehouseId,
+                                   IncludeVectors = true,
+                               }))
+            {
+                if (item.Score > score)
+                {
+                    texts.Add(item.Record);
+                }
+            }
+        }
+        else
+        {
+            throw new Exception("不支持的向量维度");
+        }
+
+
+        return texts;
+    }
+
+    public static async Task<IVectorStoreRecordCollection<string, TextParagraph>?> GetCollection(
+        IVectorStore vectorStore, string name, int dimension)
     {
         if (dimension == 1536)
         {
-            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph1536>("knowledge_" + name);
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph1536>("koala" + name);
+            await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
+        }
+        else if (dimension == 2048)
+        {
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph2048>("koala" + name);
             await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
         }
         else if (dimension == 768)
         {
-            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph768>("knowledge_" + name);
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph768>("koala" + name);
             await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
         }
         else if (dimension == 1024)
         {
-            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph1024>("knowledge_" + name);
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph1024>("koala" + name);
 
             await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
         }
         else if (dimension == 512)
         {
-            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph512>("knowledge_" + name);
+            var vectorStoreRecordCollection = vectorStore.GetCollection<string, TextParagraph512>("koala" + name);
             await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
         }
         else
@@ -181,6 +287,6 @@ public class MemoryTask(IVectorStore vectorStore, IServiceProvider service) : Ba
             throw new Exception("不支持的向量维度");
         }
 
-        return vectorStore.GetCollection<string, TextParagraph>("knowledge_" + name);
+        return vectorStore.GetCollection<string, TextParagraph>("koala" + name);
     }
 }

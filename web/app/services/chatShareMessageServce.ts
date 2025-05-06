@@ -1,0 +1,23 @@
+import { fetchApi } from './api';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '';
+
+interface ChatShareMessageInput {
+  isDeep: boolean;
+  owner: string;
+  name: string;
+  message: string;
+}
+/**
+ * Submit a new repository to the warehouse
+ * 这个函数仍然需要在客户端使用
+ */
+export async function createChatShareMessage(
+  data: ChatShareMessageInput
+): Promise<any> {
+  return await fetchApi<any>(API_URL + '/api/ChatShareMessage', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+

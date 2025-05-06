@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using KoalaWiki.Domains;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using Microsoft.EntityFrameworkCore;
@@ -22,8 +23,12 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
     public DbSet<DocumentFileItemSource> DocumentFileItemSources { get; set; }
 
     public DbSet<DocumentOverview> DocumentOverviews { get; set; }
-    
+
     public DbSet<DocumentCommitRecord> DocumentCommitRecords { get; set; }
+
+    public DbSet<ChatShareMessage> ChatShareMessages { get; set; }
+
+    public DbSet<ChatShareMessageItem> ChatShareMessageItems { get; set; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
     {
@@ -157,12 +162,31 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasKey(x => x.Id);
 
             options.Property(x => x.CommitMessage).IsRequired();
-            
+
             options.Property(x => x.Author).IsRequired();
 
             options.HasIndex(x => x.WarehouseId);
 
             options.HasIndex(x => x.CommitId);
+        });
+
+        modelBuilder.Entity<ChatShareMessage>(options =>
+        {
+            options.HasKey(x => x.Id);
+
+            options.HasIndex(x => x.WarehouseId);
+
+        });
+
+        modelBuilder.Entity<ChatShareMessageItem>(options =>
+        {
+            options.HasKey(x => x.Id);
+
+            options.HasIndex(x => x.ChatShareMessageId);
+
+            options.Property(x => x.Question).IsRequired();
+
+            options.HasIndex(x => x.Question);
         });
     }
 }

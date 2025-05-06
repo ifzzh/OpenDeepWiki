@@ -9,6 +9,8 @@ public class OpenAIOptions
     public static string EmbeddingEndpoint { get; set; }
 
     public static string ChatModel { get; set; }
+    
+    public static string AnalysisModel { get; set; }
 
     public static string ChatApiKey { get; set; }
 

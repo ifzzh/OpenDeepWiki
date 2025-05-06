@@ -63,6 +63,13 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
           enableMermaid
           enableCustomFootnotes
           allowHtml
+          componentProps={{
+            mermaid:{
+              fullFeatured: true,
+              shadow: true,
+              edge: true,
+            }
+          }}
           customRender={customRender}
           title={document?.title}
           remarkPlugins={[remarkGfm, remarkToc, remarkMath]}
@@ -101,12 +108,6 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
         
         .markdown-content h3 {
           font-size: 20px;
-        }
-        
-        .markdown-content p {
-          margin-bottom: 16px;
-          line-height: 1.8;
-          font-size: 16px;
         }
         
         .markdown-content a {

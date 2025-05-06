@@ -2,9 +2,9 @@
 
 namespace KoalaWiki.Memory.Embedding;
 
-public class TextParagraph768 : TextParagraph
+public class TextParagraph2048 : TextParagraph
 {
     /// <summary>The embedding generated from the Text.</summary>
-    [VectorStoreRecordVector(768)]
+    [VectorStoreRecordVector(2048)]
     public ReadOnlyMemory<float> TextEmbedding { get; set; }
 }
