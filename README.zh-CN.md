@@ -38,18 +38,18 @@ cd OpenDeepWiki
 打开`docker-compose.yml`文件，修改以下配置下面的环境变量：
 ```yaml
 version: '3.8'
-services:
+﻿services:
   koalawiki:
     image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
-      - TaskMaxSizePerUser=5 # 每个用户AI处理文档生成的最大并行数量
+      - TaskMaxSizePerUser=5 # 每个用户AI处理文档生成的最大数量
       - REPAIR_MERMAID=1 # 是否进行Mermaid修复，1修复，其余不修复
       - ChatModel=DeepSeek-V3 # 必须要支持function的模型
+      - AnalysisModel= # 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
+      - ChatApiKey=您的APIkey
       - LANGUAGE= # 设置生成语言默认为“中文”
       - Endpoint=https://api.token-ai.cn/v1
-      - AnalysisModel= # 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
-      - ChatApiKey= #您的APIkey
     volumes:
       - ./repositories:/app/repositories
       - ./data:/data
@@ -60,12 +60,12 @@ services:
   koalawiki-web:
     image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_API_URL=http://koalawiki:8080 # 用于提供给server的地址
     build:
-      context: .
-      dockerfile: web/Dockerfile
+      context: ./web
+      dockerfile: Dockerfile
       
-  nginx:
+  nginx: # 需要nginx将前端和后端代理到一个端口
     image: nginx:alpine
     ports:
       - 8090:80
