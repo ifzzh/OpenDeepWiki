@@ -9,24 +9,11 @@ import {
   Breadcrumb,
   Divider,
   Button,
-  FloatButton,
-  Dropdown,
-  Tooltip,
-  Avatar
 } from 'antd';
 import {
-  FolderOutlined,
-  FileTextOutlined,
-  GithubOutlined,
   HomeOutlined,
-  BookOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  MoreOutlined,
-  ShareAltOutlined,
-  EditOutlined,
-  SettingOutlined,
-  SearchOutlined
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
