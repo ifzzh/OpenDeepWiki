@@ -124,6 +124,10 @@ graph TD
   - AnalysisModel # 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
   - ChatApiKey #您的APIkey
   - LANGUAGE # 改变生成的文档的语言
+## WeChat 
+
+![1000035457](https://github.com/user-attachments/assets/f1027d44-5453-4d39-86fc-a068bacf3afc)
+
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
