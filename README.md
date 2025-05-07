@@ -43,13 +43,10 @@ services:
       - KOALAWIKI_REPOSITORIES=/repositories
       - TaskMaxSizePerUser=5 # 每个用户AI处理文档生成的最大并行数量
       - REPAIR_MERMAID=1 # 是否进行Mermaid修复，1修复，其余不修复
-      - EmbeddingModel=text-embedding-3-small # Embedding模型
       - ChatModel=DeepSeek-V3 # 必须要支持function的模型
       - Endpoint=https://api.token-ai.cn/v1
       - AnalysisModel= # 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
       - ChatApiKey= #您的APIkey
-      - EmbeddingApiKey=  #为空则使用ChatApiKey
-      - EmbeddingEndpoint= # 为空则使用Endpoint
     volumes:
       - ./repositories:/app/repositories
       - ./data:/data
@@ -119,13 +116,10 @@ graph TD
   - KOALAWIKI_REPOSITORIES # 仓库存放路径
   - TaskMaxSizePerUser # 每个用户AI处理文档生成的最大并行数量
   - REPAIR_MERMAID # 是否进行Mermaid修复，1修复，其余不修复
-  - EmbeddingModel # Embedding模型
   - ChatModel # 必须要支持function的模型
   - Endpoint # API的Endpoint
   - AnalysisModel# 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
   - ChatApiKey#您的APIkey
-  - EmbeddingApiKey #为空则使用ChatApiKey
-  - EmbeddingEndpoint # 为空则使用Endpoint
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
