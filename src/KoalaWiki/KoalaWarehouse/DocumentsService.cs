@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
+using KoalaWiki.Options;
 using LibGit2Sharp;
 using Markdig;
 using Markdig.Syntax;
@@ -34,7 +35,7 @@ public class DocumentsService
     /// 解析指定目录下单.gitignore配置忽略的文件
     /// </summary>
     /// <returns></returns>
-    private string[] GetIgnoreFiles(string path)
+    private static string[] GetIgnoreFiles(string path)
     {
         var ignoreFilePath = Path.Combine(path, ".gitignore");
         if (File.Exists(ignoreFilePath))
@@ -50,25 +51,13 @@ public class DocumentsService
         return [];
     }
 
-    public async Task HandleAsync(Document document, Warehouse warehouse, IKoalaWikiContext dbContext,
-        string gitRepository)
+    public static string GetCatalogue(string path)
     {
-        // 解析仓库的目录结构
-        var path = document.GitPath;
-
         var ignoreFiles = GetIgnoreFiles(path);
 
         var pathInfos = new List<PathInfo>();
         // 递归扫描目录所有文件和目录
         ScanDirectory(path, pathInfos, ignoreFiles);
-
-        var kernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
-            warehouse.OpenAIKey,
-            path, warehouse.Model);
-
-        var fileKernel = KernelFactory.GetKernel(warehouse.OpenAIEndpoint,
-            warehouse.OpenAIKey, path, warehouse.Model, false);
-
         var catalogue = new StringBuilder();
 
         foreach (var info in pathInfos)
@@ -91,6 +80,24 @@ public class DocumentsService
             catalogue.Append($"{relativePath}\n");
         }
 
+        return catalogue.ToString();
+    }
+
+    public async Task HandleAsync(Document document, Warehouse warehouse, IKoalaWikiContext dbContext,
+        string gitRepository)
+    {
+        // 解析仓库的目录结构
+        var path = document.GitPath;
+
+        var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey,
+            path, OpenAIOptions.ChatModel);
+
+        var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
+
+        var catalogue = GetCatalogue(path);
+
         var readme = await ReadMeFile(path);
 
         if (string.IsNullOrEmpty(readme))
@@ -104,7 +111,7 @@ public class DocumentsService
                     Temperature = 0.5,
                 })
             {
-                ["catalogue"] = catalogue.ToString(),
+                ["catalogue"] = catalogue,
                 ["git_repository"] = gitRepository,
                 ["branch"] = warehouse.Branch
             });
@@ -170,16 +177,18 @@ public class DocumentsService
 
         DocumentResultCatalogue? result = null;
 
-        int retryCount = 0;
+        var retryCount = 0;
         const int maxRetries = 5;
-        bool success = false;
-        Exception exception = null;
+        Exception? exception = null;
 
-        while (!success && retryCount < maxRetries)
+        while (retryCount < maxRetries)
         {
             try
             {
-                var chat = kernel.Services.GetService<IChatCompletionService>();
+                var analysisModel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+                    OpenAIOptions.ChatApiKey, path, OpenAIOptions.AnalysisModel, false);
+
+                var chat = analysisModel.Services.GetService<IChatCompletionService>();
 
                 StringBuilder str = new StringBuilder();
                 var history = new ChatHistory();
@@ -192,8 +201,8 @@ public class DocumentsService
                                    {
                                        ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                                        Temperature = 0.5,
-                                       MaxTokens = GetMaxTokens(warehouse.Model),
-                                   }, fileKernel))
+                                       MaxTokens = GetMaxTokens(OpenAIOptions.ChatModel),
+                                   }, analysisModel))
                 {
                     str.Append(item);
                 }
@@ -341,7 +350,7 @@ public class DocumentsService
         await dbContext.SaveChangesAsync();
     }
 
-    private int GetMaxTokens(string model)
+    public static int GetMaxTokens(string model)
     {
         return model switch
         {
@@ -597,7 +606,6 @@ public class DocumentsService
             .Replace("{{$branch}}", branch)
             .Replace("{{$title}}", catalog.Name));
 
-
         var sr = new StringBuilder();
 
         await foreach (var i in chat.GetStreamingChatMessageContentsAsync(history, new OpenAIPromptExecutionSettings()
@@ -745,7 +753,7 @@ public class DocumentsService
         return string.Empty;
     }
 
-    void ScanDirectory(string directoryPath, List<PathInfo> infoList, string[] ignoreFiles)
+    static void ScanDirectory(string directoryPath, List<PathInfo> infoList, string[] ignoreFiles)
     {
         // 遍历所有文件
         infoList.AddRange(from file in Directory.GetFiles(directoryPath).Where(file =>
