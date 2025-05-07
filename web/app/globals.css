@@ -696,10 +696,6 @@ a {
   /* 重置样式，保持代码整洁 */
 }
 
-.ant-layout-content {
-  margin-left: 260px;
-}
-
 .ant-layout-content-mobile .ant-layout-content {
   margin-left: 0px !important;
 }
