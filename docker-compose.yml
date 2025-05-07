@@ -21,8 +21,8 @@
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8080
     build:
-      context: .
-      dockerfile: web/Dockerfile
+      context: ./web
+      dockerfile: Dockerfile
       
   nginx:
     image: nginx:alpine
