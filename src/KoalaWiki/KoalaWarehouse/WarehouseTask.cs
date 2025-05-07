@@ -22,7 +22,7 @@ public class WarehouseTask(
             var dbContext = scope.ServiceProvider.GetService<IKoalaWikiContext>();
 
             var warehouses = await dbContext!.Warehouses
-                .Where(x => x.Status == WarehouseStatus.Pending)
+                .Where(x => x.Status == WarehouseStatus.Pending || x.Status == WarehouseStatus.Processing)
                 .ToListAsync(stoppingToken);
 
             foreach (var warehouse in warehouses)
