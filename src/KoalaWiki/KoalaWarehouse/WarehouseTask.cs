@@ -48,13 +48,14 @@ public class WarehouseTask(
                     .ExecuteUpdateAsync(x => x.SetProperty(a => a.Name, info.RepositoryName)
                         .SetProperty(x => x.Branch, info.BranchName)
                         .SetProperty(x => x.Version, info.Version)
+                        .SetProperty(x=>x.Status, WarehouseStatus.Processing)
                         .SetProperty(x => x.OrganizationName, info.Organization), stoppingToken);
 
                 var document = new Document()
                 {
                     GitPath = info.LocalPath,
                     WarehouseId = value.Id,
-                    Status = WarehouseStatus.Pending,
+                    Status = WarehouseStatus.Processing,
                     Description = value.Description,
                     Id = Guid.NewGuid().ToString("N")
                 };
