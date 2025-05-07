@@ -5,8 +5,8 @@ import remarkMath from 'remark-math';
 import rehypeSlug from 'rehype-slug';
 import rehypeKatex from 'rehype-katex';
 
-import React, { useEffect, useRef } from 'react';
-import { Markdown } from '@lobehub/ui';
+import React, { ReactNode, useEffect, useRef } from 'react';
+import { Markdown, Mermaid } from '@lobehub/ui';
 
 interface DocumentContentProps {
   document: any;
@@ -51,7 +51,7 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
           enableCustomFootnotes
           allowHtml
           componentProps={{
-            mermaid:{
+            mermaid: {
               fullFeatured: true,
             }
           }}
@@ -63,7 +63,7 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
           {document?.content || ''}
         </Markdown>
       </div>
-      
+
       <style jsx global>{`
         .markdown-content h1,
         .markdown-content h2,

@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, Button, message, Spin, Typography, Descriptions, Tag, Space, Result, Row, Col, theme } from 'antd';
+import { 
+  Modal, 
+  Form, 
+  Input, 
+  Button, 
+  message, 
+  Spin, 
+  Typography, 
+  Descriptions, 
+  Tag, 
+  Space, 
+  Result, 
+  Row, 
+  Col, 
+  theme,
+  Divider,
+  Card
+} from 'antd';
 import { 
   SearchOutlined, 
   GithubOutlined, 
@@ -11,12 +28,14 @@ import {
   CheckCircleOutlined,
   StopOutlined,
   LockOutlined,
-  QuestionCircleOutlined
+  QuestionCircleOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import { getLastWarehouse } from '../services/warehouseService';
 import { Repository } from '../types';
+import { homepage } from '../const/urlconst';
 
-const { Text, Title, Paragraph } = Typography;
+const { Text, Title } = Typography;
 const { useToken } = theme;
 
 interface LastRepoModalProps {
@@ -86,127 +105,195 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
     return statusMap[status] || { text: '未知状态', color: 'default', icon: <QuestionCircleOutlined /> };
   };
 
-  const contentStyle = {
-    backgroundColor: token.colorBgContainer,
-    borderRadius: token.borderRadiusLG,
-    padding: token.paddingMD,
-    marginTop: token.marginMD,
-    boxShadow: token.boxShadowTertiary
-  };
-
-  return (
-    <Modal
-      title={<Typography.Title level={4} style={{ margin: 0 }}>查询上次提交的仓库</Typography.Title>}
-      open={open}
-      onCancel={handleCancel}
-      footer={null}
-      width={{ xs: '90%', sm: 520, md: 600 }}
-      centered
-    >
-      <Form form={form} layout="vertical">
-        <Form.Item
-          name="address"
-          label={<Text strong>仓库地址</Text>}
-          rules={[{ required: true, message: '请输入仓库地址' }]}
-          tooltip={{ title: '输入您的Git仓库完整URL', icon: <InfoCircleOutlined /> }}
-        >
-          <Input 
-            placeholder="请输入Git仓库地址，例如: https://github.com/username/repo" 
-            prefix={<GithubOutlined style={{ color: token.colorTextSecondary }} />}
-            size="large"
-            autoFocus
-            allowClear
-            onPressEnter={handleSearch}
-          />
-        </Form.Item>
-      </Form>
-      
-      <Row justify="center" style={{ marginTop: token.marginSM }}>
-        <Col>
-          <Button 
-            type="primary" 
-            icon={<SearchOutlined />} 
-            onClick={handleSearch}
-            loading={loading}
-            size="large"
-          >
-            查询仓库
-          </Button>
-        </Col>
-      </Row>
-
-      {loading && (
-        <div style={{ textAlign: 'center', padding: token.paddingLG }}>
-          <Spin size="large" tip={<Text type="secondary">正在查询仓库信息...</Text>} />
+  // 渲染内容区域
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div style={{ padding: token.paddingLG, textAlign: 'center' }}>
+          <Spin size="large" />
+          <Text type="secondary" style={{ display: 'block', marginTop: token.marginMD, fontSize: token.fontSizeLG }}>
+            正在查询仓库信息...
+          </Text>
         </div>
-      )}
+      );
+    }
 
-      {!loading && searched && repository && (
-        <div style={contentStyle}>
-          <Row justify="space-between" align="middle" style={{ marginBottom: token.marginSM }}>
-            <Col>
-              <Title level={5} style={{ margin: 0, color: token.colorTextHeading }}>查询结果</Title>
-            </Col>
-            <Col>
-              <Tag color={getStatusText(repository.status).color} icon={getStatusText(repository.status).icon}>
-                {getStatusText(repository.status).text}
-              </Tag>
-            </Col>
-          </Row>
-          
-          <Descriptions 
-            bordered 
-            column={{ xs: 1, sm: 1 }} 
-            size="small"
-            labelStyle={{ backgroundColor: token.colorBgLayout, width: '25%' }}
-            contentStyle={{ backgroundColor: token.colorBgContainer }}
-          >
-            <Descriptions.Item 
-              label={<Text strong>仓库名称</Text>}
+    if (searched && !repository) {
+      return (
+        <Result
+          status="warning"
+          title={<span style={{ fontSize: token.fontSizeLG }}>未找到仓库信息</span>}
+          subTitle={<span style={{ fontSize: token.fontSize }}>请检查输入的仓库地址是否正确</span>}
+          icon={<ExclamationCircleOutlined style={{ color: token.colorWarning, fontSize: 64 }} />}
+          style={{ padding: token.paddingLG }}
+        />
+      );
+    }
+
+    if (searched && repository) {
+      const statusInfo = getStatusText(repository.status);
+      
+      return (
+        <Card 
+          bordered={false}
+          style={{ 
+            marginTop: token.marginLG,
+            boxShadow: token.boxShadowTertiary,
+            borderRadius: token.borderRadiusLG
+          }}
+          bodyStyle={{ padding: 0 }}
+        >
+          <div style={{ 
+            padding: `${token.paddingMD}px ${token.paddingLG}px`,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <Title level={5} style={{ margin: 0, color: token.colorTextHeading }}>查询结果</Title>
+            <Tag 
+              color={statusInfo.color} 
+              icon={statusInfo.icon} 
+              style={{ 
+                padding: `${token.paddingXS}px ${token.paddingSM}px`, 
+                fontSize: token.fontSize 
+              }}
             >
-              <Text>{repository.name}</Text>
+              {statusInfo.text}
+            </Tag>
+          </div>
+          
+          <Descriptions
+            bordered
+            size="middle"
+            column={1}
+            labelStyle={{ 
+              backgroundColor: token.colorBgLayout,
+              padding: `${token.paddingSM}px ${token.paddingMD}px`,
+              width: '25%',
+              fontSize: token.fontSize
+            }}
+            contentStyle={{ 
+              padding: `${token.paddingSM}px ${token.paddingMD}px`,
+              fontSize: token.fontSize 
+            }}
+          >
+            <Descriptions.Item label="仓库名称">
+              <Text strong>{repository.name}</Text>
             </Descriptions.Item>
             
-            <Descriptions.Item 
-              label={<Text strong>仓库地址</Text>}
-            >
-              <Paragraph 
-                ellipsis={{ rows: 2, expandable: true, symbol: '展开' }}
-                style={{ marginBottom: 0 }}
+            <Descriptions.Item label="仓库地址">
+              <Text
+                ellipsis={{ 
+                  tooltip: repository.address 
+                }}
+                style={{ maxWidth: '100%', display: 'inline-block' }}
+                copyable
               >
                 {repository.address}
-              </Paragraph>
+              </Text>
             </Descriptions.Item>
             
-            <Descriptions.Item label={<Text strong>仓库类型</Text>}>
-              <Tag icon={<GithubOutlined />} color="blue">{repository.type}</Tag>
-            </Descriptions.Item>
-            
-            <Descriptions.Item label={<Text strong>分支</Text>}>
-              <Tag icon={<BranchesOutlined />} color="cyan">{repository.branch}</Tag>
+            <Descriptions.Item label="仓库信息">
+              <Space size={token.marginSM}>
+                <Tag 
+                  icon={<GithubOutlined />} 
+                  color="blue" 
+                  style={{ padding: `2px ${token.paddingSM}px`, fontSize: token.fontSize }}
+                >
+                  {repository.type}
+                </Tag>
+                <Tag 
+                  icon={<BranchesOutlined />} 
+                  color="cyan"
+                  style={{ padding: `2px ${token.paddingSM}px`, fontSize: token.fontSize }}
+                >
+                  {repository.branch}
+                </Tag>
+              </Space>
             </Descriptions.Item>
             
             {repository.error && (
               <Descriptions.Item 
-                label={<Text strong type="danger">错误内容</Text>}
+                label={<Text type="danger" strong>错误信息</Text>}
                 contentStyle={{ backgroundColor: token.colorErrorBg }}
               >
-                <Text type="danger">{repository.error}</Text>
+                <Text type="danger" style={{ fontSize: token.fontSize }}>{repository.error}</Text>
               </Descriptions.Item>
             )}
           </Descriptions>
-        </div>
-      )}
+        </Card>
+      );
+    }
 
-      {!loading && searched && !repository && (
-        <Result
-          status="warning"
-          title="未找到仓库信息"
-          subTitle="请检查输入的仓库地址是否正确"
-          icon={<ExclamationCircleOutlined style={{ color: token.colorWarning }} />}
-          style={{ padding: token.paddingLG }}
-        />
-      )}
+    return null;
+  };
+
+  return (
+    <Modal
+      title={<Title level={4} style={{ margin: 0 }}>查询仓库</Title>}
+      open={open}
+      onCancel={handleCancel}
+      footer={null}
+      width={{ xs: '95%', sm: 600, md: 700 }}
+      centered
+      destroyOnClose
+      bodyStyle={{ padding: token.paddingLG }}
+      style={{ top: 20 }}
+    >
+      <Form 
+        form={form} 
+        layout="vertical"
+        size="large"
+        style={{ marginBottom: token.marginMD }}
+      >
+        <Form.Item
+          name="address"
+          label={<Text strong style={{ fontSize: token.fontSizeLG }}>仓库地址</Text>}
+          rules={[{ required: true, message: '请输入仓库地址' }]}
+          tooltip={{ title: '输入您的Git仓库完整URL', icon: <InfoCircleOutlined /> }}
+          style={{ marginBottom: token.marginSM }}
+        >
+          <Input
+            placeholder="请输入Git仓库地址"
+            prefix={
+              <LinkOutlined 
+                style={{ 
+                  color: token.colorTextSecondary, 
+                  fontSize: token.fontSizeLG,
+                  marginRight: token.marginXS 
+                }} 
+              />
+            }
+            suffix={
+              <Button 
+                type="primary" 
+                icon={<SearchOutlined />} 
+                onClick={handleSearch}
+                loading={loading}
+                style={{ 
+                  marginRight: -7,
+                  height: 40,
+                  fontSize: token.fontSize,
+                  paddingInline: token.paddingMD
+                }}
+              >
+                查询
+              </Button>
+            }
+            onPressEnter={handleSearch}
+            autoFocus
+            allowClear
+            size="large"
+            style={{ height: 48, fontSize: token.fontSize }}
+          />
+        </Form.Item>
+        <Text type="secondary" style={{ fontSize: token.fontSize, marginLeft: token.marginSM }}>
+          例如: {homepage}
+        </Text>
+      </Form>
+
+      {renderContent()}
     </Modal>
   );
 };
