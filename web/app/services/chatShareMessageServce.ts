@@ -21,3 +21,13 @@ export async function createChatShareMessage(
   });
 }
 
+/**
+ * 
+ * @param chatShareMessageId 
+ * @param page 
+ * @param pageSize 
+ * @returns 
+ */
+export async function getChatShareMessageList(chatShareMessageId:string,page:number,pageSize:number){
+  return await fetchApi<any>(API_URL +`/api/ChatShareMessage/List?chatShareMessageId=${chatShareMessageId}&page=${page}&pageSize=${pageSize}`)
+}

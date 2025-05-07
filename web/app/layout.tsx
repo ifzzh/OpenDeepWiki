@@ -4,7 +4,6 @@ import zhCN from 'antd/locale/zh_CN';
 import './globals.css';
 import OpenAIProvider from './context/OpenAIContext';
 import AIProvider from './context/AIContext';
-import AIInputBar from './components/AIInputBar';
 import '@ant-design/v5-patch-for-react-19';
 import Script from 'next/script';
 
@@ -20,7 +19,9 @@ export default function RootLayout({
     return (
       <html lang="zh-CN">
         <head />
-        <body>
+        <body style={{
+          overflow:'hidden'
+        }}>
           <Script id="api-url" 
             type="text/javascript"
             strategy="afterInteractive"

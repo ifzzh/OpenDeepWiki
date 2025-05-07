@@ -8,6 +8,33 @@ namespace KoalaWiki.Services;
 
 public class ChatShareMessageService(IKoalaWikiContext koalaWikiContext) : FastApi
 {
+    public async Task<ResultDto<object>> GetListAsync(string chatShareMessageId, int page,
+        int pageSize)
+    {
+        var chatMessage = koalaWikiContext.ChatShareMessages
+            .AsNoTracking()
+            .FirstOrDefault(x => x.Id == chatShareMessageId);
+        
+        var list = await koalaWikiContext.ChatShareMessageItems
+            .AsNoTracking()
+            .Where(x => x.Id == chatShareMessageId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var total = await koalaWikiContext.ChatShareMessageItems
+            .AsNoTracking()
+            .CountAsync(x => x.Id == chatShareMessageId);
+
+        return ResultDto<object>.Success(new
+        {
+            items = list,
+            total = total,
+            info = chatMessage
+        });
+    }
+
     public async Task<ResultDto<string>> CreateAsync(ChatShareMessageInput input, HttpContext context)
     {
         // 获取ip

@@ -64,6 +64,11 @@ public class ChatService(Kernel kernel, IKoalaWikiContext koala, IVectorStore ve
         history.AddSystemMessage(Prompt.ChatPrompt.Replace("{{$repo_url}}", warehouse.Address)
             .Replace("{{$repo_name}}", warehouse.Name));
 
+        if (isFirst)
+        {
+            input.Question = chatShareMessage!.Question;
+        }
+
         var embeddingResult = await embedding.GenerateEmbeddingAsync(input.Question);
 
         var id = warehouse.Id;
