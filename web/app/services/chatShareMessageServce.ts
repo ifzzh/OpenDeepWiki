@@ -1,6 +1,4 @@
-import { fetchApi } from './api';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '';
+import { API_URL, fetchApi } from './api';
 
 interface ChatShareMessageInput {
   isDeep: boolean;

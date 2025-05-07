@@ -11,7 +11,7 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { homepage } from '../../const/urlconst';
-import { getFileContent } from '../../services';
+import { API_URL, getFileContent } from '../../services';
 import { DocumentContent } from '../../components/document';
 
 const { Title, Text, Paragraph } = Typography;
@@ -274,7 +274,7 @@ export default function SearchPage() {
     let aiResponseContent = '';
 
     try {
-      const stream = fetchSSE('http://localhost:5085/api/Chat/Completions', {
+      const stream = fetchSSE(API_URL + '/api/Chat/Completions', {
         chatShareMessageId,
         question: content,
       });
@@ -434,7 +434,7 @@ export default function SearchPage() {
               }}>
                 <span>OpenDeepWiki</span>
               </a>
-               <Button type='text'
+              <Button type='text'
                 onClick={() => {
                   window.open(homepage)
                 }}

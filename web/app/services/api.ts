@@ -4,7 +4,7 @@ interface ApiResponse<T> {
   data?: T;
   error?: string;
   success: boolean;
-  isSuccess?:boolean;
+  isSuccess?: boolean;
   message?: string;
 }
 
@@ -102,5 +102,7 @@ async function fetchApi<T>(
   }
 }
 
-export { fetchApi, serverFetchApi, clientFetchApi };
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '';
+
+export { fetchApi, serverFetchApi, clientFetchApi, API_URL };
 export type { ApiResponse }; 

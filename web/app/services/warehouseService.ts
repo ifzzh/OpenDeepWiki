@@ -1,7 +1,5 @@
-import { fetchApi, ApiResponse } from './api';
+import { fetchApi, ApiResponse, API_URL } from './api';
 import { Repository, RepositoryFormValues } from '../types';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '';
 
 /**
  * Repository submission interface
