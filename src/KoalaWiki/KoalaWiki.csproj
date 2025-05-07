@@ -27,8 +27,6 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.SemanticKernel" Version="1.48.0" />
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Postgres" Version="1.48.0-preview" />
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Sqlite" Version="1.48.0-preview" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Polly" Version="8.5.2" />
         <PackageReference Include="Scalar.AspNetCore" Version="2.2.7" />
@@ -56,12 +54,6 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="plugins\CodeAnalysis\CommitAnalyze\skprompt.txt">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="vec0.dll">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="vec0.so">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>

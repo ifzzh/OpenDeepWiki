@@ -175,7 +175,6 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasKey(x => x.Id);
 
             options.HasIndex(x => x.WarehouseId);
-
         });
 
         modelBuilder.Entity<ChatShareMessageItem>(options =>
@@ -183,10 +182,15 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasKey(x => x.Id);
 
             options.HasIndex(x => x.ChatShareMessageId);
+            options.HasIndex(x => x.WarehouseId);
 
             options.Property(x => x.Question).IsRequired();
 
             options.HasIndex(x => x.Question);
+
+            options.Property(x => x.Files)
+                .HasConversion(x => JsonSerializer.Serialize(x, (JsonSerializerOptions)null),
+                    x => JsonSerializer.Deserialize<List<string>>(x, (JsonSerializerOptions)null));
         });
     }
 }

@@ -75,6 +75,10 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("Files")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("PromptToken")
                         .HasColumnType("integer");
 
@@ -98,6 +102,8 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                     b.HasIndex("ChatShareMessageId");
 
                     b.HasIndex("Question");
+
+                    b.HasIndex("WarehouseId");
 
                     b.ToTable("ChatShareMessageItems");
                 });

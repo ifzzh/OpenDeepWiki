@@ -40,7 +40,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children }) => {
         message: message,
       })
       
-      router.push(`/search/${warehouseId.data.data}`);
+      window.open(`/search/${warehouseId.data.data}`)
 
     } catch (error) {
       console.error('发送消息错误:', error);

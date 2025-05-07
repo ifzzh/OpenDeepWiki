@@ -43,4 +43,6 @@ public class ChatShareMessageItem : Entity<string>
     /// 总耗时
     /// </summary>
     public int TotalTime { get; set; }
+    
+    public List<string> Files { get; set; } = new List<string>();
 }

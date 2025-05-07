@@ -35,7 +35,7 @@ public class DocumentsService
     /// 解析指定目录下单.gitignore配置忽略的文件
     /// </summary>
     /// <returns></returns>
-    private string[] GetIgnoreFiles(string path)
+    private static string[] GetIgnoreFiles(string path)
     {
         var ignoreFilePath = Path.Combine(path, ".gitignore");
         if (File.Exists(ignoreFilePath))
@@ -51,25 +51,13 @@ public class DocumentsService
         return [];
     }
 
-    public async Task HandleAsync(Document document, Warehouse warehouse, IKoalaWikiContext dbContext,
-        string gitRepository)
+    public static string GetCatalogue(string path)
     {
-        // 解析仓库的目录结构
-        var path = document.GitPath;
-
         var ignoreFiles = GetIgnoreFiles(path);
 
         var pathInfos = new List<PathInfo>();
         // 递归扫描目录所有文件和目录
         ScanDirectory(path, pathInfos, ignoreFiles);
-
-        var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
-            OpenAIOptions.ChatApiKey,
-            path, OpenAIOptions.ChatModel);
-
-        var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
-            OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
-
         var catalogue = new StringBuilder();
 
         foreach (var info in pathInfos)
@@ -92,6 +80,24 @@ public class DocumentsService
             catalogue.Append($"{relativePath}\n");
         }
 
+        return catalogue.ToString();
+    }
+
+    public async Task HandleAsync(Document document, Warehouse warehouse, IKoalaWikiContext dbContext,
+        string gitRepository)
+    {
+        // 解析仓库的目录结构
+        var path = document.GitPath;
+
+        var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey,
+            path, OpenAIOptions.ChatModel);
+
+        var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
+
+        var catalogue = GetCatalogue(path);
+
         var readme = await ReadMeFile(path);
 
         if (string.IsNullOrEmpty(readme))
@@ -105,7 +111,7 @@ public class DocumentsService
                     Temperature = 0.5,
                 })
             {
-                ["catalogue"] = catalogue.ToString(),
+                ["catalogue"] = catalogue,
                 ["git_repository"] = gitRepository,
                 ["branch"] = warehouse.Branch
             });
@@ -344,7 +350,7 @@ public class DocumentsService
         await dbContext.SaveChangesAsync();
     }
 
-    private int GetMaxTokens(string model)
+    public static int GetMaxTokens(string model)
     {
         return model switch
         {
@@ -747,7 +753,7 @@ public class DocumentsService
         return string.Empty;
     }
 
-    void ScanDirectory(string directoryPath, List<PathInfo> infoList, string[] ignoreFiles)
+    static void ScanDirectory(string directoryPath, List<PathInfo> infoList, string[] ignoreFiles)
     {
         // 遍历所有文件
         infoList.AddRange(from file in Directory.GetFiles(directoryPath).Where(file =>

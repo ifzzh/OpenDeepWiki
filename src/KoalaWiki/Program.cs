@@ -1,7 +1,6 @@
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Git;
 using KoalaWiki.KoalaWarehouse;
-using KoalaWiki.Memory;
 using KoalaWiki.Options;
 using KoalaWiki.Provider.PostgreSQL;
 using KoalaWiki.Provider.Sqlite;
@@ -21,26 +20,12 @@ Log.Logger = new LoggerConfiguration()
 OpenAIOptions.ChatModel = builder.Configuration.GetValue<string>("ChatModel");
 OpenAIOptions.ChatApiKey = builder.Configuration.GetValue<string>("ChatApiKey");
 OpenAIOptions.Endpoint = builder.Configuration.GetValue<string>("Endpoint");
-OpenAIOptions.EmbeddingModel = builder.Configuration.GetValue<string>("EmbeddingModel");
 
-OpenAIOptions.EmbeddingApiKey = builder.Configuration.GetValue<string>("EmbeddingApiKey");
-OpenAIOptions.EmbeddingEndpoint = builder.Configuration.GetValue<string>("EmbeddingEndpoint");
 OpenAIOptions.AnalysisModel = builder.Configuration.GetValue<string>("AnalysisModel");
 // 如果没设置分析模型则使用默认的
 if (string.IsNullOrEmpty(OpenAIOptions.AnalysisModel))
 {
     OpenAIOptions.AnalysisModel = OpenAIOptions.ChatModel;
-}
-
-// 如果embedding没有设置则使用默认的
-if (string.IsNullOrEmpty(OpenAIOptions.EmbeddingApiKey))
-{
-	OpenAIOptions.EmbeddingApiKey = OpenAIOptions.ChatApiKey;
-}
-
-if (string.IsNullOrEmpty(OpenAIOptions.EmbeddingEndpoint))
-{
-	OpenAIOptions.EmbeddingEndpoint = OpenAIOptions.Endpoint;
 }
 
 #endregion
@@ -53,7 +38,6 @@ builder.Services.WithFast();
 builder.Services.AddSingleton<WarehouseStore>();
 builder.Services.AddSingleton<GitService>();
 builder.Services.AddSingleton<DocumentsService>();
-builder.Services.AddKoalaMemory(builder.Configuration);
 
 builder.Services
     .AddCors(options =>

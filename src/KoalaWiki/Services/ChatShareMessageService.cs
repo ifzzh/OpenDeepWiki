@@ -17,7 +17,7 @@ public class ChatShareMessageService(IKoalaWikiContext koalaWikiContext) : FastA
         
         var list = await koalaWikiContext.ChatShareMessageItems
             .AsNoTracking()
-            .Where(x => x.Id == chatShareMessageId)
+            .Where(x => x.ChatShareMessageId == chatShareMessageId)
             .OrderByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
