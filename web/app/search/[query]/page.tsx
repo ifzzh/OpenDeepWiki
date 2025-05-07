@@ -1,78 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import { Layout, Row, Col, Card, Input, Button, Typography, theme, Spin, Empty, Divider, List, message as messageApi, Tooltip } from 'antd';
-import { SendOutlined, RobotOutlined, UserOutlined, DatabaseOutlined, FileTextOutlined, GithubFilled, CopyOutlined, CheckOutlined, FileOutlined, FileMarkdownOutlined, FileImageOutlined, FileExcelOutlined, FileWordOutlined, FilePdfOutlined, FileUnknownOutlined, CodeOutlined } from '@ant-design/icons';
+import { useParams } from 'next/navigation';
+import { Layout, Row, Col, Button, Typography, theme, Spin, Empty, List, message as messageApi, Tooltip } from 'antd';
+import { FileTextOutlined, GithubFilled, CopyOutlined, FileOutlined, FileMarkdownOutlined, FileImageOutlined, FileExcelOutlined, FileWordOutlined, FilePdfOutlined, FileUnknownOutlined, CodeOutlined } from '@ant-design/icons';
 import { getChatShareMessageList } from '../../services/chatShareMessageServce';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import rehypeSlug from 'rehype-slug';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { homepage } from '../../const/urlconst';
-import { API_URL, getFileContent } from '../../services';
+import { API_URL, fetchSSE, getFileContent } from '../../services';
 import { DocumentContent } from '../../components/document';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 const { useToken } = theme;
-const { TextArea } = Input;
 
-// SSE 辅助函数
-export async function* fetchSSE(url: string, data: any): AsyncIterableIterator<any> {
-  const token = localStorage.getItem("token");
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
-
-  const response = await window.fetch(url, {
-    headers,
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    try {
-      const json = JSON.parse(errorText);
-      if (!json.success) {
-        messageApi.error(json.message, 5);
-      }
-      throw new Error(json.message || 'API请求失败');
-    } catch {
-      throw new Error(errorText || '网络请求失败');
-    }
-  }
-
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder("utf-8");
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const events = chunk.split("\n\n");
-
-      for (const event of events) {
-        if (event.trim()) {
-          const dataLine = event.split("\n").find(line => line.startsWith("data:"));
-          if (dataLine) {
-            const jsonData = dataLine.replace("data:", "").trim();
-            if (jsonData === "[done]") {
-              break;
-            }
-            yield JSON.parse(jsonData);
-          }
-        }
-      }
-    }
-  } finally {
-    reader.cancel();
-  }
-}
 // 定义消息类型
 interface ChatMessage {
   content: string;
@@ -80,15 +20,8 @@ interface ChatMessage {
   loading?: boolean;
 }
 
-// 定义代码块组件的类型
-interface CodeBlockProps {
-  node?: any;
-  inline?: boolean;
-  className?: string;
-  children: React.ReactNode;
-}
 
-export default function SearchPage() {
+export default function SearchPage({ }: any) {
   const { token } = useToken();
   const params = useParams();
   const chatShareMessageId = params.query as string;
@@ -99,22 +32,6 @@ export default function SearchPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [warehouseId, setWarehouseId] = useState('')
-
-  // 添加复制功能状态
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
-
-  // 处理复制代码的函数
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code)
-      .then(() => {
-        setCopiedCode(code);
-        messageApi.success('代码已复制到剪贴板');
-        setTimeout(() => setCopiedCode(null), 2000);
-      })
-      .catch(() => {
-        messageApi.error('复制失败，请手动复制');
-      });
-  };
 
   // 模拟引用文件列表
   const [referenceFiles, setReferenceFiles] = useState<Array<{
