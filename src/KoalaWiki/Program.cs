@@ -70,6 +70,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapMcp("/api");
+app.MapSitemap();
 
 app.MapFast();
 
