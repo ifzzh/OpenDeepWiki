@@ -8,14 +8,7 @@ namespace KoalaWiki.Extensions;
 public static class SitemapExtensions
 {
     private const string UrlTemplate =
-        """
-        <url>
-            <loc>{0}</loc>
-            <lastmod>{1}</lastmod>
-            <changefreq>{2}</changefreq>
-            <priority>{3}</priority>
-        </url>
-        """;
+        "<url><loc>{0}</loc><changefreq>{1}</changefreq><priority>{2}</priority></url>";
 
     private static async Task ExecuteAsync(this IKoalaWikiContext koala, HttpContext context)
     {
@@ -33,35 +26,26 @@ public static class SitemapExtensions
 
         var sb = new StringBuilder();
         // 关键xml
-        foreach (var warehouse in warehouses)
+        foreach (var warehouseUrl in warehouses.Select(warehouse => string.Format(UrlTemplate,
+                     $"{context.Request.Scheme}://{context.Request.Host}/wiki/{warehouse.OrganizationName}/{warehouse.Name}",
+                     "weekly",
+                     "0.5")))
         {
-            var warehouseUrl = string.Format(UrlTemplate,
-                $"{context.Request.Scheme}://{context.Request.Host}/wiki/{warehouse.OrganizationName}/{warehouse.Name}",
-                warehouse.CreatedAt.ToString("yyyy-MM-dd"),
-                "weekly",
-                "0.5");
-            sb.AppendLine(warehouseUrl);
+            sb.Append(warehouseUrl);
         }
 
-        foreach (var catalog in catalogs)
+        foreach (var catalogUrl in from catalog in catalogs let warehouse = warehouses
+                     .FirstOrDefault(x => x.Id == catalog.WarehouseId) select string.Format(UrlTemplate,
+                     $"{context.Request.Scheme}://{context.Request.Host}/wiki/{warehouse?.OrganizationName}/{warehouse?.Name}/{catalog.Url}",
+                     "weekly",
+                     "0.5"))
         {
-            var warehouse = warehouses
-                .FirstOrDefault(x => x.Id == catalog.WarehouseId);
-            var catalogUrl = string.Format(UrlTemplate,
-                $"{context.Request.Scheme}://{context.Request.Host}/wiki/{warehouse?.OrganizationName}/{warehouse?.Name}/{catalog.Url}",
-                catalog.CreatedAt.ToString("yyyy-MM-dd"),
-                "weekly",
-                "0.5");
-            sb.AppendLine(catalogUrl);
+            sb.Append(catalogUrl);
         }
 
         await context.Response.WriteAsync(
             $"""
-             <?xml
-             version="1.0" encoding="UTF-8"?>
-             <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-             {sb.ToString()}
-             </urlset>
+             <?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">{sb}</urlset>
              """);
     }
 
