@@ -16,8 +16,32 @@ OpenDeepWiki 是参考[DeepWiki](https://deepwiki.com/) 作为灵感，基于 .N
 - 生成代码文档
 - 自动生成代码README.md
 
+## MCP支持
+
+OpenDeepWiki支持MCP（ModelContextProtocol）
+- 支持单仓库提供MCPServer，针对单个仓库进行分析
+
+使用方式：下面是cursor的使用方式：
+```json
+{
+  "mcpServers": {
+    "OpenDeepWiki":{
+       "url": "http://您的OpenDeepWiki服务IP:端口/sse?owner=AIDotNet&name=OpenDeepWiki"
+    }
+  }
+}
+```
+
+- owner: 是仓库组织或拥有者的名称
+- name: 是仓库的名称
+
+添加好仓库以后进行测试提问（请注意，再次之前这个仓库需要先保证已经处理完成）：OpenDeepWiki是什么？
+效果如图：![](img/mcp.png)
+
+通过这种方式，您可以将OpenDeepWiki作为MCPServer使用，提供给其他的AI模型进行调用，方便对一个开源项目进行分析和理解。
 
 ## 功能
+
 
 - **快速生成：** 只需要几分钟即可将所有的Github，Gitlab，Gitee，Gitea等代码仓库转换为知识库
 - **多语言支持：** 支持所有编程语言的代码分析和文档生成
