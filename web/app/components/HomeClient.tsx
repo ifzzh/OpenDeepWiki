@@ -296,7 +296,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                           AI驱动的代码知识库
                         </Title>
                         <Paragraph style={paragraphStyle}>
-                        OpenDeepWiki 是参考[DeepWiki](https://deepwiki.com/) 作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成等功能。
+                        OpenDeepWiki 是参考DeepWiki作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成等功能。
                         </Paragraph>
                         <Space size={16}>
                           <Button 
