@@ -17,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <head />
+      <meta name="msvalidate.01" content="61D1D1BFCB7FDB548E411C30FC69B058" />
       <body >
         <Script id="api-url"
           type="text/javascript"
