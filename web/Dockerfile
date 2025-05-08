@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
