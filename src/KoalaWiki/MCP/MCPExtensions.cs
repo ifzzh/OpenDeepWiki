@@ -1,6 +1,8 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 using KoalaWiki.Tools;
 using ModelContextProtocol.Protocol.Types;
+using Serilog;
 
 namespace KoalaWiki.MCP;
 
@@ -57,8 +59,14 @@ public static class MCPExtensions
                     var warehouse = context.Services!.GetService<WarehouseTool>();
 
                     var question = context.Params.Arguments["question"].ToString();
+                    var sw = Stopwatch.StartNew();
 
                     var response = await warehouse.GenerateDocumentAsync(question);
+
+                    sw.Stop();
+
+                    Log.Logger.Information("functionName {functionName} Execution Time: {ExecutionTime}ms",
+                        context.Params.Name, sw.ElapsedMilliseconds);
 
                     return new CallToolResponse()
                     {
