@@ -35,7 +35,7 @@ public class GitService
         {
             FetchOptions =
             {
-                CertificateCheck = (certificate, chain, errors) => true,
+                CertificateCheck = (_, _, _) => true,
                 Depth = 0,
             }
         };
@@ -48,28 +48,44 @@ public class GitService
         // 判断仓库是否已经存在
         if (Directory.Exists(localPath))
         {
-            // 获取当前仓库的git分支
-            using var repo = new Repository(localPath);
-            
-            // 判断仓库是否已经克隆
-            if (!repo.Network.Remotes.Any())
+            try
             {
-                // 如果没有克隆，则克隆
-                var str = Repository.Clone(repositoryUrl, localPath, cloneOptions);
+                // 获取当前仓库的git分支
+                using var repo = new Repository(localPath);
+
+                var branchName = repo.Head.FriendlyName;
+                // 获取当前仓库的git版本
+                var version = repo.Head.Tip.Sha;
+                // 获取当前仓库的git提交时间
+                var commitTime = repo.Head.Tip.Committer.When;
+                // 获取当前仓库的git提交人
+                var commitAuthor = repo.Head.Tip.Committer.Name;
+                // 获取当前仓库的git提交信息
+                var commitMessage = repo.Head.Tip.Message;
+
+                return new GitRepositoryInfo(localPath, repositoryName, organization, branchName, commitTime.ToString(),
+                    commitAuthor, commitMessage, version);
             }
+            catch (Exception e)
+            {
+                // 删除目录以后在尝试一次
+                Directory.Delete(localPath, true);
+                var str = Repository.Clone(repositoryUrl, localPath, cloneOptions);
+                using var repo = new Repository(localPath);
 
-            var branchName = repo.Head.FriendlyName;
-            // 获取当前仓库的git版本
-            var version = repo.Head.Tip.Sha;
-            // 获取当前仓库的git提交时间
-            var commitTime = repo.Head.Tip.Committer.When;
-            // 获取当前仓库的git提交人
-            var commitAuthor = repo.Head.Tip.Committer.Name;
-            // 获取当前仓库的git提交信息
-            var commitMessage = repo.Head.Tip.Message;
+                var branchName = repo.Head.FriendlyName;
+                // 获取当前仓库的git版本
+                var version = repo.Head.Tip.Sha;
+                // 获取当前仓库的git提交时间
+                var commitTime = repo.Head.Tip.Committer.When;
+                // 获取当前仓库的git提交人
+                var commitAuthor = repo.Head.Tip.Committer.Name;
+                // 获取当前仓库的git提交信息
+                var commitMessage = repo.Head.Tip.Message;
 
-            return new GitRepositoryInfo(localPath, repositoryName, organization, branchName, commitTime.ToString(),
-                commitAuthor, commitMessage, version);
+                return new GitRepositoryInfo(localPath, repositoryName, organization, branchName, commitTime.ToString(),
+                    commitAuthor, commitMessage, version);
+            }
         }
         else
         {
@@ -86,7 +102,7 @@ public class GitService
                     FetchOptions =
                     {
                         Depth = 0,
-                        CertificateCheck = (certificate, chain, errors) => true,
+                        CertificateCheck = (_, _, _) => true,
                         CredentialsProvider = (_url, _user, _cred) =>
                             new UsernamePasswordCredentials
                             {

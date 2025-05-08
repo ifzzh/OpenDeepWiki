@@ -388,6 +388,9 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                     b.Property<bool>("IsEmbedded")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsRecommended")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");

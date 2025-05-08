@@ -62,11 +62,8 @@ const AIInputBar: React.FC<AIInputBarProps> = ({ owner, name, style }) => {
             <Flex
                 align="center"
                 justify="center"
-
                 style={{
-                    maxWidth: '800px',
                     margin: '0 auto',
-                    // 上下排
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
