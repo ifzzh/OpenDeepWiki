@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using KoalaWiki.Extensions;
+using Newtonsoft.Json;
 
 namespace KoalaWiki.Options;
 
@@ -14,10 +15,10 @@ public class OpenAIOptions
 
     public static void Config(IConfiguration configuration)
     {
-        ChatModel = Environment.GetEnvironmentVariable("CHAT_MODEL") ?? configuration.GetValue<string>("ChatModel") ?? string.Empty;
-        AnalysisModel = Environment.GetEnvironmentVariable("ANALYSIS_MODEL") ?? configuration.GetValue<string>("AnalysisModel") ?? string.Empty;
-        ChatApiKey = Environment.GetEnvironmentVariable("CHAT_API_KEY") ?? configuration.GetValue<string>("ChatApiKey") ?? string.Empty;
-        Endpoint = Environment.GetEnvironmentVariable("ENDPOINT") ?? configuration.GetValue<string>("Endpoint") ?? string.Empty;
+        ChatModel = (Environment.GetEnvironmentVariable("CHAT_MODEL") ?? configuration.GetValue<string>("ChatModel") ?? string.Empty).GetTrimmedValueOrEmpty();
+        AnalysisModel = (Environment.GetEnvironmentVariable("ANALYSIS_MODEL") ?? configuration.GetValue<string>("AnalysisModel") ?? string.Empty).GetTrimmedValueOrEmpty();
+        ChatApiKey = (Environment.GetEnvironmentVariable("CHAT_API_KEY") ?? configuration.GetValue<string>("ChatApiKey") ?? string.Empty).GetTrimmedValueOrEmpty();
+        Endpoint = (Environment.GetEnvironmentVariable("ENDPOINT") ?? configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
 
         // 检查参数
         if (string.IsNullOrEmpty(ChatModel))

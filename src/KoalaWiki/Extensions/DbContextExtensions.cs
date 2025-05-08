@@ -8,13 +8,13 @@ public static class DbContextExtensions
     public static IServiceCollection AddDbContext(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var dbType = Environment.GetEnvironmentVariable("DB_TYPE");
-        var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+        var dbType = Environment.GetEnvironmentVariable("DB_TYPE").GetTrimmedValueOrEmpty();
+        var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING").GetTrimmedValueOrEmpty();
 
         Console.WriteLine($"dbType:{dbType}");
         Console.WriteLine($"dbConnectionString:{dbConnectionString}");
 
-        if (dbType == null || dbConnectionString == null)
+        if (string.IsNullOrEmpty(dbType) || string.IsNullOrEmpty(dbConnectionString))
         {
             if (configuration.GetConnectionString("type")?.Equals("postgres", StringComparison.OrdinalIgnoreCase) ==
                 true)
