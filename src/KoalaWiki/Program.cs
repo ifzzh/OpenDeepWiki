@@ -1,9 +1,8 @@
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Extensions;
 using KoalaWiki.Git;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.Options;
-using KoalaWiki.Provider.PostgreSQL;
-using KoalaWiki.Provider.Sqlite;
 using Mapster;
 using Scalar.AspNetCore;
 using Serilog;
@@ -17,19 +16,10 @@ Log.Logger = new LoggerConfiguration()
 
 #region Options
 
-OpenAIOptions.ChatModel = builder.Configuration.GetValue<string>("ChatModel");
-OpenAIOptions.ChatApiKey = builder.Configuration.GetValue<string>("ChatApiKey");
-OpenAIOptions.Endpoint = builder.Configuration.GetValue<string>("Endpoint");
-
-OpenAIOptions.AnalysisModel = builder.Configuration.GetValue<string>("AnalysisModel");
-// 如果没设置分析模型则使用默认的
-if (string.IsNullOrEmpty(OpenAIOptions.AnalysisModel))
-{
-    OpenAIOptions.AnalysisModel = OpenAIOptions.ChatModel;
-}
+OpenAIOptions.Config(builder.Configuration);
+Console.WriteLine(OpenAIOptions.ToStr());
 
 #endregion
-
 
 builder.Services.AddSerilog(Log.Logger);
 
@@ -42,26 +32,16 @@ builder.Services.AddSingleton<DocumentsService>();
 builder.Services
     .AddCors(options =>
     {
-        options.AddPolicy("AllowAll",
-            builder => builder
-                .SetIsOriginAllowed(_ => true)
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials());
+        options.AddPolicy("AllowAll", configurePolicy => configurePolicy
+            .SetIsOriginAllowed(_ => true)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials());
     });
 
 builder.Services.AddHostedService<WarehouseTask>();
 
-if (builder.Configuration.GetConnectionString("type")?.Equals("postgres", StringComparison.OrdinalIgnoreCase) == true)
-{
-    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-    AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
-    builder.Services.AddPostgreSQLDbContext(builder.Configuration);
-}
-else
-{
-    builder.Services.AddSqliteDbContext(builder.Configuration);
-}
+builder.Services.AddDbContext(builder.Configuration);
 
 builder.Services.AddMapster();
 
@@ -82,6 +62,5 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapFast();
-
 
 app.Run();

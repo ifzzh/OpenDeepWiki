@@ -13,9 +13,25 @@ public static class PostgreSQLApplicationExtensions
         IConfiguration configuration)
     {
         
-        services.AddDataAccess<PostgreSQLContext>(((provider, builder) =>
+        services.AddDataAccess<PostgreSQLContext>((_, builder) =>
         {
             builder.UseNpgsql(configuration.GetConnectionString("Default"));
+            
+            // sql日志不输出控制台
+            builder.UseLoggerFactory(LoggerFactory.Create(_ => { }));
+        });
+        
+
+        return services;
+    }
+    
+    public static IServiceCollection AddPostgreSQLDbContext(this IServiceCollection services,
+        string connectionString)
+    {
+        
+        services.AddDataAccess<PostgreSQLContext>(((provider, builder) =>
+        {
+            builder.UseNpgsql(connectionString);
             
             // sql日志不输出控制台
             builder.UseLoggerFactory(LoggerFactory.Create(_ => { }));

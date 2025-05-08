@@ -33,45 +33,21 @@ git clone https://github.com/AIDotNet/OpenDeepWiki.git
 cd OpenDeepWiki
 ```
 
-Open the `docker-compose.yml` file and modify the following environment variables:
+2. Open the `docker-compose.yml` file and modify the following environment variables:
 ```yaml
-version: '3.8'
 services:
   koalawiki:
-    image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
-      - TaskMaxSizePerUser=5 # Maximum parallel tasks for AI document generation per user
+      - TASK_MAX_SIZE_PER_USER=5 # Maximum parallel tasks for AI document generation per user
       - REPAIR_MERMAID=1 # Whether to repair Mermaid, 1 for repair, others for no repair
-      - ChatModel=DeepSeek-V3 # Model must support functions
+      - CHAT_MODEL=DeepSeek-V3 # Model must support functions
+      - ANALYSIS_MODEL= # Analysis model for generating repository directory structure
+      - CHAT_API_KEY= # Your API key
       - LANGUAGE= # Default language for generation set to "Chinese"
-      - Endpoint=https://api.token-ai.cn/v1
-      - AnalysisModel= # Analysis model for generating repository directory structure, very important, stronger models yield better directory structures, empty uses ChatModel
-      - ChatApiKey= # Your API key
-    volumes:
-      - ./repositories:/app/repositories
-      - ./data:/data
-    build:
-      context: .
-      dockerfile: src/KoalaWiki/Dockerfile
-      
-  koalawiki-web:
-    image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
-    build:
-      context: .
-      dockerfile: web/Dockerfile
-      
-  nginx:
-    image: nginx:alpine
-    ports:
-      - 8090:80
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - koalawiki
-      - koalawiki-web
+      - ENDPOINT=https://api.token-ai.cn/v1
+      - DB_TYPE=sqlite
+      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
 ```
 
 > 💡 **How to get an API Key:**
@@ -80,12 +56,62 @@ services:
 > - Get CoresHub [CoresHub](https://console.coreshub.cn/xb3/maas/global-keys) [Click here for 50 million free tokens](https://account.coreshub.cn/signup?invite=ZmpMQlZxYVU=)
 > - Get TokenAI [TokenAI](https://api.token-ai.cn/)
 
-2. Start the service
+3. Start the service
+
+You can use the provided Makefile commands to easily manage the application:
 
 ```bash
-docker-compose up -d
+# Build all Docker images
+make build
+
+# Start all services in background mode
+make up
+
+# Or start in development mode (with logs visible)
+make dev
 ```
-Then visit http://localhost:8090 to access the knowledge base
+
+Then visit http://localhost:80 to access the knowledge base.
+
+For more commands:
+```bash
+make help
+```
+
+### For Windows Users (without make)
+
+If you're using Windows and don't have `make` available, you can use these Docker Compose commands directly:
+
+```bash
+# Build all Docker images
+docker-compose build
+
+# Start all services in background mode
+docker-compose up -d
+
+# Start in development mode (with logs visible)
+docker-compose up
+
+# Stop all services
+docker-compose down
+
+# View logs
+docker-compose logs -f
+```
+
+For building specific architectures or services, use:
+
+```bash
+# Build only backend
+docker-compose build koalawiki
+
+# Build only frontend
+docker-compose build koalawiki-web
+
+# Build with architecture parameters
+docker-compose build --build-arg ARCH=arm64
+docker-compose build --build-arg ARCH=amd64
+```
 
 ## 🔍 How It Works
 
@@ -115,13 +141,32 @@ graph TD
 
 ### Environment Variables
   - KOALAWIKI_REPOSITORIES # Path for storing repositories
-  - TaskMaxSizePerUser # Maximum parallel tasks for AI document generation per user
+  - TASK_MAX_SIZE_PER_USER # Maximum parallel tasks for AI document generation per user
   - REPAIR_MERMAID # Whether to repair Mermaid, 1 for repair, others for no repair
-  - ChatModel # Model must support functions
-  - Endpoint # API Endpoint
-  - AnalysisModel # Analysis model for generating repository directory structure, very important, stronger models yield better directory structures, empty uses ChatModel
-  - ChatApiKey # Your API key
+  - CHAT_MODEL # Model must support functions
+  - ENDPOINT # API Endpoint
+  - ANALYSIS_MODEL # Analysis model for generating repository directory structure
+  - CHAT_API_KEY # Your API key
   - LANGUAGE # Change the language of the generated documents
+  - DB_TYPE # Database type, default is sqlite
+  - DB_CONNECTION_STRING # Database connection string
+
+### Build for Different Architectures
+The Makefile provides commands to build for different CPU architectures:
+
+```bash
+# Build for ARM architecture
+make build-arm
+
+# Build for AMD architecture
+make build-amd
+
+# Build only backend for ARM
+make build-backend-arm
+
+# Build only frontend for AMD
+make build-frontend-amd
+```
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.

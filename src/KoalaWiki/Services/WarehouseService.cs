@@ -157,11 +157,16 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         });
     }
 
-    public async Task<PageDto<Warehouse>> GetWarehouseListAsync(int page, int pageSize)
+    public async Task<PageDto<Warehouse>> GetWarehouseListAsync(int page, int pageSize, string keyword)
     {
         var query = access.Warehouses
             .AsNoTracking()
             .Where(x => x.Status == WarehouseStatus.Completed);
+        
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            query = query.Where(x => x.Name.Contains(keyword) || x.Address.Contains(keyword));
+        }
 
         var total = await query.CountAsync();
         var list = await query

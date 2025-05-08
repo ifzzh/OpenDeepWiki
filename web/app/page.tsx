@@ -46,12 +46,12 @@ export default function Home() {
   // 加载仓库数据
   useEffect(() => {
     fetchRepositories();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, searchValue]);
 
   const fetchRepositories = async () => {
     setLoading(true);
     try {
-      const response = await getWarehouse(currentPage, pageSize);
+      const response = await getWarehouse(currentPage, pageSize, searchValue);
       if (response.success && response.data) {
         setRepositories(response.data.items);
         setTotal(response.data.total);
@@ -90,10 +90,10 @@ export default function Home() {
     if (size) setPageSize(size);
   };
 
-  const filteredRepositories = repositories.filter(repo => 
-    repo.name.toLowerCase().includes(searchValue.toLowerCase()) || 
-    repo.address.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  // const filteredRepositories = repositories.filter(repo => 
+  //   repo.name.toLowerCase().includes(searchValue.toLowerCase()) || 
+  //   repo.address.toLowerCase().includes(searchValue.toLowerCase())
+  // );
 
   // 计算统计数据
   const stats = {
@@ -110,7 +110,7 @@ export default function Home() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
           <div className="home-title" style={{ display: 'flex', alignItems: 'center' }}>
             <DatabaseOutlined style={{ fontSize: 28, color: 'white', marginRight: 12 }} />
-            <Title level={3} style={{ color: 'white', margin: 0 }}>Koala Wiki</Title>
+            <Title level={3} style={{ color: 'white', margin: 0 }}>OpenDeepWiki</Title>
           </div>
           
           <Space>
@@ -139,7 +139,7 @@ export default function Home() {
                         AI驱动的代码知识库
                       </Title>
                       <Paragraph type="secondary" style={{ fontSize: 16, marginBottom: 24, color: 'var(--ant-color-text-secondary)' }}>
-                        Koala Wiki 使用先进的AI技术分析您的代码仓库，生成详细的文档和见解，帮助您更深入地理解代码结构和工作原理。
+                        OpenDeepWiki 使用先进的AI技术分析您的代码仓库，生成详细的文档和见解，帮助您更深入地理解代码结构和工作原理。
                       </Paragraph>
                       <Button 
                         type="primary" 
@@ -216,7 +216,7 @@ export default function Home() {
                 </Col>
               ))}
             </Row>
-          ) : filteredRepositories.length === 0 ? (
+          ) : repositories.length === 0 ? (
             <div className="empty-container" style={{ background: 'var(--ant-color-bg-container)' }}>
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -231,7 +231,7 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <RepositoryList repositories={filteredRepositories} />
+              <RepositoryList repositories={repositories} />
               {!searchValue && total > pageSize && (
                 <div style={{ textAlign: 'center', marginTop: 24 }}>
                   <Pagination 
