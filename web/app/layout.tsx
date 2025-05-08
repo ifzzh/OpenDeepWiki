@@ -18,7 +18,7 @@ export default function RootLayout({
     <html lang="zh-CN">
       <head>
         <meta name="msvalidate.01" content="61D1D1BFCB7FDB548E411C30FC69B058" />
-        <Script id="baidu-analytics" strategy="afterInteractive">
+        <Script >
           {`
             var _hmt = _hmt || [];
             (function() {
