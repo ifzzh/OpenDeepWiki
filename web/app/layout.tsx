@@ -2,8 +2,6 @@ import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { ConfigProvider, theme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import './globals.css';
-import OpenAIProvider from './context/OpenAIContext';
-import AIProvider from './context/AIContext';
 import '@ant-design/v5-patch-for-react-19';
 import Script from 'next/script';
 
@@ -40,11 +38,7 @@ export default function RootLayout({
               algorithm: theme.defaultAlgorithm,
             }}
           >
-            <OpenAIProvider>
-              <AIProvider>
-                {children}
-              </AIProvider>
-            </OpenAIProvider>
+            {children}
           </ConfigProvider>
         </AntdRegistry>
       </body>

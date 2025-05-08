@@ -1,7 +1,8 @@
-import React from 'react';
-import { Card, Skeleton, Typography, Button, Space, Empty, Result } from 'antd';
-import { ArrowLeftOutlined, FileExclamationOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Card, Skeleton, Typography, Button, Space, Result, Avatar, Tag, Statistic } from 'antd';
+import { ArrowLeftOutlined, FileExclamationOutlined, ReloadOutlined, GithubOutlined, StarOutlined, ForkOutlined, CalendarOutlined, BranchesOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import { getLastWarehouse } from '../../services/warehouseService';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -13,34 +14,170 @@ interface LoadingErrorStateProps {
   token: any;
 }
 
-// 自定义空状态组件
-const EmptyDocumentState = ({ message, token, owner, name }) => (
-  <Empty
-    image={Empty.PRESENTED_IMAGE_SIMPLE}
-    imageStyle={{ height: 80, opacity: 0.8 }}
-    description={
-      <Space direction="vertical" size="small" style={{ textAlign: 'center' }}>
-        <Text style={{ fontSize: 16, color: token.colorTextSecondary }}>{message}</Text>
-        <Paragraph type="secondary" style={{ fontSize: 14 }}>
-          这可能是因为文档不存在或您没有访问权限
-        </Paragraph>
+interface GitHubRepoInfo {
+  name: string;
+  description: string;
+  stars: number;
+  forks: number;
+  language: string;
+  updated_at: string;
+  html_url: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+    html_url: string;
+  };
+}
+
+// 仓库信息展示组件
+const RepositoryInfoState = ({ owner, name, token }) => {
+  const [repoInfo, setRepoInfo] = useState<GitHubRepoInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fetchRepoInfo = async () => {
+      try {
+        // 尝试直接从GitHub API获取仓库信息
+        const response = await fetch(`https://api.github.com/repos/${owner}/${name}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setRepoInfo({
+            name: data.name,
+            description: data.description || '暂无描述',
+            stars: data.stargazers_count,
+            forks: data.forks_count,
+            language: data.language,
+            updated_at: data.updated_at,
+            html_url: data.html_url,
+            owner: {
+              login: data.owner.login,
+              avatar_url: data.owner.avatar_url,
+              html_url: data.owner.html_url
+            }
+          });
+        } else {
+          // 如果GitHub API获取失败，尝试从自己的API获取
+          const result = await getLastWarehouse(`https://github.com/${owner}/${name}`);
+          if (result.data) {
+            setRepoInfo({
+              name: result.data.name,
+              description: result.data.description || '暂无描述',
+              stars: 0,
+              forks: 0,
+              language: '',
+              updated_at: result.data.updatedAt || result.data.createdAt,
+              html_url: result.data.address,
+              owner: {
+                login: owner,
+                avatar_url: '',
+                html_url: `https://github.com/${owner}`
+              }
+            });
+          } else {
+            setError('无法获取仓库信息');
+          }
+        }
+      } catch (err) {
+        setError('获取仓库信息时出错');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRepoInfo();
+  }, [owner, name]);
+
+  if (loading) {
+    return <Skeleton active avatar paragraph={{ rows: 4 }} />;
+  }
+
+  if (error || !repoInfo) {
+    return (
+      <Space direction="vertical" size="middle" style={{ width: '100%', textAlign: 'center' }}>
+        <Text type="secondary" style={{ fontSize: 16 }}>仓库地址: https://github.com/{owner}/{name}</Text>
+        <Button 
+          type="primary" 
+          icon={<GithubOutlined />}
+          href={`https://github.com/${owner}/${name}`}
+          target="_blank"
+        >
+          访问GitHub仓库
+        </Button>
+        <Button 
+          onClick={() => window.location.reload()}
+          icon={<ReloadOutlined />}
+        >
+          重新加载
+        </Button>
       </Space>
-    }
-  >
-    <Space>
-      <Link href={`/${owner}/${name}`}>
-        <Button type="primary" icon={<ArrowLeftOutlined />}>
-          返回仓库概览
+    );
+  }
+
+  return (
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space size="middle" align="start">
+        <Avatar 
+          size={64} 
+          src={repoInfo.owner.avatar_url || undefined}
+          icon={!repoInfo.owner.avatar_url && <GithubOutlined />}
+        />
+        <Space direction="vertical" size="small" style={{ maxWidth: '100%' }}>
+          <Title level={3} style={{ margin: 0, color: token.colorTextHeading }}>
+            <a 
+              href={repoInfo.html_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: token.colorPrimary }}
+            >
+              {repoInfo.owner.login}/{repoInfo.name}
+            </a>
+          </Title>
+          <Paragraph style={{ margin: 0, color: token.colorTextSecondary }}>
+            {repoInfo.description}
+          </Paragraph>
+          <Space size="middle" wrap>
+            {repoInfo.language && (
+              <Tag color={token.colorPrimary}>
+                {repoInfo.language}
+              </Tag>
+            )}
+            <Space>
+              <StarOutlined style={{ color: token.colorWarning }} />
+              <Text>{repoInfo.stars}</Text>
+            </Space>
+            <Space>
+              <ForkOutlined />
+              <Text>{repoInfo.forks}</Text>
+            </Space>
+            <Space>
+              <CalendarOutlined />
+              <Text>{new Date(repoInfo.updated_at).toLocaleDateString()}</Text>
+            </Space>
+          </Space>
+        </Space>
+      </Space>
+      
+      <Space>
+        <Button 
+          type="primary" 
+          icon={<GithubOutlined />}
+          href={repoInfo.html_url}
+          target="_blank"
+        >
+          访问GitHub仓库
         </Button>
-      </Link>
-      <Link href={`/${owner}/${name}/search`}>
-        <Button icon={<SearchOutlined />}>
-          搜索文档
+        <Button 
+          onClick={() => window.location.reload()}
+          icon={<ReloadOutlined />}
+        >
+          重新加载
         </Button>
-      </Link>
+      </Space>
     </Space>
-  </Empty>
-);
+  );
+};
 
 const LoadingErrorState: React.FC<LoadingErrorStateProps> = ({
   loading,
@@ -73,11 +210,10 @@ const LoadingErrorState: React.FC<LoadingErrorStateProps> = ({
             padding: token.paddingLG
           }}
         >
-          <EmptyDocumentState 
-            message="未找到您请求的文档" 
-            token={token}
+          <RepositoryInfoState 
             owner={owner}
             name={name}
+            token={token}
           />
         </Card>
       );

@@ -1,5 +1,6 @@
 ﻿services:
   koalawiki:
+    image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
     ports:
       - 8080:8080
     environment:
@@ -24,15 +25,15 @@
     ports:
       - 3000:3000
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_API_URL=http://koalawiki:8080 # 用于提供给server的地址
     build:
       context: ./web
       dockerfile: Dockerfile
       
-  nginx:
+  nginx: # 需要nginx将前端和后端代理到一个端口
     image: nginx:alpine
     ports:
-      - 80:80
+      - 8090:80
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:

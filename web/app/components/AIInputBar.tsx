@@ -4,22 +4,39 @@ import React, { useState, useRef } from 'react';
 import { Input, Button, Switch, Flex, Space, theme, Grid } from 'antd';
 import type { InputRef } from 'antd';
 import { SendOutlined, LoadingOutlined } from '@ant-design/icons';
-import { useAI } from '../context/AIContext';
+import { createChatShareMessage } from '../services/chatShareMessageServce';
 
 const { useBreakpoint } = Grid;
 
-const AIInputBar: React.FC<{ owner: string, name: string }> = ({ owner, name }) => {
+interface AIInputBarProps {
+    owner: string;
+    name: string;
+    style?: React.CSSProperties;
+}
+
+const AIInputBar: React.FC<AIInputBarProps> = ({ owner, name, style }) => {
     const { token } = theme.useToken();
     const screens = useBreakpoint();
-    const { isLoading, sendMessage } = useAI();
+    const [isLoading, setIsLoading] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [deepResearch, setDeepResearch] = useState(false);
     const inputRef = useRef<InputRef>(null);
 
     const handleSend = async () => {
         if (inputValue.trim() && !isLoading) {
-            await sendMessage(inputValue, deepResearch, owner, name);
+            setIsLoading(true);
+
+            const warehouseId = await createChatShareMessage({
+                isDeep: deepResearch,
+                owner: owner,
+                name: name,
+                message: inputValue,
+            })
+
+            window.open(`/search/${warehouseId.data.data}`)
+
             setInputValue('');
+            setIsLoading(false);
         }
     };
 
@@ -40,7 +57,7 @@ const AIInputBar: React.FC<{ owner: string, name: string }> = ({ owner, name }) 
             position: 'absolute',
             borderRadius: '10px',
             boxShadow: `rgb(189 188 188) 0px -2px 8px`,
-            // 如果宽度小于700px，则宽度为100%
+            ...style
         }}>
             <Flex
                 align="center"
