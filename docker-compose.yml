@@ -31,7 +31,7 @@
       dockerfile: Dockerfile
       
   nginx: # 需要nginx将前端和后端代理到一个端口
-    image: nginx:alpine
+    image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/nginx:alpine
     ports:
       - 8090:80
     volumes:
