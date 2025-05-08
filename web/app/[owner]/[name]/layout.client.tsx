@@ -9,19 +9,31 @@ import {
   Breadcrumb,
   Divider,
   Button,
+  Modal,
+  Card,
+  message,
+  Tooltip,
+  Steps,
+  Collapse,
+  Alert,
 } from 'antd';
 import {
   HomeOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  ApiOutlined,
+  CopyOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import AIInputBar from '../../components/AIInputBar';
+import Image from 'next/image';
 
 const { Header, Content, Sider } = Layout;
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
+const { Panel } = Collapse;
 
 interface DocumentCatalogResponse {
   key: string;
@@ -54,6 +66,8 @@ export default function RepositoryLayoutClient({
 
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isMCPModalVisible, setIsMCPModalVisible] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const selectedKey = pathname.includes('/') ? 'docs' : 'overview';
 
@@ -77,6 +91,28 @@ export default function RepositoryLayoutClient({
       setCollapsed(true);
     }
   }, [isMobile]);
+
+  const mcpConfigJson = {
+    mcpServers: {
+      [name]: {
+        url: `${window.location.protocol}//${window.location.host}/sse?owner=${owner}&name=${name}`
+      }
+    }
+  };
+
+  const mcpJsonString = JSON.stringify(mcpConfigJson, null, 2);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(mcpJsonString)
+      .then(() => {
+        setCopySuccess(true);
+        message.success('配置已复制到剪贴板');
+        setTimeout(() => setCopySuccess(false), 3000);
+      })
+      .catch(() => {
+        message.error('复制失败，请手动复制');
+      });
+  };
 
   const renderSidebarItem = (item: DocumentCatalogResponse, level = 0) => {
     const isActive = pathname.includes(`/${item.url}`);
@@ -232,6 +268,14 @@ export default function RepositoryLayoutClient({
             </Flex>
 
             <Flex align="center" gap={token.marginSM}>
+              <Button 
+                type="primary" 
+                icon={<ApiOutlined />} 
+                onClick={() => setIsMCPModalVisible(true)}
+                size={isMobile ? "small" : "middle"}
+              >
+                添加MCP
+              </Button>
               {initialLastUpdated && (
                 <Text type="secondary" style={{
                   fontSize: token.fontSizeSM,
@@ -244,6 +288,124 @@ export default function RepositoryLayoutClient({
             </Flex>
           </Flex>
         </Header>
+
+        {/* MCP Modal */}
+        <Modal
+          title={
+            <Flex align="center" gap={token.marginXS}>
+              <ApiOutlined style={{ color: token.colorPrimary }} />
+              <span>MCP接入教程</span>
+            </Flex>
+          }
+          open={isMCPModalVisible}
+          onCancel={() => setIsMCPModalVisible(false)}
+          footer={null}
+          width={700}
+          bodyStyle={{ padding: token.paddingLG }}
+          centered
+        >
+          <Flex vertical gap={token.marginMD}>
+            <Alert
+              type="info"
+              showIcon
+              message="OpenDeepWiki支持MCP（ModelContextProtocol）"
+              description={
+                <ul style={{ paddingLeft: token.paddingLG, margin: `${token.marginXS}px 0` }}>
+                  <li>支持单仓库提供MCPServer，针对单个仓库进行分析</li>
+                  <li>通过OpenDeepWiki作为MCPServer，您可以方便地对开源项目进行分析和理解</li>
+                </ul>
+              }
+              style={{ marginBottom: token.marginMD }}
+            />
+
+            <Card
+              title="使用配置"
+              headStyle={{ 
+                background: token.colorBgLayout, 
+                borderBottom: `1px solid ${token.colorBorderSecondary}` 
+              }}
+              bordered
+              style={{ marginBottom: token.marginMD }}
+            >
+              <Paragraph style={{ marginBottom: token.marginSM }}>
+                下面是Cursor的使用方式：
+              </Paragraph>
+              
+              <div style={{ 
+                position: 'relative', 
+                backgroundColor: token.colorBgLayout, 
+                padding: token.paddingMD, 
+                borderRadius: token.borderRadiusLG,
+                marginBottom: token.marginMD
+              }}>
+                <pre style={{ 
+                  margin: 0, 
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}>
+                  {mcpJsonString}
+                </pre>
+                <Tooltip title={copySuccess ? "已复制" : "复制配置"}>
+                  <Button
+                    type="text"
+                    icon={copySuccess ? <CheckOutlined style={{ color: token.colorSuccess }} /> : <CopyOutlined />}
+                    onClick={copyToClipboard}
+                    style={{ 
+                      position: 'absolute', 
+                      top: token.paddingXS, 
+                      right: token.paddingXS 
+                    }}
+                  />
+                </Tooltip>
+              </div>
+
+              <Flex vertical gap={token.marginSM}>
+                <Text strong>配置说明：</Text>
+                <ul style={{ paddingLeft: token.paddingLG, margin: 0 }}>
+                  <li><Text code>owner</Text>: 是仓库组织或拥有者的名称</li>
+                  <li><Text code>name</Text>: 是仓库的名称</li>
+                </ul>
+              </Flex>
+            </Card>
+
+            <Card
+              title="测试案例"
+              headStyle={{ 
+                background: token.colorBgLayout, 
+                borderBottom: `1px solid ${token.colorBorderSecondary}` 
+              }}
+              bordered
+            >
+              <Paragraph>
+                添加好仓库以后尝试进行测试提问（注意，请保证仓库已经处理完成）：
+              </Paragraph>
+              <Paragraph strong style={{ color: token.colorPrimary }}>
+                OpenDeepWiki是什么？
+              </Paragraph>
+              <div style={{ 
+                width: '100%', 
+                height: 'auto', 
+                position: 'relative',
+                marginTop: token.marginMD,
+                borderRadius: token.borderRadiusLG,
+                overflow: 'hidden',
+                border: `1px solid ${token.colorBorderSecondary}`
+              }}>
+                <img 
+                  src="/mcp.png"
+                  alt="MCP测试效果"
+                  style={{ 
+                    width: '100%', 
+                    height: 'auto', 
+                    display: 'block',
+                    objectFit: 'contain' 
+                  }}
+                />
+              </div>
+            </Card>
+          </Flex>
+        </Modal>
 
         <Layout
           className={initialCatalogData?.items?.length > 0 ? 'ant-layout-content' : 'ant-layout-content-mobile'}
