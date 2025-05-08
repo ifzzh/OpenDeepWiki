@@ -41,7 +41,7 @@ export async function submitWarehouse(
  * Get warehouse list
  * 此函数可在服务器组件中使用
  */
-export async function getWarehouse(page: number, pageSize: number,keyword: string): Promise<ApiResponse<WarehouseListResponse>> {
+export async function getWarehouse(page: number, pageSize: number, keyword?: string): Promise<ApiResponse<WarehouseListResponse>> {
   // @ts-ignore
   return fetchApi<WarehouseListResponse>(API_URL + '/api/Warehouse/WarehouseList?page=' + page + '&pageSize=' + pageSize + '&keyword=' + keyword, {
     method: 'GET',
