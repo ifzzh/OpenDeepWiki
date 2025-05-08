@@ -297,6 +297,7 @@ public class DocumentsService
                     }
                     catch (Exception ex)
                     {
+                        Log.Logger.Error("处理仓库；{path} ,处理标题：{name} 失败:{ex}", path, item.Name, ex.ToString());
                         semaphore.Release();
                         retryCount++;
                         if (retryCount >= retries)
@@ -361,7 +362,11 @@ public class DocumentsService
             "gpt-4o" => 16384,
             "o4-mini" => 100000,
             "o3-mini" => 100000,
-            _ => 16384
+            "Qwen/Qwen3-235B-A22B" => 32768,
+            "grok-3" => 65536,
+            // 官方默认只有8k
+            "deepseek-chat" => 8192,
+            _ => 8192
         };
     }
 
