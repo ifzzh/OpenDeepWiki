@@ -170,6 +170,10 @@ make build-backend-arm
 make build-frontend-amd
 ```
 
+## WeChat 
+
+![1000035457](https://github.com/user-attachments/assets/f1027d44-5453-4d39-86fc-a068bacf3afc)
+
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
