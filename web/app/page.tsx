@@ -16,7 +16,7 @@ export default async function Home({ searchParams = {} }: any) {
   const pageSize = Number(resolvedSearchParams?.pageSize) || 20;
 
   // 在服务端获取初始数据
-  const response = await getWarehouse(page, pageSize);
+  const response = await getWarehouse(page, pageSize,'');
   const initialRepositories = response.success ? response.data.items : [];
   const initialTotal = response.success ? response.data.total : 0;
 

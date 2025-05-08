@@ -53,7 +53,7 @@ export default function OrganizationPage({ params }: any) {
   const owner = pathParts[0] || '';
 
   const [repositories, setRepositories] = useState<Repository[]>([]);
-  const [filteredRepositories, setFilteredRepositories] = useState<Repository[]>([]);
+  // const [filteredRepositories, setFilteredRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState('');
   const [total, setTotal] = useState(0);
@@ -72,18 +72,18 @@ export default function OrganizationPage({ params }: any) {
   // 加载仓库数据
   useEffect(() => {
     fetchRepositories();
-  }, [owner]);
+  }, [owner,searchValue]);
 
   // 过滤仓库
-  useEffect(() => {
-    if (repositories.length > 0) {
-      const filtered = repositories.filter(repo =>
-        repo.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        repo.address.toLowerCase().includes(searchValue.toLowerCase())
-      );
-      setFilteredRepositories(filtered);
-    }
-  }, [repositories, searchValue]);
+  // useEffect(() => {
+  //   if (repositories.length > 0) {
+  //     const filtered = repositories.filter(repo =>
+  //       repo.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+  //       repo.address.toLowerCase().includes(searchValue.toLowerCase())
+  //     );
+  //     setFilteredRepositories(filtered);
+  //   }
+  // }, [repositories, searchValue]);
 
   // 获取组织信息 (通过 GitHub API)
   const fetchOrganizationInfo = async () => {
@@ -125,7 +125,7 @@ export default function OrganizationPage({ params }: any) {
     try {
       // 这里获取所有仓库然后前端过滤属于该组织的仓库
       // 实际应用中可能需要后端支持按组织过滤的 API
-      const response = await getWarehouse(1, 100);
+      const response = await getWarehouse(1, 100,searchValue);
       if (response.success && response.data) {
         // 过滤出属于该组织的仓库
         const orgRepos = response.data.items.filter(repo => {
@@ -144,7 +144,7 @@ export default function OrganizationPage({ params }: any) {
         });
 
         setRepositories(orgRepos);
-        setFilteredRepositories(orgRepos);
+        // setFilteredRepositories(orgRepos);
         setTotal(orgRepos.length);
       }
     } catch (error) {
@@ -528,7 +528,7 @@ export default function OrganizationPage({ params }: any) {
             <div style={{ textAlign: 'center', padding: token.paddingLG }}>
               <Spin size="large" />
             </div>
-          ) : filteredRepositories.length === 0 ? (
+          ) : repositories.length === 0 ? (
             <Card style={{ background: token.colorBgContainer, borderRadius: token.borderRadiusLG }}>
               <Empty
                 description={
@@ -538,7 +538,7 @@ export default function OrganizationPage({ params }: any) {
               />
             </Card>
           ) : (
-            <RepositoryList repositories={filteredRepositories} />
+            <RepositoryList repositories={repositories} />
           )}
         </div>
       </div>
