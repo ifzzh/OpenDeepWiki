@@ -3,10 +3,6 @@ import HomeClient from './components/HomeClient';
 import { Suspense } from 'react';
 import { Spin } from 'antd';
 
-interface PageProps {
-  searchParams?: { [key: string]: string | string[] | undefined }
-}
-
 export default async function Home({ searchParams = {} }: any) {
   // 确保 searchParams 已经被解析
   const resolvedSearchParams = await searchParams;

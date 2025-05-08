@@ -69,7 +69,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.MapMcp();
+app.MapMcp("/api");
 
 app.MapFast();
 
