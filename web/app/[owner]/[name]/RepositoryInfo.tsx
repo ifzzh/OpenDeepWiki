@@ -300,9 +300,6 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
                   type: 'git',
                   branch: repoInfo?.default_branch || 'main',
                   prompt: '',
-                  model: '',
-                  openAIKey: '',
-                  openAIEndpoint: ''
                 }}
                 disabledFields={['address']}
               />
