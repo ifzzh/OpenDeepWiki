@@ -24,4 +24,19 @@ public static class SqliteApplicationExtensions
 
         return services;
     }
+    public static IServiceCollection AddSqliteDbContext(this IServiceCollection services,
+        string connectionString)
+    {
+        
+        services.AddDataAccess<SqliteContext>(((provider, builder) =>
+        {
+            builder.UseSqlite(connectionString);
+            
+            // sql日志不输出控制台
+            builder.UseLoggerFactory(LoggerFactory.Create(_ => { }));
+        }));
+        
+
+        return services;
+    }
 }

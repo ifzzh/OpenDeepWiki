@@ -35,45 +35,21 @@ git clone https://github.com/AIDotNet/OpenDeepWiki.git
 cd OpenDeepWiki
 ```
 
-打开`docker-compose.yml`文件，修改以下配置下面的环境变量：
+2. 打开`docker-compose.yml`文件，修改以下环境变量：
 ```yaml
-version: '3.8'
-﻿services:
+services:
   koalawiki:
-    image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
-      - TaskMaxSizePerUser=5 # 每个用户AI处理文档生成的最大数量
+      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
       - REPAIR_MERMAID=1 # 是否进行Mermaid修复，1修复，其余不修复
-      - ChatModel=DeepSeek-V3 # 必须要支持function的模型
-      - AnalysisModel= # 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
-      - ChatApiKey=您的APIkey
-      - LANGUAGE= # 设置生成语言默认为“中文”
-      - Endpoint=https://api.token-ai.cn/v1
-    volumes:
-      - ./repositories:/app/repositories
-      - ./data:/data
-    build:
-      context: .
-      dockerfile: src/KoalaWiki/Dockerfile
-      
-  koalawiki-web:
-    image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web
-    environment:
-      - NEXT_PUBLIC_API_URL=http://koalawiki:8080 # 用于提供给server的地址
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-      
-  nginx: # 需要nginx将前端和后端代理到一个端口
-    image: nginx:alpine
-    ports:
-      - 8090:80
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - koalawiki
-      - koalawiki-web
+      - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
+      - ANALYSIS_MODEL= # 分析模型，用于生成仓库目录结构
+      - CHAT_API_KEY= # 您的APIkey
+      - LANGUAGE= # 设置生成语言默认为"中文"
+      - ENDPOINT=https://api.token-ai.cn/v1
+      - DB_TYPE=sqlite
+      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
 ```
 
 > 💡 **如何获取APIKey:**
@@ -82,12 +58,62 @@ version: '3.8'
 > - 获取 CoresHub [CoresHub](https://console.coreshub.cn/xb3/maas/global-keys) [点击这里免费领取5000万token](https://account.coreshub.cn/signup?invite=ZmpMQlZxYVU=)
 > - 获取 TokenAI [TokenAI](https://api.token-ai.cn/)
 
-2. 启动服务
+3. 启动服务
+
+您可以使用提供的Makefile命令轻松管理应用程序：
 
 ```bash
-docker-compose up -d
+# 构建所有Docker镜像
+make build
+
+# 以后台模式启动所有服务
+make up
+
+# 或以开发模式启动（可查看日志）
+make dev
 ```
-然后访问 http://localhost:8090 即可访问知识库
+
+然后访问 http://localhost:80 即可访问知识库。
+
+更多命令可查看：
+```bash
+make help
+```
+
+### Windows用户（无make命令）
+
+如果您使用Windows系统且没有安装`make`，可以直接使用以下Docker Compose命令：
+
+```bash
+# 构建所有Docker镜像
+docker-compose build
+
+# 后台启动所有服务
+docker-compose up -d
+
+# 开发模式启动（可查看日志）
+docker-compose up
+
+# 停止所有服务
+docker-compose down
+
+# 查看日志
+docker-compose logs -f
+```
+
+针对特定架构或服务的构建命令：
+
+```bash
+# 只构建后端
+docker-compose build koalawiki
+
+# 只构建前端
+docker-compose build koalawiki-web
+
+# 使用架构参数构建
+docker-compose build --build-arg ARCH=arm64
+docker-compose build --build-arg ARCH=amd64
+```
 
 ## 🔍工作原理
 
@@ -117,17 +143,36 @@ graph TD
 
 ### 环境变量
   - KOALAWIKI_REPOSITORIES # 仓库存放路径
-  - TaskMaxSizePerUser # 每个用户AI处理文档生成的最大并行数量
+  - TASK_MAX_SIZE_PER_USER # 每个用户AI处理文档生成的最大并行数量
   - REPAIR_MERMAID # 是否进行Mermaid修复，1修复，其余不修复
-  - ChatModel # 必须要支持function的模型
-  - Endpoint # API的Endpoint
-  - AnalysisModel # 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
-  - ChatApiKey #您的APIkey
+  - CHAT_MODEL # 必须要支持function的模型
+  - ENDPOINT # API的Endpoint
+  - ANALYSIS_MODEL # 分析模型，用于生成仓库目录结构
+  - CHAT_API_KEY # 您的APIkey
   - LANGUAGE # 改变生成的文档的语言
+  - DB_TYPE # 数据库类型，默认为sqlite
+  - DB_CONNECTION_STRING # 数据库连接字符串
+
+### 针对不同架构的构建
+Makefile提供了针对不同CPU架构构建的命令：
+
+```bash
+# 构建ARM架构的所有镜像
+make build-arm
+
+# 构建AMD架构的所有镜像
+make build-amd
+
+# 只构建ARM架构的后端服务
+make build-backend-arm
+
+# 只构建AMD架构的前端服务
+make build-frontend-amd
+```
+
 ## WeChat 
 
 ![1000035457](https://github.com/user-attachments/assets/f1027d44-5453-4d39-86fc-a068bacf3afc)
-
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.

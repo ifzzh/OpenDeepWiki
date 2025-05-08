@@ -1,15 +1,19 @@
 ﻿services:
   koalawiki:
     image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
+    ports:
+      - 8080:8080
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
-      - TaskMaxSizePerUser=5 # 每个用户AI处理文档生成的最大数量
+      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大数量
       - REPAIR_MERMAID=1 # 是否进行Mermaid修复，1修复，其余不修复
-      - ChatModel=DeepSeek-V3 # 必须要支持function的模型
-      - AnalysisModel= # 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
-      - ChatApiKey=您的APIkey
+      - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
+      - ANALYSIS_MODEL= # 分析模型，用于生成仓库目录结构，这个很重要，模型越强，生成的目录结构越好，为空则使用ChatModel
+      - CHAT_API_KEY= #您的APIkey
       - LANGUAGE= # 设置生成语言默认为“中文”
-      - Endpoint=https://api.token-ai.cn/v1
+      - ENDPOINT=https://api.token-ai.cn/v1
+      - DB_TYPE=sqlite
+      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
     volumes:
       - ./repositories:/app/repositories
       - ./data:/data
@@ -18,7 +22,8 @@
       dockerfile: src/KoalaWiki/Dockerfile
       
   koalawiki-web:
-    image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web
+    ports:
+      - 3000:3000
     environment:
       - NEXT_PUBLIC_API_URL=http://koalawiki:8080 # 用于提供给server的地址
     build:
