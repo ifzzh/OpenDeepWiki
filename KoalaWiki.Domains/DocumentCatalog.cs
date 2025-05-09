@@ -42,4 +42,7 @@ public class DocumentCatalog : Entity<string>
     
     [NotMapped]
     public string Prompt { get; set; } = string.Empty;
+    
+    [NotMapped]
+    public List<string> DependentFile { get; set; } = new();
 }

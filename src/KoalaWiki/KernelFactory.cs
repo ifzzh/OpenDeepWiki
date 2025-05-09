@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using KoalaWiki.Functions;
 using KoalaWiki.Options;
+using KoalaWiki.plugins;
 using Microsoft.SemanticKernel;
 using OpenAI;
 using Serilog;
@@ -29,6 +30,8 @@ public static class KernelFactory
 
         kernelBuilder.Services.AddSerilog(Log.Logger);
 
+        kernelBuilder.Services.AddSingleton<IPromptRenderFilter, LanguagePromptFilter>();
+        
         if (OpenAIOptions.ModelProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase))
         {
             kernelBuilder.AddOpenAIChatCompletion(model, new Uri(chatEndpoint), apiKey,

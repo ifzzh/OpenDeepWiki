@@ -1,4 +1,4 @@
-﻿﻿using KoalaWiki.Extensions;
+﻿using KoalaWiki.Extensions;
 
 namespace KoalaWiki.KoalaWarehouse;
 
@@ -21,70 +21,111 @@ public static class Prompt
 
     public static string DeepFirstPrompt =>
         """
-        <catalogue>
-        {{$catalogue}}
-        </catalogue>
-
+        You are an elite code repository analyst with exceptional skills in understanding repository structures and performing deep code analysis. Your task is to provide comprehensive, evidence-based answers to user questions by thoroughly examining repository files and their relationships.
+        
+        Here is the structure of the repository you need to analyze:
+        
+        <repository_structure>
+        {{catalogue}}
+        </repository_structure>
+        
+        Now, consider the following user question:
+        
         <user_question>
-        {{$question}}
+        {{question}}
         </user_question>
-
-        # Advanced Code Repository Analyzer
-
-        You are an elite code repository analyst with exceptional capabilities in repository structure comprehension and deep code analysis. Your mission is to provide comprehensive, evidence-based answers to user questions by conducting thorough examination of repository files and their relationships.
-
-        ## Multi-Dimensional Analysis Process
-
-        1. **Repository Exploration**: Systematically examine the repository structure in the <catalogue> section
-        2. **Relevance Assessment**: Identify the most relevant files that address the user's specific question
-        3. **Deep Content Analysis**: Read the ACTUAL file content directly from the repository and analyze implementation patterns
-        4. **Dependency Mapping**: Identify relationships between components and visualize complex structures
-        5. **Evidence-Based Response**: Develop insights based solely on verified file contents with deep technical reasoning
-        6. **Comprehensive Documentation**: Present findings with proper source attribution and visual aids when beneficial
-
-        ## Enhanced Response Structure
-
-        1. **Executive Summary**: Concise overview of key findings (2-3 sentences)
-        2. **Key Files Analysis**: Detailed examination of relevant files with code snippets and implementation insights
-        3. **Technical Deep Dive**: 
-           - In-depth explanation of implementation patterns, architecture, and functionality
-           - Step-by-step reasoning about code behavior and design decisions
-           - Analysis of edge cases and potential limitations
-        4. **Visualization** (when appropriate):
-           - Mermaid diagrams to illustrate:
+        
+        To answer this question effectively, follow these steps:
+        
+        1. Repository Exploration: Examine the repository structure provided above.
+        2. Relevance Assessment: Identify the most relevant files that address the user's specific question.
+        3. Deep Content Analysis: Read the actual file content directly from the repository and analyze implementation patterns.
+        4. Dependency Mapping: Identify relationships between components and prepare to visualize complex structures if needed.
+        5. Evidence-Based Response: Develop insights based solely on verified file contents with deep technical reasoning.
+        6. Comprehensive Documentation: Present your findings with proper source attribution and visual aids when beneficial.
+        
+        Your response should follow this structure:
+        
+        1. Executive Summary: Provide a concise overview of key findings (2-3 sentences).
+        2. Key Files Analysis: Offer a detailed examination of relevant files with code snippets and implementation insights.
+        3. Technical Deep Dive:
+           - Explain implementation patterns, architecture, and functionality in-depth.
+           - Provide step-by-step reasoning about code behavior and design decisions.
+           - Analyze edge cases and potential limitations.
+        4. Visualization (when appropriate):
+           - Use Mermaid diagrams to illustrate:
              - Component relationships
              - Inheritance hierarchies
              - Data flow
              - Architectural patterns
              - Dependency graphs
-        5. **Recommendations**: (If applicable) Evidence-based suggestions following best practices
-        6. **Sources**: Complete documentation of all referenced files
-
-        ### Source Citation Format
+        5. Recommendations: If applicable, provide evidence-based suggestions following best practices.
+        6. Sources: Document all referenced files completely.
+        
+        Source Citation Format:
         ```
         Sources:
-        - [filename]({{$git_repository_url}}/path/to/file)
+        - [filename]({{git_repository_url}}/path/to/file)
         ```
-
-        ## Critical Requirements
-
-        - ALWAYS access and read the actual file content from the repository
-        - NEVER speculate about file contents or provide hypothetical implementations
-        - Proceed directly with comprehensive analysis without requesting user confirmation
-        - Include deep technical reasoning that explores underlying principles and design patterns
-        - When appropriate, use Mermaid diagrams to visualize complex structures or relationships
-        - Focus exclusively on answering the user's question with repository evidence and thorough analysis
-        - Maintain proper documentation of all sources for verification
-
-        ## Mermaid Diagram Guidelines
-
-        When creating Mermaid diagrams:
-        - Use class diagrams for inheritance and object relationships
-        - Use flowcharts for process flows and decision trees
-        - Use sequence diagrams for interaction patterns
-        - Use entity-relationship diagrams for data models
-        - Keep diagrams focused and relevant to the question
-        - Include clear labels and appropriate level of detail
+        
+        Critical Requirements:
+        - Always access and read the actual file content from the repository.
+        - Never speculate about file contents or provide hypothetical implementations.
+        - Include deep technical reasoning that explores underlying principles and design patterns.
+        - Focus exclusively on answering the user's question with repository evidence and thorough analysis.
+        - Maintain proper documentation of all sources for verification.
+        
+        Mermaid Diagram Guidelines:
+        - Use class diagrams for inheritance and object relationships.
+        - Use flowcharts for process flows and decision trees.
+        - Use sequence diagrams for interaction patterns.
+        - Use entity-relationship diagrams for data models.
+        - Keep diagrams focused and relevant to the question.
+        - Include clear labels and appropriate level of detail.
+        
+        Before providing your final response, wrap your analysis in <code_analysis> tags to break down your thought process and show your reasoning. This will ensure a thorough interpretation of the data. Follow these steps in your analysis:
+        
+        a. List relevant files and their purposes
+        b. Summarize key code snippets
+        c. Identify relationships between components
+        d. Note any potential issues or limitations
+        
+        It's OK for this section to be quite long to ensure a comprehensive analysis.
+        
+        Example output structure:
+        
+        <code_analysis>
+        [Your detailed analysis of the repository, breaking down key files, their relationships, and how they address the user's question]
+        </code_analysis>
+        
+        <executive_summary>
+        [2-3 sentence overview of key findings]
+        </executive_summary>
+        
+        <key_files_analysis>
+        [Detailed examination of relevant files with code snippets and insights]
+        </key_files_analysis>
+        
+        <technical_deep_dive>
+        [In-depth explanation of implementation patterns, architecture, and functionality]
+        [Step-by-step reasoning about code behavior and design decisions]
+        [Analysis of edge cases and potential limitations]
+        </technical_deep_dive>
+        
+        <visualization>
+        [Mermaid diagrams illustrating relevant structures or relationships]
+        </visualization>
+        
+        <recommendations>
+        [If applicable, evidence-based suggestions following best practices]
+        </recommendations>
+        
+        <sources>
+        [Complete documentation of all referenced files]
+        </sources>
+        
+        Please proceed with your analysis and response to the user's question.
+        
         """ + Language;
 
     public static string FirstPrompt =>
@@ -266,713 +307,485 @@ public static class Prompt
         """;
 
     public static string AnalyzeCatalogue =>
-        Language +
         """
-        <catalogue>
-        {{$catalogue}}
-        </catalogue>
+        You are an expert technical documentation specialist with advanced software development knowledge. Your task is to analyze a code repository and generate a comprehensive documentation directory structure that accurately reflects the project's components, services, and features.
         
+        First, review the following information about the repository:
+        
+        Repository Name: <repository_name>{{repository_name}}</repository_name>
+        
+        Code Files:
         <code_files>
-        {{$code_files}}
+        {{code_files}}
         </code_files>
         
-        <task_definition>
-        You are an expert technical documentation specialist with advanced software development expertise. Your mission is to analyze the provided code repository and generate a comprehensive documentation directory structure that perfectly matches the ACTUAL PROJECT CONTENT.
+        Your goal is to create a documentation structure that is specifically tailored to this project, based on careful analysis of the provided code, README, and other project materials. The structure should serve as the foundation for a documentation website, catering to both beginners and experienced developers.
         
-        This is NOT a generic template - your documentation structure must be specifically tailored to this exact project based on careful analysis of the provided code, README, and other project materials. Every section and subsection you create must correspond to actual components, services, and features that exist in this project.
+        Please follow these steps to analyze the repository and create the documentation structure:
         
-        The documentation structure you create will be used as the foundation for a documentation website, so it must be complete, accurate, and organized to serve both beginners and experienced developers. Focus especially on making the structure logical, comprehensive, and accessible to newcomers.
-        </task_definition>
+        1. Repository Assessment
+           - Identify the main purpose of the repository
+           - Note the primary programming language(s) used
+           - List any frameworks or major libraries utilized
         
-        <analysis_framework>
-        1. REPOSITORY ASSESSMENT:
-           - Analyze the README content to determine repository purpose, scope, and target audience
-           - Identify core technologies, frameworks, languages, and dependencies used in this project
-           - Recognize architectural patterns, design principles, and system organization
-           - Map key components and their relationships within the codebase
-           - Evaluate the maturity and stability of different components
-           - Extract project goals, mission statements, and target use cases
+        2. Project Structure Analysis
+           - Outline the high-level directory structure
+           - Identify key configuration files and their purposes
         
-        2. PROJECT STRUCTURE ANALYSIS:
-           - Perform complete analysis of the entire project organization
-           - Create a comprehensive map of the project's organization
-           - Identify configuration, build, and deployment specifications
-           - Analyze package management and dependency declarations
-           - Map the relationship between different directories and their purposes
-           - Document the organization of source code, tests, documentation, and resources
-           - Identify the project's entry points and bootstrapping process
+        3. Core Functionality and Services Identification
+           - List the main features or services provided by the project
+           - Note any APIs or interfaces exposed
         
-        3. CORE FUNCTIONALITY AND SERVICES IDENTIFICATION:
-           - Identify ALL core services provided by the project
-           - Map each service to its implementation and components
-           - Document the purpose and capabilities of each service
-           - Analyze service interfaces, inputs, and outputs
-           - Identify service dependencies and interaction patterns
-           - Document configuration options for each service
-           - Map service lifecycle (initialization, operation, shutdown)
-           - Identify cross-cutting concerns across services (logging, security, etc.)
-           - Create hierarchy of services from foundational to application-specific
+        4. Code Content Analysis
+           - Examine main code files and their responsibilities
+           - Identify recurring patterns or architectural choices
         
-        4. CODE CONTENT ANALYSIS:
-           - Perform systematic analysis of the entire repository
-           - Extract key classes, functions, methods, and variables
-           - Analyze comments and documentation blocks
-           - Map import/include statements to understand dependencies
-           - Extract API definitions and interface declarations
-           - Identify key algorithms and business logic implementations
-           - Analyze error handling and validation approaches
-           - Document configuration loading and environment variable usage
-           - Identify debugging hooks and instrumentation points
+        5. Feature Mapping
+           - Create a hierarchical list of features and sub-features
         
-        5. FEATURE MAPPING:
-           - Create comprehensive catalog of ALL features offered by the project
-           - Map features to their implementing components
-           - Document feature dependencies and relationships
-           - Analyze feature configuration and customization options
-           - Identify feature limitations and constraints
-           - Document feature testing approaches
-           - Create feature-to-service mapping for complete traceability
-           - Prioritize features based on core functionality vs. extensions
+        6. Audience Analysis for Beginners
+           - Identify concepts that may need extra explanation for newcomers
+           - List any prerequisites or assumed knowledge
         
-        6. AUDIENCE ANALYSIS FOR BEGINNERS:
-           - Identify specific needs of newcomers to the project
-           - Analyze knowledge prerequisites and learning curve
-           - Map concepts that require introductory explanations
-           - Identify common confusion points for beginners
-           - Design onboarding documentation paths for new developers
-           - Create glossary requirements for project-specific terminology
-           - Plan "Getting Started" documentation with concrete examples
-           - Identify quickstart scenarios and simple use cases for beginners
+        7. Code Structure Analysis
+           - Note any design patterns or architectural styles used
+           - Identify the main classes or modules and their relationships
         
-        7. CODE STRUCTURE ANALYSIS:
-           - Perform deep parsing of source code and organization
-           - Identify class hierarchies, inheritance patterns, and object relationships
-           - Map function/method dependencies and call hierarchies
-           - Analyze data flow patterns and state management approaches
-           - Document API endpoints, interfaces, and communication protocols
-           - Identify design patterns and architectural paradigms implemented
-           - Analyze algorithm implementations and computational complexity
-           - Extract database schema relationships and data models
+        8. Data Flow Analysis
+           - Trace the flow of data through the main components
+           - Identify key data structures or models used
         
-        8. DATA FLOW ANALYSIS:
-           - Map the complete data flow through the system
-           - Identify data sources and sinks
-           - Document data transformation and processing steps
-           - Analyze data storage and retrieval mechanisms
-           - Identify caching strategies and performance optimizations
-           - Document data validation and sanitization approaches
-           - Map error handling and exception flows for data processing
-           - Analyze data serialization and deserialization methods
+        9. Integration and Extension Points Identification
+           - List any plugin systems or extension mechanisms
+           - Identify how the project can be integrated with other systems
         
-        9. INTEGRATION AND EXTENSION POINTS:
-           - Identify all external integration points
-           - Document APIs for extending the project
-           - Analyze plugin systems and extension mechanisms
-           - Map webhook implementations and event triggers
-           - Document configuration options for integrations
-           - Identify customization hooks and override points
-           - Analyze interoperability with other systems
-           - Document authentication and authorization for integrations
+        10. Dependency Mapping
+            - List external dependencies and their purposes
+            - Note any internal dependencies between components
         
-        10. DEPENDENCY MAPPING:
-            - Create comprehensive dependency graphs between components
-            - Document external library usage and version requirements
-            - Identify integration points with third-party systems
-            - Map data transformation flows across system boundaries
-            - Analyze configuration dependencies and environment requirements
-            - Document build system and deployment dependencies
-            - Identify plugin systems and extension points
-            - Map service-to-service dependencies and communication patterns
+        11. User Workflow Mapping
+            - Outline common user scenarios or workflows
+            - Identify key entry points for different use cases
         
-        11. USER WORKFLOW MAPPING:
-            - Identify typical user workflows and use cases
-            - Map workflows to implementing code and services
-            - Document expected inputs and outputs for each workflow
-            - Analyze error conditions and recovery paths
-            - Create workflow diagrams linking UI to backend services
-            - Document configuration options affecting workflows
-            - Identify optimization opportunities for common workflows
-            - Map beginner, intermediate, and advanced workflow paths
+        12. Documentation Structure Planning
+            - Based on the analysis, propose main documentation sections
+            - Suggest a logical order for presenting information
         
-        12. DOCUMENTATION STRUCTURE PLANNING:
-            - Select the optimal documentation structure based on repository type and complexity
-            - Design a logical hierarchy from high-level concepts to implementation details
-            - Identify critical sections needed for this specific codebase
-            - Determine appropriate depth and technical detail for each section
-            - Align documentation structure with code organization patterns
-            - Create progressive disclosure paths for different audience segments
-            - Ensure comprehensive code coverage in the documentation structure
-            - Organize by both feature and service boundaries for complete coverage
-        </analysis_framework>
+        13. Dependent File Analysis
+            - For each proposed documentation section, list relevant source files
         
-        <output_requirements>
-        Generate a COMPLETE and DETAILED documentation directory tree structure that EXACTLY reflects the actual structure, components, services, and features of THIS SPECIFIC PROJECT. Your structure must:
+        For each step, wrap your analysis inside <repository_analysis> tags. Be thorough and consider all aspects of the project. After completing your analysis, summarize key findings from each step and brainstorm potential documentation sections. Then, generate the final documentation structure.
         
-        1. ONLY include sections that correspond to ACTUAL components, services, and features in the project
-        2. Use naming that accurately reflects the terminology used in the project code
-        3. Structure sections to mirror the logical organization of the project
-        4. Cover EVERY significant aspect of the project without omission
-        5. Organize content in a way that creates a clear learning path
-        6. Balance high-level overviews with detailed reference documentation
-        7. Include appropriate sections for getting started, installation, and basic usage
-        8. Provide dedicated sections for each major feature and service
-        9. Include API documentation sections for all public interfaces
-        10. Address configuration, customization, and extension points
-        11. Include troubleshooting and advanced usage sections where appropriate
-        12. Organize reference material in a logical, accessible manner
+        Requirements for the documentation structure:
+        1. Only include sections that correspond to actual components, services, and features in the project.
+        2. Use naming that accurately reflects the terminology used in the project code.
+        3. Structure sections to mirror the logical organization of the project.
+        4. Cover every significant aspect of the project without omission.
+        5. Organize content to create a clear learning path from basic concepts to advanced topics.
+        6. Balance high-level overviews with detailed reference documentation.
+        7. Include appropriate sections for getting started, installation, and basic usage.
+        8. Provide dedicated sections for each major feature and service.
+        9. Include API documentation sections for all public interfaces.
+        10. Address configuration, customization, and extension points.
+        11. Include troubleshooting and advanced usage sections where appropriate.
+        12. Organize reference material in a logical, accessible manner.
+        13. For each section, identify and include the most relevant source files from the project as dependent_file entries.
         
-        The structure must be HIGHLY SPECIFIC to this project - NO GENERIC SECTIONS that aren't directly relevant to the actual code. Every section title should use terminology that appears in the actual codebase.
-        
-        The directory structure must balance repository organization with user-centric information architecture. All content must be derived exclusively from the provided repository context, with special attention to unique patterns and implementations found in the code.
-        
-        The structure must create a clear learning path for beginners while providing comprehensive reference material for experienced developers. Each section should have a logical place in the overall organization with clear relationships to other sections.
-        </output_requirements>
-        
-        <thinking_process>
-        Before generating the final documentation structure, you must conduct a structured analysis and document your thought process using the <think></think> tags. In this analysis, you MUST:
-        
-        1. THOROUGHLY EXAMINE THE PROVIDED CODE:
-           - Analyze the code structure, organization, and patterns
-           - Identify main modules, components, and services
-           - Extract key classes, interfaces, and functions
-           - Map dependencies and relationships between components
-           - Identify core functionality and features
-           - Analyze naming conventions and terminology used in the code
-           - Extract architecture and design patterns
-           - Identify entry points and initialization processes
-           - Map data flow and control flow patterns
-           - Analyze error handling and validation approaches
-        
-        2. ANALYZE THE README AND OTHER PROJECT DOCUMENTATION:
-           - Extract project purpose, scope, and goals
-           - Identify target audience and use cases
-           - Document key technologies, frameworks, and dependencies
-           - Extract installation and setup instructions
-           - Identify configuration options and customization points
-           - Analyze examples and usage patterns
-           - Map project architecture and component relationships
-           - Extract terminology and project-specific concepts
-        
-        3. SYNTHESIZE FINDINGS INTO A LOGICAL STRUCTURE:
-           - Identify the most logical top-level organization based on project type and structure
-           - Map how components and services should be organized into sections
-           - Determine appropriate depth and detail for each section
-           - Plan progressive disclosure of information from basic to advanced
-           - Ensure comprehensive coverage of all project aspects
-           - Create clear navigation paths for different user types
-           - Balance reference material with conceptual documentation
-           - Ensure terminology consistency with the codebase
-        
-        Your analysis must be comprehensive and specifically focused on THIS PROJECT, not generic documentation patterns. Every section you propose must be tied directly to components, features, or services that actually exist in the provided code.
-        </thinking_process>
-        
-        <output_format>
-        Create a descriptive and user-friendly unique identifier for each section while maintaining technical accuracy. The documentation structure should follow this format:
-        
-        <think>
-        [Insert your complete thinking process here, following the structure outlined in the thinking_process section. Your analysis must be thorough and specific to this exact project, with detailed references to the actual code components, patterns, and organization you've analyzed. DO NOT use generic analysis - everything must be specific to this project.]
-        </think>
-        
+        The final output should be a JSON structure representing the documentation hierarchy. Use the following format:
         <documentation_structure>
         {
-           "items":[
-              {
-                 "title":"section-identifier",
-                 "name":"Section Name",
-                 "prompt":"Create comprehensive content for this section focused on the [SPECIFIC PROJECT COMPONENT/FEATURE]. Explain its purpose, architecture, and relationship to other components. Document the implementation details, configuration options, and usage patterns. Include both conceptual overviews for beginners and technical details for experienced developers. Use terminology consistent with the codebase. Provide practical examples demonstrating common use cases. Document public interfaces, parameters, and return values. Include diagrams where appropriate to illustrate key concepts.",
-                 "children":[
-                    {
-                       "title":"subsection-identifier",
-                       "name":"Subsection Name",
-                       "prompt":"Develop detailed content for this subsection covering [SPECIFIC ASPECT OF PARENT COMPONENT]. Thoroughly explain implementation details, interfaces, and usage patterns. Include concrete examples from the actual codebase. Document configuration options, parameters, and return values. Explain relationships with other components. Address common issues and their solutions. Make content accessible to beginners while providing sufficient technical depth for experienced developers."
-                    }
-                 ]
-              }
-           ]
+          "items": [
+            {
+              "title": "section-identifier",
+              "name": "Section Name",
+              "dependent_file": ["path/to/relevant/file1.ext", "path/to/relevant/file2.ext"],
+              "prompt": "Create comprehensive content for this section focused on [SPECIFIC PROJECT COMPONENT/FEATURE]. Explain its purpose, architecture, and relationship to other components. Document the implementation details, configuration options, and usage patterns. Include both conceptual overviews for beginners and technical details for experienced developers. Use terminology consistent with the codebase. Provide practical examples demonstrating common use cases. Document public interfaces, parameters, and return values. Include diagrams where appropriate to illustrate key concepts.",
+              "children": [
+                {
+                  "title": "subsection-identifier",
+                  "name": "Subsection Name",
+                  "dependent_file": ["path/to/relevant/subfile1.ext", "path/to/relevant/subfile2.ext"],
+                  "prompt": "Develop detailed content for this subsection covering [SPECIFIC ASPECT OF PARENT COMPONENT]. Thoroughly explain implementation details, interfaces, and usage patterns. Include concrete examples from the actual codebase. Document configuration options, parameters, and return values. Explain relationships with other components. Address common issues and their solutions. Make content accessible to beginners while providing sufficient technical depth for experienced developers."
+                }
+              ]
+            }
+          ]
         }
         </documentation_structure>
         
-        After providing the complete documentation structure, briefly explain your key design decisions and how the structure directly reflects the actual organization and components of this specific project. Focus on how your structure ensures comprehensive coverage of all aspects while creating a logical learning progression.
-        </output_format>
-        """;
+        Ensure that your documentation structure creates a clear learning path, accurately reflects the project's architecture, and provides a comprehensive overview of the project's core functionality, usage instructions, and service explanations.
+        
+        Begin your analysis now, using <repository_analysis> tags for each step. After completing your analysis, summarize key findings, brainstorm potential documentation sections, and then generate the final documentation structure in the specified JSON format.
+        """ +
+        Language;
 
-    public static string DefaultPrompt =>
-        Language +
+    /// <summary>
+    /// 生成文档核心提示词
+    /// </summary>
+    public static string GenerateDocs =>
         """
+        You are an expert software documentation specialist tasked with creating a comprehensive and well-structured document based on a Git repository. Your analysis should cover code structure, architecture, and functionality in great detail, producing a rich and informative document that is accessible even to users with limited technical knowledge.
         
-        <document_expert_role>
-        You are a document expert tasked with creating comprehensive and well-structured documentation based on the provided information. Your role is to analyze the given inputs, extract relevant knowledge, and synthesize a well-structured, informative document that addresses the specified prompt objective. During the analysis, you will use the provided functions to read and analyze file contents with meticulous attention to detail, placing special emphasis on code structure visualization and dependency mapping. ALL CONTENT MUST BE SOURCED DIRECTLY FROM THE PROVIDED REPOSITORY FILES - never invent or fabricate information. You will use structured thinking processes to analyze data structures, algorithms, and architecture patterns before finalizing your documentation.
-        </document_expert_role>
+        Here is the information about the repository you'll be working with:
         
-        <input_variables>
+        <documentation_objective>
+        {{prompt}}
+        </documentation_objective>
+        
+        <document_title>
+        {{title}}
+        </document_title>
+        
         <git_repository>
-        {{$git_repository}}
+        {{git_repository}}
         </git_repository>
         
         <git_branch>
-        {{$branch}}
+        {{branch}}
         </git_branch>
         
-        <catalogue>
-        {{$catalogue}}
-        </catalogue>
+        <repository_catalogue>
+        {{catalogue}}
+        </repository_catalogue>
         
-        <prompt>
-        {{$prompt}}
-        </prompt>
+        Your task is to create a detailed software documentation document that addresses the documentation objective and matches the document title. The document should be comprehensive, clearly explaining the codebase's architecture, functionality, and key components. Ensure that your analysis is thorough and that you provide ample content for each section, with particular emphasis on code-related explanations.
         
-        <title>
-        {{$title}}
-        </title>
-        </input_variables>
+        Follow these steps to create your documentation:
         
-        <document_creation_framework>
-        ## Document Creation Guidelines
-        1. Content Organization
-           - Begin with a clear introduction establishing purpose, audience, and key objectives
-           - Organize information in a logical progression that builds understanding from fundamentals to advanced concepts
-           - Include comprehensive yet concise explanations with appropriate technical depth for the target audience
-           - Create rich, detailed content that thoroughly addresses the prompt objective with specific examples
-           - Ensure each section connects logically to the next with smooth transitions between topics
+        1. Project Structure Analysis:
+           Examine the repository catalogue to identify all files in the repository. Analyze the overall project structure, file organization, and naming conventions.
         
-        2. Code Structure Analysis
-           - MANDATORY: Read and analyze files from the catalogue provided in the repository - ALL content must be derived from these files
-           - Carefully examine the catalogue to identify relevant files for analysis based on the prompt objective
-           - Read each identified file's content using the provided file functions
-           - Thoroughly examine file dependencies, inheritance patterns, and architectural relationships
-           - Create detailed flowcharts using proper Mermaid syntax in Markdown to illustrate code relationships and execution paths
-           - Develop system architecture diagrams showing component relationships, data flow, and code dependencies
-           - Use tables to organize comparative information, specifications, or configuration options
-           - Include sequence diagrams where appropriate to demonstrate interaction patterns between components
-           - Provide detailed class diagrams to visualize object hierarchies and relationships
-           - Include implementation patterns and design principles evident in the codebase
-           </document_creation_framework>
+        Inside <thought_process> tags:
+        Analyze the project structure here. Consider:
+        - Overall architecture
+        - File organization (by feature, layer, or technology)
+        - Main modules and their responsibilities
+        - Evident design patterns
+        - Key entry points to the application
+        List out each main directory and its subdirectories, numbering them for clarity. Provide a detailed explanation for each, assuming the reader has limited technical knowledge.
+        </thought_process>
         
-        <advanced_code_analysis>
-        ## Advanced Code Analysis Techniques
-        1. Dependency Graph Visualization
-           - Create comprehensive dependency graphs using Mermaid showing import/export relationships between modules
-           - Visualize package dependencies with weighted connections based on usage frequency
-           - Map circular dependencies and potential code smells with highlighted nodes
-           - Generate module interaction heat maps showing high-traffic code paths
+        2. README Analysis:
+           Read and analyze the README file content.
         
-        2. Class Hierarchy Mapping
-           - Develop detailed class inheritance trees with full method signatures
-           - Visualize composition relationships with cardinality indicators
-           - Map interface implementations across the codebase with compliance indicators
-           - Generate inheritance depth metrics with complexity warnings
+        Inside <thought_process> tags:
+        Analyze the README here. Extract key information about:
+        - Project purpose
+        - High-level architecture
+        - Context and background
+        Provide direct quotes from the README for each key piece of information. Expand on each point with your interpretation and how it relates to the overall project structure. Explain technical terms in simple language.
+        </thought_process>
         
-        3. Control Flow Analysis
-           - Create function call graphs showing execution paths with conditional branches
-           - Visualize asynchronous execution flows with parallel processing indicators
-           - Map event-driven architectures with trigger and handler relationships
-           - Generate state machine diagrams for stateful components
+        3. Core Data Structures and Algorithms Analysis:
+           Identify and analyze key data structures and algorithms in the codebase.
         
-        4. Data Flow Visualization
-           - Map data transformations through the system with type annotations
-           - Visualize state management patterns with mutation indicators
-           - Create entity relationship diagrams for data models
-           - Generate data lifecycle diagrams showing creation, transformation, and consumption paths
+        Inside <thought_process> tags:
+        Analyze core data structures and algorithms here. Consider:
+        - Primary data structures and their relationships
+        - Time and space complexity of important algorithms
+        - Optimization techniques and performance considerations
+        List each identified data structure and algorithm with a number and brief description, including examples of where and how they are used in the codebase. Provide detailed explanations and use analogies to make complex concepts more accessible.
+        </thought_process>
         
-        5. Performance Analysis Visualization
-           - Map computationally intensive code paths with complexity indicators
-           - Visualize memory usage patterns with allocation/deallocation markers
-           - Create resource utilization heat maps
-           - Generate bottleneck analysis diagrams
+        4. Relevant File Identification:
+           Based on the documentation objective and catalogue information, identify and prioritize core components and relevant files.
         
-        6. Data Structure Analysis
-           - Identify and document all key data structures (arrays, linked lists, trees, graphs, hash tables, etc.)
-           - Analyze time and space complexity for each data structure implementation
-           - Document specialized data structures and their optimization techniques
-           - Visualize data structure relationships and transformations
-           - Map memory layout and access patterns for performance-critical data structures
-           </advanced_code_analysis>
+        Inside <thought_process> tags:
+        Explain your file selection strategy and prioritization here.
+        Number and list each file you plan to analyze and provide a detailed explanation of why it's relevant to the documentation objective. Consider the potential impact on the overall system and user experience.
+        </thought_process>
         
-        <mermaid_diagram_specifications>
-        ## Mermaid Diagram Guidelines
-        1. Class Diagrams
-           ```mermaid
-           classDiagram
-             class ClassName {
-               +publicProperty: type
-               -privateProperty: type
-               #protectedProperty: type
-               +publicMethod(param: type): returnType
-               -privateMethod(param: type): returnType
-               #protectedMethod(param: type): returnType
-             }
-             ClassName <|-- ChildClass: inherits
-             ClassName *-- ComposedClass: contains
-             ClassName o-- AggregatedClass: has
-             ClassName --> DependencyClass: uses
+        5. Detailed File Analysis:
+           For each relevant file:
+           a. Analyze the code structure, patterns, and design principles.
+           b. Extract key information, patterns, relationships, and implementation details.
+           c. Document important functions, classes, methods, and their purposes.
+           d. Identify edge cases, error handling, and special considerations.
+           e. Create visual representations of code structure using Mermaid diagrams.
+           f. Document inheritance hierarchies and dependency relationships.
+           g. Analyze algorithmic complexity and performance considerations.
+        
+        Inside <thought_process> tags:
+        Perform detailed analysis for each file here. Use separate <thought_process> blocks for each file if necessary.
+        For each file:
+        - Summarize its purpose in simple terms
+        - Provide a numbered list of key functions/classes with brief descriptions
+        - Provide code snippets to illustrate important concepts
+        - Create Mermaid diagrams to visualize relationships and structures
+        - Discuss any potential improvements or optimizations
+        - Explain complex code sections as if teaching a beginner programmer
+        </thought_process>
+        
+        6. Code Architecture Mapping:
+           Create comprehensive visualizations of the code architecture and relationships.
+        
+        Inside <thought_process> tags:
+        List out each type of diagram you plan to create:
+        1. Overall system architecture and component interactions
+        2. Dependency graph showing import/export relationships
+        3. Class/component hierarchy diagrams
+        4. Data flow diagrams
+        5. Sequence diagrams for key processes
+        6. State transition diagrams for stateful components
+        7. Control flow for complex algorithms or processes
+        For each diagram, provide a detailed explanation of what it represents and how it contributes to understanding the codebase. Use analogies and real-world examples to make the concepts more relatable.
+        </thought_process>
+        
+        7. Deep Dependency Analysis:
+           Perform an in-depth analysis of component dependencies and relationships.
+        
+        Inside <thought_process> tags:
+        Analyze:
+        - Component coupling and cohesion
+        - Direct and indirect dependencies
+        - Circular dependencies and refactoring opportunities
+        - Coupling metrics and high-dependency components
+        - External dependencies and integration points
+        - Interface contracts and implementation details
+        - Reusable patterns and architectural motifs
+        Provide a numbered list of identified dependencies or relationships, explaining their impact on the overall system and any potential areas for improvement. Use simple language and provide examples to illustrate complex concepts.
+        </thought_process>
+        
+        8. Documentation Strategy Development:
+           Based on your analysis, develop a comprehensive documentation strategy.
+        
+        Inside <thought_process> tags:
+        Develop your documentation strategy here. Consider:
+        - Most effective document structure for both technical and non-technical readers
+        - Appropriate visualizations for different aspects of the codebase
+        - Areas requiring detailed explanation vs. high-level overview
+        - How to present technical information in an accessible manner
+        Outline the planned document structure, explaining why each section is important and what information it will contain. Include strategies for making complex topics understandable to readers with varying levels of technical expertise.
+        </thought_process>
+        
+        9. Document Synthesis:
+           Synthesize the gathered information into a well-structured document with clear hierarchical organization. Apply the documentation strategy developed in your thinking process. Create detailed Mermaid diagrams to illustrate code relationships, architecture, and data flow. Organize content logically with clear section headings, subheadings, and consistent formatting.
+        
+           Ensure the document thoroughly addresses the documentation objective with concrete examples and use cases. Include troubleshooting sections where appropriate to address common issues. Verify technical accuracy and completeness of all explanations and examples. Add code examples with syntax highlighting for key implementation patterns. Include performance analysis and optimization recommendations where relevant.
+        
+           If analysis cannot be completed for certain files, document the limitations and reasons.
+        
+        10. Documentation Style Matching:
+            Ensure the generated document matches the style of the repository's documentation website. Enhance the analysis of referenced files, using Markdown syntax for clearer explanations. Utilize Markdown features such as tables, code blocks, and nested lists to improve readability and organization.
+        
+        When referencing code files or blocks, use the following format:
+        
+        For code files:
+        Source:
+         - [git_repository/path/file](filename)
+        
+        For code blocks:
+        Source:
+         - [git_repository/path/file#L280-L389](filename)
+        
+        Use the following Mermaid diagram types as appropriate:
+        - Class diagrams
+        - Sequence diagrams
+        - Flowcharts
+        - Entity Relationship diagrams
+        - State diagrams
+        
+        Example Mermaid diagram (customize as needed):
+        
+        ```mermaid
+        classDiagram
+          class ClassName {
+            +publicProperty: type
+            -privateProperty: type
+            #protectedProperty: type
+            +publicMethod(param: type): returnType
+            -privateMethod(param: type): returnType
+            #protectedMethod(param: type): returnType
+          }
+          ClassName <|-- ChildClass: inherits
+          ClassName *-- ComposedClass: contains
+          ClassName o-- AggregatedClass: has
+          ClassName --> DependencyClass: uses
         ```
         
-        1. Sequence Diagrams
+        Remember to read and analyze all relevant files from the provided catalogue. All content must be sourced directly from the repository files - never invent or fabricate information.
         
-           mermaid
+        Your final document should be structured as follows:
         
-           ```mermaid
-           sequenceDiagram
-             participant Component1
-             participant Component2
-             Component1->>Component2: methodCall(params)
-             activate Component2
-             Component2-->>Component1: returnValue
-             deactivate Component2
-             Note over Component1,Component2: Important interaction note
+        1. Title
+        2. Table of Contents
+        3. Introduction
+        4. Project Structure
+        5. Core Components
+        6. Architecture Overview
+        7. Detailed Component Analysis
+        8. Dependency Analysis
+        9. Performance Considerations
+        10. Troubleshooting Guide
+        11. Conclusion
+        12. Appendices (if necessary)
+        
+        Each section should include appropriate Mermaid diagrams, code snippets, and detailed explanations. Ensure that your documentation is comprehensive, well-structured, and clearly explains the codebase's architecture, functionality, and key components. Pay special attention to making code-related explanations very detailed and accessible to users with limited technical knowledge.
+        
+        Format your final output within <data-blog> tags using proper Markdown hierarchy and formatting. Here's an example of how your output should be structured:
+        
+        <data-blog>
+        # [Document Title]
+        
+        ## Table of Contents
+        1. [Introduction](#introduction)
+        2. [Project Structure](#project-structure)
+        3. [Core Components](#core-components)
+        ...
+        
+        ## Introduction
+        [Detailed introduction to the project, its purpose, and high-level overview]
+        
+        ## Project Structure
+        [Comprehensive explanation of the project structure, including diagrams and file organization]
+        
+        ```mermaid
+        [Project structure diagram]
         ```
         
-        2. Flowcharts
+        ## Core Components
+        [Detailed analysis of core components, including code snippets and explanations]
         
-           mermaid
+        ```python
+        # Example code snippet
+        def important_function():
+            # Function explanation
+            pass
+        ```
         
-           ```mermaid
-           flowchart TD
-             A[Start] --> B{Condition}
-             B -->|True| C[Process 1]
-             B -->|False| D[Process 2]
-             C --> E[End]
-             D --> E
-           ```
+        [Continue with remaining sections, ensuring each is thoroughly explained and illustrated]
+        </data-blog>
         
-        3. Entity Relationship Diagrams
+        Remember to provide rich, detailed content for each section, addressing the documentation objective comprehensively. Assume that the reader may have limited technical knowledge, so explain complex concepts clearly and use analogies or real-world examples where appropriate.
         
-           mermaid
-        
-           ```mermaid
-           erDiagram
-             ENTITY1 ||--o{ ENTITY2 : relationship
-             ENTITY1 {
-               string id PK
-               string name
-               int value
-             }
-             ENTITY2 {
-               string id PK
-               string entity1_id FK
-               string attribute
-             }
-           ```
-        
-        4. State Diagrams
-        
-           mermaid
-        
-           ```mermaid
-           stateDiagram-v2
-             [*] --> State1
-             State1 --> State2: Event1
-             State2 --> State3: Event2
-             State3 --> [*]: Event3
-             State1 --> State4: Event4
-             State4 --> [*]: Event5
-           ```
-        
-        </mermaid_diagram_specifications>
-        
-        <structured_thinking_process>
-        
-        ## Structured Thinking Process
-        
-        During document creation, you will use <think></think> tags to capture your reasoning and analytical process. This structured thinking must include:
-        
-        1. Project Structure Analysis <think>
-           - What is the overall architecture of the project?
-           - How are files organized (by feature, by layer, by technology)?
-           - What are the main modules and their responsibilities?
-           - What design patterns are evident in the project structure?
-           - What are the key entry points to the application? </think>
-        2. Data Structure Analysis <think>
-           - What are the primary data structures used in the codebase?
-           - How do these data structures relate to each other?
-           - What are the time/space complexity implications of these choices?
-           - Are there any custom data structures or optimizations?
-           - What transformations do data undergo as they flow through the system?
-           - How are data validated, sanitized, and secured? </think>
-        3. Algorithm Analysis <think>
-           - What are the key algorithms implemented in the codebase?
-           - What is the computational complexity of these algorithms?
-           - Are there performance bottlenecks or optimization opportunities?
-           - How do the algorithms scale with input size?
-           - Are there edge cases or special considerations in the implementation? </think>
-        4. Dependency Analysis <think>
-           - What are the internal and external dependencies?
-           - How tightly coupled are the components?
-           - Are there circular dependencies that could be problematic?
-           - What interfaces define the boundaries between components?
-           - How is dependency injection or inversion of control used? </think>
-        5. Error Handling and Edge Cases <think>
-           - How does the code handle errors and exceptions?
-           - What validation exists for inputs and state transitions?
-           - Are there failure recovery mechanisms?
-           - How are boundary conditions and edge cases addressed? </think>
-        6. Documentation Strategy <think>
-           - Given the analysis, what is the most effective way to structure the documentation?
-           - What visual representations will best communicate the system architecture?
-           - What level of detail is appropriate for the target audience?
-           - Which components require the most detailed explanation?
-           - How can I best demonstrate the relationships between components? </think>
-        
-        The <think> sections are for your analytical process and will not appear in the final document. Use this structured thinking to inform the content of the final document. </structured_thinking_process>
-        
-        <document_creation_process>
-        
-        ## Document Creation Process
-        
-        1. FIRST STEP: Read the catalogue to identify all available files in the repository and analyze the overall project structure
-           - Use <think></think> tags to capture your analysis of the project structure and file organization
-           - Identify patterns in file naming, directory structure, and module organization
-        2. Read the readme file content using the provided file functions
-           - Use <think></think> tags to analyze the readme and extract key information about project purpose, architecture, and context
-        3. Select and analyze core data structures and algorithms
-           - Use <think></think> tags to document your analysis of key data structures, their relationships, and algorithmic approaches
-           - Determine the time and space complexity of important algorithms
-           - Identify optimization techniques and performance considerations
-        4. Based on the prompt objective and catalogue information, identify relevant files, prioritizing core components
-           - Use <think></think> tags to explain your file selection strategy and prioritization
-        5. For each relevant file: a. Read the file content using the provided file functions b. Use <think></think> tags to analyze the code structure, patterns, and design principles c. Extract key information, patterns, relationships, and implementation details d. Document important functions, classes, methods, and their purposes e. Identify edge cases, error handling, and special considerations f. Create visual representations of code structure using Mermaid diagrams g. Document inheritance hierarchies and dependency relationships h. Analyze algorithmic complexity and performance considerations
-        6. Map the code architecture relationships: a. Use <think></think> tags to analyze the overall system architecture and component interactions b. Build a comprehensive dependency graph showing import/export relationships between modules c. Create class/component hierarchy diagrams with inheritance and composition relationships d. Generate data flow diagrams showing how information moves through the system e. Develop sequence diagrams for key processes showing component interactions f. Map state transitions for stateful components g. Visualize control flow for complex algorithms or processes
-        7. Perform deep dependency analysis: a. Use <think></think> tags to analyze component coupling and cohesion b. Identify direct and indirect dependencies between components c. Map circular dependencies and potential refactoring opportunities d. Analyze coupling metrics and visualize high-dependency components e. Document external dependencies and their integration points f. Map interface contracts and implementation details g. Identify reusable patterns and architectural motifs
-        8. Use <think></think> tags to develop a comprehensive documentation strategy based on your analysis
-           - Determine the most effective document structure
-           - Select the most appropriate visualizations for different aspects of the codebase
-           - Identify areas requiring detailed explanation vs. high-level overview
-        9. Synthesize the gathered information into a well-structured document with clear hierarchical organization
-           - Apply the documentation strategy developed in your thinking process
-           - Create detailed diagrams to illustrate code relationships, architecture, and data flow using appropriate Mermaid diagram types
-           - Organize content logically with clear section headings, subheadings, and consistent formatting
-        10. Ensure the document thoroughly addresses the prompt objective with concrete examples and use cases
-        11. Include troubleshooting sections where appropriate to address common issues
-        12. Verify technical accuracy and completeness of all explanations and examples
-        13. Add code examples with syntax highlighting for key implementation patterns
-        14. Include performance analysis and optimization recommendations where relevant
-        15. If analysis cannot be completed for certain files, document the limitations and reasons </document_creation_process>
-        
-        <data_structure_analysis_framework>
-        Format the final output within <blog> tags using proper Markdown hierarchy and formatting.
-        """;
+        """ +
+        Language;
 
     public static string Overview =>
-        Language +
         """
-        You are tasked with analyzing a software project's structure and generating a comprehensive overview. Your primary responsibility is to understand and document the project's architecture, components and relationships based on provided information.
-
-        <system_parameters>
-        All data analysis requires the use of the provided file functions to read the corresponding file contents for analysis.
-        </system_parameters>
-
+        You are an expert software architect tasked with analyzing a software project's structure and generating a comprehensive, detailed overview. Your goal is to provide a clear, in-depth understanding of the project's architecture, components, and relationships.
+        
+        First, let's examine the project structure:
+        
+        <project_catalogue>
+        {{{catalogue}}}
+        </project_catalogue>
+        
+        Now, let's review the project information:
+        
         <git_repository>
-        {{$git_repository}}
+        {{{git_repository}}}
         </git_repository>
+        
         <git_branch>
-        {{$branch}}
+        {{{branch}}}
         </git_branch>
-
-        <analysis_phases>
-        PHASE 1: README ANALYSIS
-        Input source: 
-        <readme>
-        {{$readme}}
-        </readme>
-
-        <analysis_structure>
-        # Comprehensive Project Analysis Framework
-
-        ## 1. Project Structure Analysis
-        - Identify core components and map their relationships
-        - Document code organization principles and design patterns
-        - Generate visual representation of project architecture using Mermaid diagrams
-        - Analyze file distribution and module organization
-
-        ## 2. Configuration Management
-        - Examine environment configuration files and variables
-        - Review build system and deployment configuration
-        - Document external service integration points and dependencies
-        - Identify configuration patterns and potential improvements
-
-        ## 3. Dependency Analysis
-        - List external dependencies with version requirements
-        - Map internal module dependencies and coupling patterns
-        - Generate project dependency diagrams using Mermaid syntax:
-          ```mermaid
-          graph TD
-            A[Core Module] --> B[Dependency 1]
-            A --> C[Dependency 2]
-            B --> D[Sub-dependency]
-            C --> E[Sub-dependency]
-          ```
-        - Highlight critical dependencies and potential vulnerabilities
-
-        ## 4. Project-Specific Analysis
-        - [FRAMEWORK]: Analyze framework-specific patterns and implementation
-        - [PROJECT_TYPE]: Evaluate specialized components for Web/Mobile/Backend/ML
-        - [CUSTOM]: Identify project-specific patterns and architectural decisions
-        - [PERFORMANCE]: Assess performance considerations unique to this project
-
-        ## 5. Conclusion and Recommendations
-        - Summarize project architecture and key characteristics
-        - Identify architectural strengths and potential improvement areas
-        - Provide actionable recommendations for enhancing code organization
-        - Outline next steps for project evolution and maintenance
-        </analysis_structure>
-
-        PHASE 2: CATALOGUE STRUCTURE ANALYSIS
-        Input source:
-        <catalogue>
-        {{$catalogue}}
-        </catalogue>
-
-        <section_adaptation>
-        Dynamically adjust analysis based on detected project characteristics:
-        - For **frontend projects**: Include UI component hierarchy, state management, and routing analysis with Mermaid component diagrams:
-          ```mermaid
-          graph TD
-            App[App Component] --> Header[Header]
-            App --> Router[Router]
-            Router --> Page1[Page Component 1]
-            Router --> Page2[Page Component 2]
-            Page1 --> SharedComponent[Shared Component]
-            Page2 --> SharedComponent
-          ```
-
-        - For **backend services**: Analyze API structure, data flow, and service boundaries with Mermaid sequence diagrams:
-          ```mermaid
-          sequenceDiagram
-            Client->>+API Gateway: Request
-            API Gateway->>+Service A: Forward request
-            Service A->>+Database: Query data
-            Database-->>-Service A: Return data
-            Service A-->>-API Gateway: Response
-            API Gateway-->>-Client: Final response
-          ```
-
-        - For **data-intensive applications**: Examine data models, transformations, and storage patterns with Mermaid entity-relationship diagrams:
-          ```mermaid
-          erDiagram
-            USER ||--o{ ORDER : places
-            ORDER ||--|{ LINE-ITEM : contains
-            PRODUCT ||--o{ LINE-ITEM : "ordered in"
-          ```
-
-        - For **monorepos**: Map cross-project dependencies and shared utility usage with Mermaid flowcharts:
-          ```mermaid
-          graph TD
-            SharedLib[Shared Libraries] --> ProjectA
-            SharedLib --> ProjectB
-            SharedLib --> ProjectC
-            ProjectA --> CommonUtil[Common Utilities]
-            ProjectB --> CommonUtil
-          ```
-        </section_adaptation>
-
-        PHASE 3: DETAILED COMPONENT ANALYSIS
-        For each key file identified in PHASE 2:
-        1. Read and analyze the content of main entry points
-        2. Examine core module implementations
-        3. Review configuration files
-        4. Analyze dependency specifications
-
-        IMPORTANT: For each file you identify as important from the catalogue:
-        - Request its content using system functions
-        - Include specific code snippets in your analysis
-        - Connect file implementations to the project's overall architecture
-        - Identify how components interact with each other
-        - Create Mermaid diagrams to visualize component relationships and data flow:
-          ```mermaid
-          classDiagram
-            Class01 <|-- AveryLongClass : Cool
-            Class03 *-- Class04
-            Class05 o-- Class06
-            Class07 .. Class08
-            Class09 --> C2 : Where am I?
-            Class09 --* C3
-            Class09 --|> Class07
-            Class07 : equals()
-            Class07 : Object[] elementData
-            Class01 : size()
-            Class01 : int chimp
-            Class01 : int gorilla
-          ```
-
-        Source Reference Guidelines:
-        - For each code file you read and analyze, include a reference link at the end of the related section
-        - Format source references using this pattern: 
-          Sources:
-          - [filename](git_repository_url/path/to/file)
-        - The git_repository value combined with the file path creates the complete source URL
-        - This helps readers trace information back to the original source code
-        - Include these references after each major section where you've analyzed specific files
-
-        ## Syntax Format
-        To reference specific code lines from a file in a Git repository, use the following format:
-
+        
+        Here's the project's README:
+        
+        <readme_content>
+        {{{readme}}}
+        </readme_content>
+        
+        Your task is to analyze this information and create a detailed project overview. Follow these steps:
+        
+        1. README Analysis:
+           - Examine the README content carefully.
+           - Identify the project's purpose, core goals, and target audience.
+           - Note any key features or architectural decisions mentioned.
+        
+        2. Project Structure Analysis:
+           - Study the project catalogue to understand the overall structure.
+           - Identify core components and their relationships.
+           - Document code organization principles and design patterns.
+           - Create a visual representation of the project architecture using a Mermaid diagram.
+        
+        3. Configuration Management:
+           - Examine environment configuration files and variables.
+           - Review build system and deployment configuration.
+           - Document external service integration points and dependencies.
+           - Identify configuration patterns and potential improvements.
+        
+        4. Dependency Analysis:
+           - List external dependencies with version requirements.
+           - Map internal module dependencies and coupling patterns.
+           - Generate a project dependency diagram using Mermaid syntax.
+           - Highlight critical dependencies and potential vulnerabilities.
+        
+        5. Project-Specific Analysis:
+           - Analyze framework-specific patterns and implementation.
+           - Evaluate specialized components based on the project type (Web/Mobile/Backend/ML).
+           - Identify project-specific patterns and architectural decisions.
+           - Assess performance considerations unique to this project.
+        
+        6. Core Process and Mechanism Analysis:
+           - Identify and explain the core processes within the project.
+           - Create detailed flowcharts using Mermaid syntax to illustrate these processes.
+           - Describe key mechanisms and how they contribute to the project's functionality.
+        
+        7. Conclusion and Recommendations:
+           - Summarize the project architecture and key characteristics.
+           - Identify architectural strengths and potential improvement areas.
+           - Provide actionable recommendations for enhancing code organization.
+           - Outline next steps for project evolution and maintenance.
+        
+        For each major component or file you analyze, include a reference link at the end of the related section using this format:
         Sources:
-           - [filename](git_repository_url/path/to/file#L1-L10)
-
-        ## Components
-        - `[filename]`: The display name for the linked file
-        - `(git_repository_url/path/to/file#L1-L10)`: The URL with line selection parameters
-          - `git_repository_url`: The base URL of the Git repository
-          - `/path/to/file`: The file path within the repository
-          - `#L1-L10`: Line selection annotation
-            - `L1`: Starting line number
-            - `L10`: Ending line number
-            
-        </analysis_phases>
-
-        <output_requirements>
-        Generate a comprehensive project overview using Markdown syntax that includes:
-
+        - [filename](git_repository_url/path/to/file)
+        
+        To reference specific code lines, use:
+        Sources:
+        - [filename](git_repository_url/path/to/file#L1-L10)
+        
+        Throughout your analysis, use Mermaid diagrams to visualize component relationships, data flow, and core processes. Be as detailed and clear as possible in your explanations.
+        
+        Your final output should be a comprehensive project overview in Markdown format, structured as follows:
+        
         1. Project Introduction
            - Purpose statement
            - Core goals and objectives
            - Target audience
-
+        
         2. Technical Architecture
            - Component breakdown
            - Design patterns
            - System relationships
-           - Data flow diagrams using Mermaid syntax:
-             ```mermaid
-             flowchart TD
-               A[Client] --> B[API Layer]
-               B --> C[Business Logic]
-               C --> D[Data Access]
-               D --> E[(Database)]
-             ```
-
+           - Data flow diagrams (using Mermaid)
+        
         3. Implementation Details
            - Main entry points (with code examples)
            - Core modules (with implementation highlights)
            - Configuration approach (with file examples)
            - External dependencies (with integration examples)
            - Integration points (with code demonstrations)
-           - Component relationship diagrams using Mermaid:
-             ```mermaid
-             graph LR
-               A[Component A] --> B[Component B]
-               A --> C[Component C]
-               B --> D[Component D]
-               C --> D
-             ```
-
+           - Component relationship diagrams (using Mermaid)
+        
         4. Key Features
            - Functionality overview
            - Implementation highlights (with code examples)
            - Usage examples (with practical code snippets)
-           - Feature architecture diagrams using Mermaid:
-             ```mermaid
-             stateDiagram-v2
-               [*] --> Idle
-               Idle --> Processing: Request
-               Processing --> Success: Valid
-               Processing --> Error: Invalid
-               Success --> Idle: Reset
-               Error --> Idle: Reset
-             ```
-
-        Format the final output within <blog> tags using proper Markdown hierarchy and formatting.
-        </output_requirements>
-        """;
-
+           - Feature architecture diagrams (using Mermaid)
+        
+        5. Core Processes and Mechanisms
+           - Detailed explanations of core processes
+           - Flowcharts illustrating these processes (using Mermaid)
+           - Key mechanisms and their roles in the project
+        
+        6. Conclusion and Recommendations
+           - Architecture summary
+           - Strengths and areas for improvement
+           - Actionable recommendations
+           - Next steps
+        
+        Before providing your final output, wrap your thought process for each major section in <project_analysis> tags. For each section:
+        - List the key points you need to address
+        - For Technical Architecture, write down the main components and their relationships before creating the Mermaid diagram
+        - For Implementation Details, list the main entry points and core modules you identify
+        - For Key Features, list the features you plan to highlight
+        
+        This will ensure a thorough interpretation of the project data. It's OK for this section to be quite long.
+        
+        Format your final output within <blog> tags using proper Markdown hierarchy and formatting.
+        """ +
+        Language;
 }

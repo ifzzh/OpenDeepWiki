@@ -6,6 +6,7 @@ using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Extensions;
+using KoalaWiki.Functions;
 using KoalaWiki.Options;
 using LibGit2Sharp;
 using Markdig;
@@ -194,14 +195,17 @@ public class DocumentsService
                 StringBuilder str = new StringBuilder();
                 var history = new ChatHistory();
                 history.AddUserMessage(Prompt.AnalyzeCatalogue
-                    .Replace("{{$catalogue}}", catalogue));
-
+                        .Replace("{{code_files}}", catalogue)
+                        .Replace("{{repository_name}}", warehouse.Name))
+                    ;
                 await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history,
                                    new OpenAIPromptExecutionSettings()
                                    {
-                                       ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                                       ToolCallBehavior = ToolCallBehavior.RequireFunction(
+                                           analysisModel.Plugins["FileFunction"]["ReadFiles"].Metadata
+                                               .ToOpenAIFunction(), true),
                                        Temperature = 0.5,
-                                       MaxTokens = GetMaxTokens(OpenAIOptions.ChatModel),
+                                       MaxTokens = GetMaxTokens(OpenAIOptions.AnalysisModel)
                                    }, analysisModel))
                 {
                     str.Append(item);
@@ -358,7 +362,7 @@ public class DocumentsService
             {
                 await semaphore.WaitAsync();
                 Log.Logger.Information("处理仓库；{path} ,处理标题：{name}", path, catalog.Name);
-                var fileItem = await ProcessCatalogueItems(catalog, kernel, catalogue, gitRepository, branch);
+                var fileItem = await ProcessCatalogueItems(catalog, kernel, catalogue, gitRepository, branch, path);
                 files.AddRange(DocumentContext.DocumentStore.Files);
 
                 Log.Logger.Information("处理仓库；{path} ,处理标题：{name} 完成！", path, catalog.Name);
@@ -400,6 +404,7 @@ public class DocumentsService
             "gpt-4.1" => 16384,
             "gpt-4o" => 16384,
             "o4-mini" => 16384,
+            "doubao-1-5-pro-256k-250115" => 12288,
             "o3-mini" => 16384,
             "Qwen/Qwen3-235B-A22B" => 16384,
             "grok-3" => 65536,
@@ -540,24 +545,29 @@ public class DocumentsService
     /// 处理每一个标题产生文件内容
     /// </summary>
     private async Task<DocumentFileItem> ProcessCatalogueItems(DocumentCatalog catalog, Kernel kernel, string catalogue,
-        string gitRepository, string branch)
+        string gitRepository, string branch, string path)
     {
         var chat = kernel.Services.GetService<IChatCompletionService>();
 
         var history = new ChatHistory();
 
-        history.AddUserMessage(Prompt.DefaultPrompt
-            .Replace("{{$catalogue}}", catalogue)
-            .Replace("{{$prompt}}", catalog.Prompt)
-            .Replace("{{$git_repository}}", gitRepository)
-            .Replace("{{$branch}}", branch)
-            .Replace("{{$title}}", catalog.Name));
+        history.AddUserMessage(Prompt.GenerateDocs
+            .Replace("{{catalogue}}", catalogue)
+            .Replace("{{prompt}}", catalog.Prompt)
+            .Replace("{{git_repository}}", gitRepository)
+            .Replace("{{branch}}", branch)
+            .Replace("{{title}}", catalog.Name));
+
+        var fileFunction = new FileFunction(path);
+        history.AddUserMessage(await fileFunction.ReadFilesAsync(catalog.DependentFile.ToArray()));
 
         var sr = new StringBuilder();
 
         await foreach (var i in chat.GetStreamingChatMessageContentsAsync(history, new OpenAIPromptExecutionSettings()
                        {
-                           ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+                           ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                           MaxTokens = GetMaxTokens(OpenAIOptions.ChatModel),
+                           Temperature = 0.5,
                        }, kernel))
         {
             if (!string.IsNullOrEmpty(i.Content))
@@ -565,9 +575,21 @@ public class DocumentsService
                 sr.Append(i.Content);
             }
         }
+        
+        // 擅长<thought_process></thought_process>标签的内容包括标签
+        var thought_process = new Regex(@"<thought_process>(.*?)</thought_process>", RegexOptions.Singleline);
+        var thought_process_match = thought_process.Match(sr.ToString());
+        if (thought_process_match.Success)
+        {
+            // 提取到的内容
+            var extractedContent = thought_process_match.Groups[1].Value;
+            sr.Clear();
+            sr.Append(extractedContent);
+        }
+        
 
         // 使用正则表达式将<blog></blog>中的内容提取
-        var regex = new Regex(@"<blog>(.*?)</blog>", RegexOptions.Singleline);
+        var regex = new Regex(@"<data-blog>(.*?)</data-blog>", RegexOptions.Singleline);
 
         var match = regex.Match(sr.ToString());
 
@@ -609,6 +631,7 @@ public class DocumentsService
             {
                 WarehouseId = warehouse.Id,
                 Description = item.title,
+                DependentFile = item.dependent_file.ToList(),
                 Id = Guid.NewGuid().ToString("N"),
                 Name = item.name,
                 Url = item.title,
@@ -622,54 +645,6 @@ public class DocumentsService
 
             ProcessCatalogueItems(item.children.ToList(), documentItem.Id, warehouse, document,
                 documents);
-        }
-    }
-
-    private void ProcessCatalogueItems(List<DocumentResultCatalogueChildItem> items, string parentId,
-        Warehouse warehouse, Document document, List<DocumentCatalog> documents)
-    {
-        int order = 0; // 创建排序计数器
-        foreach (var item in items)
-        {
-            var documentItem = new DocumentCatalog
-            {
-                WarehouseId = warehouse.Id,
-                Description = item.title,
-                Id = Guid.NewGuid().ToString("N"),
-                Name = item.name,
-                Url = item.title,
-                DucumentId = document.Id,
-                ParentId = parentId,
-                Prompt = item.prompt,
-                Order = order++
-            };
-
-            documents.Add(documentItem);
-            ProcessCatalogueItems1(item.children.ToList(), documentItem.Id, warehouse, document,
-                documents);
-        }
-    }
-
-    private void ProcessCatalogueItems1(List<DocumentResultCatalogueChildItem1> items, string parentId,
-        Warehouse warehouse, Document document, List<DocumentCatalog> documents)
-    {
-        int order = 0; // 创建排序计数器
-        foreach (var item in items)
-        {
-            var documentItem = new DocumentCatalog
-            {
-                WarehouseId = warehouse.Id,
-                Description = item.title,
-                Id = Guid.NewGuid().ToString("N"),
-                Name = item.name,
-                Url = item.title,
-                DucumentId = document.Id,
-                Prompt = item.prompt,
-                ParentId = parentId,
-                Order = order++
-            };
-
-            documents.Add(documentItem);
         }
     }
 

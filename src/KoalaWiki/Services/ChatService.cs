@@ -77,9 +77,9 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             if (isFirst)
             {
                 history.AddUserMessage(Prompt.DeepFirstPrompt
-                    .Replace("{{$question}}", chatShareMessage!.Question)
-                    .Replace("{{$git_repository_url}}", warehouse.Address)
-                    .Replace("{{$catalogue}}", string.Join('\n', fileSource)));
+                    .Replace("{{question}}", chatShareMessage!.Question)
+                    .Replace("{{git_repository_url}}", warehouse.Address)
+                    .Replace("{{catalogue}}", string.Join('\n', fileSource)));
             }
             else
             {

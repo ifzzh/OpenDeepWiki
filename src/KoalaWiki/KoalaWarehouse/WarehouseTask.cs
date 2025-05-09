@@ -70,6 +70,7 @@ public class WarehouseTask(
                         WarehouseId = value.Id,
                         CreatedAt = DateTime.UtcNow,
                         LastUpdate = DateTime.UtcNow,
+                        GitPath = info.LocalPath,
                         Status = WarehouseStatus.Pending
                     };
                     logger.LogInformation("创建文档记录，文档ID：{Id}", document.Id);

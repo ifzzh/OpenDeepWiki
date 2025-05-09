@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Text;
+using System.Text.Json;
 using KoalaWiki.KoalaWarehouse;
 using Microsoft.SemanticKernel;
 
@@ -9,7 +10,7 @@ public class FileFunction(string gitPath)
 {
     [KernelFunction, Description("Read the specified file content")]
     [return: Description("Return the dictionary. The key is the directory name")]
-    public async Task<Dictionary<string, string>> ReadFilesAsync(
+    public async Task<string> ReadFilesAsync(
         [Description("File Path")] string[] filePaths)
     {
         try
@@ -37,15 +38,19 @@ public class FileFunction(string gitPath)
                 // 判断文件大小
                 if (info.Length > 1024 * 1024 * 1)
                 {
-                    throw new Exception($"File too large: {item} ({info.Length / 1024 / 1024}MB)");
+                    throw new Exception($"File too large: {filePath} ({info.Length / 1024 / 1024}MB)");
                 }
 
                 await using var stream = new FileStream(item, FileMode.Open, FileAccess.Read);
                 using var reader = new StreamReader(stream);
-                dic.Add(item, await reader.ReadToEndAsync());
+                dic[filePath] = await reader.ReadToEndAsync();
             }
 
-            return dic;
+            return JsonSerializer.Serialize(dic,new JsonSerializerOptions()
+            {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                WriteIndented = true,
+            });
         }
         catch (Exception ex)
         {

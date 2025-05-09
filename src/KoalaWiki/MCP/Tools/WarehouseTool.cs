@@ -59,9 +59,9 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
         var fileSource = DocumentsService.GetCatalogue(document.GitPath);
 
         history.AddUserMessage(Prompt.DeepFirstPrompt
-            .Replace("{{$question}}", question)
-            .Replace("{{$git_repository_url}}", warehouse.Address)
-            .Replace("{{$catalogue}}", string.Join('\n', fileSource)));
+            .Replace("{{question}}", question)
+            .Replace("{{git_repository_url}}", warehouse.Address)
+            .Replace("{{catalogue}}", string.Join('\n', fileSource)));
 
         var first = true;
 
