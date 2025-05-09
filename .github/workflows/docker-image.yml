@@ -10,13 +10,13 @@ jobs:
       - name: Set up Docker Buildx
         run: |
           docker buildx create --use
+      - name: Login to Docker Registry
+        run: docker login -u "${{ secrets.DOCKER_USERNAME }}" crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com --password="${{ secrets.DOCKER_PASSWORD }}"
       - name: Build Backend Image
         run: ./build-image.sh
-      - name: Login to Docker Registry
-        run: docker login -u "${{ secrets.DOCKER_USERNAME }}" crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com --password="${{ secrets.DOCKER_PASSWORD }}"
       - name: Push Images
         run: |
-          docker push crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
-          docker push crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web
-          docker push crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64
-          docker push crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64
+          docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
+          docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web
+          docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64
+          docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64

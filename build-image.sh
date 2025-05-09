@@ -11,7 +11,7 @@ docker buildx create --use
 echo "Building backend image for amd64 platform..."
 docker buildx build \
     --platform linux/amd64 \
-    -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki \
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki \
     -f src/KoalaWiki/Dockerfile \
     --push .
 if [ $? -ne 0 ]; then
@@ -23,7 +23,7 @@ fi
 echo "Building backend image for arm64 platform using Dockerfile.arm..."
 docker buildx build \
     --platform linux/arm64 \
-    -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64 \
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64 \
     -f src/KoalaWiki/Dockerfile.arm \
     --push .
 if [ $? -ne 0 ]; then
@@ -36,7 +36,7 @@ echo "Building frontend image for amd64 platform..."
 pushd web > /dev/null
 docker buildx build \
     --platform linux/amd64 \
-    -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web \
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web \
     -f Dockerfile \
     --push .
 if [ $? -ne 0 ]; then
@@ -51,7 +51,7 @@ echo "Building frontend image for arm64 platform..."
 pushd web > /dev/null
 docker buildx build \
     --platform linux/arm64 \
-    -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64 \
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64 \
     -f Dockerfile.arm \
     --push .
 if [ $? -ne 0 ]; then
