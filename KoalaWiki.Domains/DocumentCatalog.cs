@@ -35,6 +35,11 @@ public class DocumentCatalog : Entity<string>
     
     public string WarehouseId { get; set; } = string.Empty;
     
+    /// <summary>
+    /// 是否处理完成
+    /// </summary>
+    public bool IsCompleted { get; set; } = false;
+    
     [NotMapped]
     public string Prompt { get; set; } = string.Empty;
 }

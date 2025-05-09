@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react';
-import { Row, Col, Card, Typography, Tag, Button, Skeleton, Avatar, theme, Divider, message } from 'antd';
+import { Row, Col,  Typography, Tag, Button, Skeleton, Avatar, theme, Divider, message } from 'antd';
 import { StarOutlined, ForkOutlined, CalendarOutlined, ExclamationCircleOutlined, EyeOutlined, IssuesCloseOutlined, PlusOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 
@@ -30,7 +30,7 @@ import RepositoryForm from '../../components/RepositoryForm';
 import { submitWarehouse } from '../../services';
 import { RepositoryFormValues } from '../../types';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title,  Paragraph } = Typography;
 const { useToken } = theme;
 
 interface RepositoryInfoProps {
@@ -51,14 +51,14 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
       try {
         setLoading(true);
         const response = await fetch(`https://api.github.com/repos/${owner}/${name}`);
-        
+
         if (!response.ok) {
           throw new Error('GitHub仓库信息获取失败');
         }
-        
+
         const data = await response.json();
         setRepoInfo(data);
-        
+
         // 获取README内容
         try {
           const readmeResponse = await fetch(`https://api.github.com/repos/${owner}/${name}/readme`, {
@@ -66,7 +66,7 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
               'Accept': 'application/vnd.github.html'
             }
           });
-          
+
           if (readmeResponse.ok) {
             const readmeHtml = await readmeResponse.text();
             setReadme(readmeHtml);
@@ -75,7 +75,7 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
           console.error('获取README失败:', readmeErr);
           // README获取失败不影响主流程
         }
-        
+
         setError(null);
       } catch (err) {
         console.error('获取GitHub仓库信息出错:', err);
@@ -113,126 +113,125 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
   };
 
   return (
-    <div style={{ backgroundColor: token.colorBgLayout, minHeight: '100vh', padding: { xs: '8px', sm: '16px', md: '24px' }[token.screenSM] }}>
+    <div style={{ minHeight: '100vh' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <Card bordered={false} style={{ borderRadius: token.borderRadiusLG, overflow: 'hidden' }}>
-          {loading ? (
-            <Skeleton active avatar paragraph={{ rows: 4 }} />
-          ) : error ? (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <ExclamationCircleOutlined style={{ fontSize: '48px', color: token.colorError, marginBottom: '16px' }} />
-              <Title level={4} style={{ marginBottom: '16px' }}>仓库未索引</Title>
-              <Paragraph type="secondary">
-                {`${owner}/${name} ${error}`}
-              </Paragraph>
-              <Button type="primary" href={`https://github.com/${owner}/${name}`} target="_blank">
-                前往GitHub查看
-              </Button>
-            </div>
-          ) : repoInfo && (
-            <>
-              <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap' }}>
-                <Avatar 
-                  src={repoInfo.owner.avatar_url} 
-                  alt={owner} 
-                  size={64}
-                  style={{ marginRight: '16px' }}
-                />
-                <div style={{ flex: 1, minWidth: '280px' }}>
-                  <Title level={3} style={{ margin: 0 }}>
-                    <Link 
-                      href={repoInfo.html_url} 
-                      target="_blank"
-                      style={{ color: token.colorText }}
-                    >
-                      {owner}/{name}
-                    </Link>
-                  </Title>
-                  {repoInfo.description && (
-                    <Paragraph style={{ margin: '8px 0 0', color: token.colorTextSecondary }}>
-                      {repoInfo.description}
-                    </Paragraph>
-                  )}
-                </div>
-                <div style={{ display: 'flex', marginTop: { xs: '16px', sm: '16px', md: '0' }[token.screenSM], flexWrap: 'wrap' }}>
-                  <Button 
-                    type="primary" 
-                    href={`https://github.com/${owner}/${name}`} 
+        {loading ? (
+          <Skeleton active avatar paragraph={{ rows: 4 }} />
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <ExclamationCircleOutlined style={{ fontSize: '48px', color: token.colorError, marginBottom: '16px' }} />
+            <Title level={4} style={{ marginBottom: '16px' }}>仓库未索引</Title>
+            <Paragraph type="secondary">
+              {`${owner}/${name} ${error}`}
+            </Paragraph>
+            <Button type="primary" href={`https://github.com/${owner}/${name}`} target="_blank">
+              前往GitHub查看
+            </Button>
+          </div>
+        ) : repoInfo && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap' }}>
+              <Avatar
+                src={repoInfo.owner.avatar_url}
+                alt={owner}
+                size={64}
+                style={{ marginRight: '16px' }}
+              />
+              <div style={{ flex: 1, minWidth: '280px' }}>
+                <Title level={3} style={{ margin: 0 }}>
+                  <Link
+                    href={repoInfo.html_url}
                     target="_blank"
-                    style={{ marginRight: '12px', marginBottom: '8px' }}
-                    icon={<EyeOutlined />}
+                    style={{ color: token.colorText }}
                   >
-                    在GitHub上查看
-                  </Button>
-                  <Button 
-                    type="default" 
-                    onClick={() => setFormVisible(true)}
-                    style={{ marginBottom: '8px' }}
-                    icon={<PlusOutlined />}
-                  >
-                    添加仓库
-                  </Button>
-                </div>
+                    {owner}/{name}
+                  </Link>
+                </Title>
+                {repoInfo.description && (
+                  <Paragraph style={{ margin: '8px 0 0', color: token.colorTextSecondary }}>
+                    {repoInfo.description}
+                  </Paragraph>
+                )}
               </div>
+              <div style={{ display: 'flex', marginTop: { xs: '16px', sm: '16px', md: '0' }[token.screenSM], flexWrap: 'wrap' }}>
+                <Button
+                  type="primary"
+                  href={`https://github.com/${owner}/${name}`}
+                  target="_blank"
+                  style={{ marginRight: '12px', marginBottom: '8px' }}
+                  icon={<EyeOutlined />}
+                >
+                  在GitHub上查看
+                </Button>
+                <Button
+                  type="default"
+                  onClick={() => setFormVisible(true)}
+                  style={{ marginBottom: '8px' }}
+                  icon={<PlusOutlined />}
+                >
+                  添加仓库
+                </Button>
+              </div>
+            </div>
 
-              <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+              <Col>
+                <Tag color={token.colorPrimary} icon={<StarOutlined />}>
+                  {repoInfo.stargazers_count} 星标
+                </Tag>
+              </Col>
+              <Col>
+                <Tag color={token.colorSuccess} icon={<ForkOutlined />}>
+                  {repoInfo.forks_count} 分支
+                </Tag>
+              </Col>
+              {repoInfo.open_issues_count > 0 && (
                 <Col>
-                  <Tag color={token.colorPrimary} icon={<StarOutlined />}>
-                    {repoInfo.stargazers_count} 星标
+                  <Tag color={token.colorWarning} icon={<IssuesCloseOutlined />}>
+                    {repoInfo.open_issues_count} 议题
                   </Tag>
                 </Col>
+              )}
+              {repoInfo.language && (
                 <Col>
-                  <Tag color={token.colorSuccess} icon={<ForkOutlined />}>
-                    {repoInfo.forks_count} 分支
+                  <Tag color={token.colorInfo}>
+                    {repoInfo.language}
                   </Tag>
                 </Col>
-                {repoInfo.open_issues_count > 0 && (
-                  <Col>
-                    <Tag color={token.colorWarning} icon={<IssuesCloseOutlined />}>
-                      {repoInfo.open_issues_count} 议题
-                    </Tag>
-                  </Col>
-                )}
-                {repoInfo.language && (
-                  <Col>
-                    <Tag color={token.colorInfo}>
-                      {repoInfo.language}
-                    </Tag>
-                  </Col>
-                )}
-                {repoInfo.license && (
-                  <Col>
-                    <Tag color={token.colorWarning}>
-                      {repoInfo.license.name}
-                    </Tag>
-                  </Col>
-                )}
+              )}
+              {repoInfo.license && (
                 <Col>
-                  <Tag color={token.colorTextSecondary} icon={<CalendarOutlined />}>
-                    更新于 {formatDate(repoInfo.updated_at)}
+                  <Tag color={token.colorWarning}>
+                    {repoInfo.license.name}
                   </Tag>
                 </Col>
-                {repoInfo.topics && repoInfo.topics.length > 0 && (
-                  repoInfo.topics.slice(0, 3).map(topic => (
-                    <Col key={topic}>
-                      <Tag color={token.colorPrimaryBg}>{topic}</Tag>
-                    </Col>
-                  ))
-                )}
-              </Row>
+              )}
+              <Col>
+                <Tag color={token.colorTextSecondary} icon={<CalendarOutlined />}>
+                  更新于 {formatDate(repoInfo.updated_at)}
+                </Tag>
+              </Col>
+              {repoInfo.topics && repoInfo.topics.length > 0 && (
+                repoInfo.topics.slice(0, 3).map(topic => (
+                  <Col key={topic}>
+                    <Tag color={token.colorPrimaryBg}>{topic}</Tag>
+                  </Col>
+                ))
+              )}
+            </Row>
 
-              {readme && (
-                <>
-                  <Divider />
-                  <div 
-                    className="github-readme"
-                    dangerouslySetInnerHTML={{ __html: readme }}
-                    style={{
-                      overflow: 'auto',
-                      padding: '0 8px'
-                    }}
-                  />
-                  <style jsx global>{`
+            {readme && (
+              <>
+                <Divider />
+                <div
+                  className="github-readme"
+                  dangerouslySetInnerHTML={{ __html: readme }}
+                  style={{
+                    overflow: 'auto',
+                    padding: '0 8px'
+                  }}
+                />
+                <style jsx global>{`
                     .github-readme {
                       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
                       font-size: 16px;
@@ -288,24 +287,23 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
                       padding: 0;
                     }
                   `}</style>
-                </>
-              )}
-              
-              <RepositoryForm
-                open={formVisible}
-                onCancel={() => setFormVisible(false)}
-                onSubmit={handleAddRepository}
-                initialValues={{
-                  address: `https://github.com/${owner}/${name}`,
-                  type: 'git',
-                  branch: repoInfo?.default_branch || 'main',
-                  prompt: '',
-                }}
-                disabledFields={['address']}
-              />
-            </>
-          )}
-        </Card>
+              </>
+            )}
+
+            <RepositoryForm
+              open={formVisible}
+              onCancel={() => setFormVisible(false)}
+              onSubmit={handleAddRepository}
+              initialValues={{
+                address: `https://github.com/${owner}/${name}`,
+                type: 'git',
+                branch: repoInfo?.default_branch || 'main',
+                prompt: '',
+              }}
+              disabledFields={['address']}
+            />
+          </>
+        )}
       </div>
     </div>
   );

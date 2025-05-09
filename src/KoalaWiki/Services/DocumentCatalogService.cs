@@ -61,6 +61,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             items = BuildDocumentTree(documentCatalogs),
             lastUpdate,
             document?.Description,
+            progress = documentCatalogs.Count(x => x.IsCompleted) * 100 / documentCatalogs.Count,
             git = warehouse.Address,
             document?.LikeCount,
             document?.Status,
@@ -135,7 +136,9 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
                     label = item.Name,
                     Url = item.Url,
                     item.Description,
-                    key = item.Id
+                    key = item.Id,
+                    // 是否启用
+                    disabled = item.IsCompleted == false
                 });
             }
             else
@@ -146,7 +149,9 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
                     item.Description,
                     Url = item.Url,
                     key = item.Id,
-                    children
+                    children,
+                    // 是否启用
+                    disabled = item.IsCompleted == false
                 });
             }
         }
@@ -177,7 +182,9 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
                     label = child.Name,
                     Url = child.Url,
                     key = child.Id,
-                    child.Description
+                    child.Description,
+                    // 是否启用
+                    disabled = child.IsCompleted == false
                 });
             }
             else
@@ -188,7 +195,9 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
                     key = child.Id,
                     Url = child.Url,
                     child.Description,
-                    children = subChildren
+                    children = subChildren,
+                    // 是否启用
+                    disabled = child.IsCompleted == false
                 });
             }
         }

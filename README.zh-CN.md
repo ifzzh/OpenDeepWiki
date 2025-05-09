@@ -66,13 +66,13 @@ services:
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
       - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
-      - REPAIR_MERMAID=1 # 是否进行Mermaid修复，1修复，其余不修复
       - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
       - ANALYSIS_MODEL= # 分析模型，用于生成仓库目录结构
       - CHAT_API_KEY= # 您的APIkey
       - LANGUAGE= # 设置生成语言默认为"中文"
       - ENDPOINT=https://api.token-ai.cn/v1
       - DB_TYPE=sqlite
+      - MODEL_PROVIDER=OpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
 ```
 
@@ -168,7 +168,6 @@ graph TD
 ### 环境变量
   - KOALAWIKI_REPOSITORIES # 仓库存放路径
   - TASK_MAX_SIZE_PER_USER # 每个用户AI处理文档生成的最大并行数量
-  - REPAIR_MERMAID # 是否进行Mermaid修复，1修复，其余不修复
   - CHAT_MODEL # 必须要支持function的模型
   - ENDPOINT # API的Endpoint
   - ANALYSIS_MODEL # 分析模型，用于生成仓库目录结构
@@ -176,6 +175,7 @@ graph TD
   - LANGUAGE # 改变生成的文档的语言
   - DB_TYPE # 数据库类型，默认为sqlite
   - DB_CONNECTION_STRING # 数据库连接字符串
+  - MODEL_PROVIDER # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
 
 ### 针对不同架构的构建
 Makefile提供了针对不同CPU架构构建的命令：

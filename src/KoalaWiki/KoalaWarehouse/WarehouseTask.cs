@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 namespace KoalaWiki.KoalaWarehouse;
 
 public class WarehouseTask(
-    GitService gitService,
     WarehouseStore warehouseStore,
     ILogger<WarehouseTask> logger,
     DocumentsService documentsService,
@@ -41,8 +40,11 @@ public class WarehouseTask(
             try
             {
                 // 先拉取仓库
+                logger.LogInformation("开始拉取仓库：{Address}", value.Address);
                 var info = GitService.PullRepository(value.Address, value?.GitUserName ?? string.Empty,
                     value?.GitPassword ?? string.Empty, value?.Branch);
+
+                logger.LogInformation("仓库拉取完成：{RepositoryName}, 分支：{BranchName}", info.RepositoryName, info.BranchName);
 
                 await dbContext!.Warehouses.Where(x => x.Id == value.Id)
                     .ExecuteUpdateAsync(x => x.SetProperty(a => a.Name, info.RepositoryName)
@@ -50,6 +52,8 @@ public class WarehouseTask(
                         .SetProperty(x => x.Version, info.Version)
                         .SetProperty(x=>x.Status, WarehouseStatus.Processing)
                         .SetProperty(x => x.OrganizationName, info.Organization), stoppingToken);
+
+                logger.LogInformation("更新仓库信息到数据库完成，仓库ID：{Id}", value.Id);
 
                 var document = new Document()
                 {
@@ -60,24 +64,38 @@ public class WarehouseTask(
                     Id = Guid.NewGuid().ToString("N")
                 };
 
+                logger.LogInformation("创建文档记录，文档ID：{Id}", document.Id);
+
                 await dbContext.Documents.Where(x => x.WarehouseId == value.Id)
                     .ExecuteDeleteAsync(stoppingToken);
 
+                logger.LogInformation("删除旧文档记录完成，仓库ID：{Id}", value.Id);
+
                 await dbContext.Documents.AddAsync(document, stoppingToken);
+
+                logger.LogInformation("添加新文档记录完成，文档ID：{Id}", document.Id);
 
                 await dbContext.SaveChangesAsync(stoppingToken);
 
+                logger.LogInformation("数据库更改保存完成，开始处理文档。");
+
                 await documentsService.HandleAsync(document, value, dbContext, value.Address);
+
+                logger.LogInformation("文档处理完成，文档ID：{Id}", document.Id);
 
                 // 更新仓库状态
                 await dbContext.Warehouses.Where(x => x.Id == value.Id)
                     .ExecuteUpdateAsync(x => x.SetProperty(a => a.Status, WarehouseStatus.Completed)
                         .SetProperty(x => x.Error, string.Empty), stoppingToken);
 
+                logger.LogInformation("更新仓库状态为完成，仓库ID：{Id}", value.Id);
+
                 // 提交更改
                 await dbContext.Documents.Where(x => x.Id == document.Id)
                     .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.UtcNow)
                         .SetProperty(a => a.Status, WarehouseStatus.Completed), stoppingToken);
+
+                logger.LogInformation("文档状态更新为完成，文档ID：{Id}", document.Id);
             }
             catch (Exception e)
             {
@@ -94,3 +112,4 @@ public class WarehouseTask(
         }
     }
 }
+

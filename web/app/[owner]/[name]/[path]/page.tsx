@@ -116,11 +116,9 @@ export default function DocumentPage() {
               />
             </Col>
             
-            {/* 侧边栏：目录和更多信息 */}
             <Col xs={0} sm={0} md={6} lg={6} xl={6}>
               <DocumentSidebar
                 anchorItems={anchorItems}
-                token={token}
                 document={document}
               />
             </Col>

@@ -157,11 +157,18 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         });
     }
 
+    /// <summary>
+    /// 获取仓库列表的异步方法，支持分页和关键词搜索。
+    /// </summary>
+    /// <param name="page">当前页码，从1开始。</param>
+    /// <param name="pageSize">每页显示的记录数。</param>
+    /// <param name="keyword">搜索关键词，用于匹配仓库名称或地址。</param>
+    /// <returns>返回一个包含总记录数和当前页仓库数据的分页结果对象。</returns>
     public async Task<PageDto<Warehouse>> GetWarehouseListAsync(int page, int pageSize, string keyword)
     {
         var query = access.Warehouses
             .AsNoTracking()
-            .Where(x => x.Status == WarehouseStatus.Completed);
+            .Where(x => x.Status == WarehouseStatus.Completed || x.Status == WarehouseStatus.Processing);
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -172,6 +179,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         var list = await query
             // 推荐true排在前面
             .OrderByDescending(x => x.IsRecommended)
+            .ThenBy(x => x.Status == WarehouseStatus.Completed )
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

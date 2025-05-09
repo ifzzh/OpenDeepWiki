@@ -10,13 +10,11 @@ interface AnchorItem {
 
 interface DocumentSidebarProps {
   anchorItems: AnchorItem[];
-  token?: any;
   document?: any;
 }
 
 const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   anchorItems,
-  token,
   document
 }) => {
   const [activeAnchor, setActiveAnchor] = useState<string>('');
@@ -24,8 +22,6 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   // 监听滚动事件，自动更新活动锚点
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-
       // 查找当前可见的章节
       anchorItems.forEach(item => {
         if (item.href) {
@@ -63,7 +59,6 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
     
     return () => window.removeEventListener('scroll', handleScroll);
   }, [anchorItems]);
-
   return (
     <div className="document-sidebar">
       <nav className="sidebar-navigation">

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
@@ -221,8 +222,15 @@ public class DocumentsService
                     str.Append(extractedContent);
                 }
 
-
-                result = JsonConvert.DeserializeObject<DocumentResultCatalogue>(str.ToString().Trim());
+                try
+                {
+                    result = JsonConvert.DeserializeObject<DocumentResultCatalogue>(str.ToString().Trim());
+                }
+                catch (Exception ex)
+                {
+                    Log.Logger.Error("反序列化失败: {ex}, 原始字符串: {str}", ex.ToString(), str.ToString().Trim());
+                    throw;
+                }
 
                 break;
             }
@@ -255,126 +263,141 @@ public class DocumentsService
         var documents = new List<DocumentCatalog>();
         // 递归处理目录层次结构
         ProcessCatalogueItems(result.items, null, warehouse, document, documents);
-        
-        
+
+        documents.ForEach(x => x.IsCompleted = false);
 
         // 将解析的目录结构保存到数据库
         await dbContext.DocumentCatalogs.AddRangeAsync(documents);
 
         await dbContext.SaveChangesAsync();
 
-        var documentFileItems = new ConcurrentBag<DocumentFileItem>();
-
-        var documentFileSource = new ConcurrentDictionary<string, List<string>>();
-
         // 提供5个并发的信号量,很容易触发429错误
         var semaphore = new SemaphoreSlim(TaskMaxSizePerUser);
 
-        var tasks = new List<Task>();
+        // 等待中的任务列表
+        var pendingDocuments = new ConcurrentBag<DocumentCatalog>(documents);
+        var runningTasks = new List<Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)>>();
 
-        // 开始根据目录结构创建文档
-        foreach (var item in documents)
+        // 开始处理文档，直到所有文档都处理完成
+        while (pendingDocuments.Count > 0 || runningTasks.Count > 0)
         {
-            tasks.Add(Task.Run(async () =>
+            // 尝试启动新任务，直到达到并发限制
+            while (pendingDocuments.Count > 0 && runningTasks.Count < TaskMaxSizePerUser)
             {
-                int retryCount = 0;
-                const int retries = 5;
-                bool success = false;
-
-                // 收集所有引用源文件
-                var files = new List<string>();
-                DocumentContext.DocumentStore = new DocumentStore();
-
-                while (!success && retryCount < retries)
+                if (pendingDocuments.TryTake(out var documentCatalog))
                 {
-                    try
-                    {
-                        await semaphore.WaitAsync();
-                        Log.Logger.Information("处理仓库；{path} ,处理标题：{name}", path, item.Name);
-                        var fileItem = await ProcessCatalogueItems(item, fileKernel, catalogue.ToString(), readme,
-                            gitRepository, warehouse.Branch);
-                        documentFileItems.Add(fileItem);
-                        success = true;
-
-                        files.AddRange(DocumentContext.DocumentStore.Files);
-
-                        documentFileSource.TryAdd(fileItem.Id, files);
-
-                        Log.Logger.Information("处理仓库；{path} ,处理标题：{name} 完成！", path, item.Name);
-                        semaphore.Release();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Logger.Error("处理仓库；{path} ,处理标题：{name} 失败:{ex}", path, item.Name, ex.ToString());
-                        semaphore.Release();
-                        retryCount++;
-                        if (retryCount >= retries)
-                        {
-                            Console.WriteLine($"处理 {item.Name} 失败，已重试 {retryCount} 次，错误：{ex.Message}");
-                        }
-                        else
-                        {
-                            // 等待一段时间后重试
-                            await Task.Delay(10000 * retryCount);
-                        }
-                    }
-                    finally
-                    {
-                    }
+                    var task = ProcessDocumentAsync(documentCatalog, fileKernel, catalogue, readme, gitRepository,
+                        warehouse.Branch, path, semaphore);
+                    runningTasks.Add(task);
                 }
-            }));
-        }
+            }
 
-        // 等待所有任务完成
-        await Task.WhenAll(tasks);
+            // 如果没有正在运行的任务，退出循环
+            if (runningTasks.Count == 0)
+                break;
 
+            // 等待任意一个任务完成
+            var completedTask = await Task.WhenAny(runningTasks);
+            runningTasks.Remove(completedTask);
 
-        await dbContext.DocumentCatalogs.AddRangeAsync(documents);
-
-        if (Environment.GetEnvironmentVariable("REPAIR_MERMAID").GetTrimmedValueOrEmpty() == "1")
-        {
-            //修复Mermaid语法错误
-            RepairMermaid(kernel, documentFileItems);
-        }
-
-        await dbContext.DocumentFileItems.AddRangeAsync(documentFileItems);
-        // 批量添加fileSource
-
-        foreach (var source in documentFileSource)
-        {
-            // warehouse.Address是仓库地址
-            foreach (var fileItem in source.Value)
+            try
             {
-                await dbContext.DocumentFileItemSources.AddAsync(new DocumentFileItemSource()
+                var (catalog, fileItem, files) = await completedTask;
+
+                // 更新文档状态
+                await dbContext.DocumentCatalogs.Where(x => x.Id == catalog.Id)
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsCompleted, true));
+
+                // 修复Mermaid语法错误
+                RepairMermaid(fileItem);
+
+                await dbContext.DocumentFileItems.AddAsync(fileItem);
+                await dbContext.DocumentFileItemSources.AddRangeAsync(files.Select(x => new DocumentFileItemSource()
                 {
-                    Address = fileItem,
-                    DocumentFileItemId = source.Key,
-                    Name = fileItem,
+                    Address = x,
+                    DocumentFileItemId = fileItem.Id,
+                    Name = x,
                     Id = Guid.NewGuid().ToString("N"),
-                });
+                }));
+
+                await dbContext.SaveChangesAsync();
+
+                Log.Logger.Information("处理仓库；{path}, 处理标题：{name} 完成并保存到数据库！", path, catalog.Name);
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Error("处理文档失败: {ex}", ex.ToString());
+            }
+        }
+    }
+
+    /// <summary>
+    /// 处理单个文档的异步方法
+    /// </summary>
+    private async Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)> ProcessDocumentAsync(
+        DocumentCatalog catalog, Kernel kernel, string catalogue,
+        string readme, string gitRepository, string branch, string path, SemaphoreSlim semaphore)
+    {
+        int retryCount = 0;
+        const int retries = 5;
+        var files = new List<string>();
+        DocumentContext.DocumentStore = new DocumentStore();
+
+        while (retryCount < retries)
+        {
+            try
+            {
+                await semaphore.WaitAsync();
+                Log.Logger.Information("处理仓库；{path} ,处理标题：{name}", path, catalog.Name);
+                var fileItem = await ProcessCatalogueItems(catalog, kernel, catalogue, readme,
+                    gitRepository, branch);
+
+                files.AddRange(DocumentContext.DocumentStore.Files);
+
+                Log.Logger.Information("处理仓库；{path} ,处理标题：{name} 完成！", path, catalog.Name);
+                semaphore.Release();
+
+                return (catalog, fileItem, files);
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Error("处理仓库；{path} ,处理标题：{name} 失败:{ex}", path, catalog.Name, ex.ToString());
+                semaphore.Release();
+                retryCount++;
+                if (retryCount >= retries)
+                {
+                    Console.WriteLine($"处理 {catalog.Name} 失败，已重试 {retryCount} 次，错误：{ex.Message}");
+                    throw; // 重试耗尽后向上层抛出异常
+                }
+                else
+                {
+                    // 等待一段时间后重试
+                    await Task.Delay(10000 * retryCount);
+                }
             }
         }
 
-        await dbContext.SaveChangesAsync();
+        // 不应该执行到这里，因为要么成功返回，要么抛出异常
+        throw new Exception($"处理文档 {catalog.Name} 失败");
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetMaxTokens(string model)
     {
         return model switch
         {
+            "deepseek-chat" => 8192,
             "DeepSeek-V3" => 16384,
             "QwQ-32B" => 8192,
-            "gpt-4.1-mini" => 32768,
-            "gpt-4.1" => 32768,
+            "gpt-4.1-mini" => 16384,
+            "gpt-4.1" => 16384,
             "gpt-4o" => 16384,
-            "o4-mini" => 100000,
-            "o3-mini" => 100000,
-            "Qwen/Qwen3-235B-A22B" => 32768,
+            "o4-mini" => 16384,
+            "o3-mini" => 16384,
+            "Qwen/Qwen3-235B-A22B" => 16384,
             "grok-3" => 65536,
             "qwen3-235b-a22b" => 16384,
-            "gemini-2.5-pro-preview-05-06" => 65536,
-            // 官方默认只有8k
-            "deepseek-chat" => 8192,
+            "gemini-2.5-pro-preview-05-06" => 16384,
             _ => 8192
         };
     }
@@ -382,118 +405,28 @@ public class DocumentsService
     /// <summary>
     /// Mermaid可能存在语法错误，使用大模型进行修复
     /// </summary>
-    /// <param name="kernel"></param>
-    /// <param name="documentFileItems"></param>
-    private void RepairMermaid(Kernel kernel, ConcurrentBag<DocumentFileItem> documentFileItems)
+    /// <param name="fileItem"></param>
+    private void RepairMermaid(DocumentFileItem fileItem)
     {
-        foreach (var fileItem in documentFileItems)
+        try
         {
-            try
+            var regex = new Regex(@"```mermaid\s*([\s\S]*?)```", RegexOptions.Multiline);
+            var matches = regex.Matches(fileItem.Content);
+
+            foreach (Match match in matches)
             {
-                string markdown = fileItem.Content;
-                //这个markdown里面含有一部分mermaid语法，但是可能有错误，我需要提取 ``` mermaid  ```的节点，并重新使用大模型进行检查并替换
-                //我的提示词是：检查mermaid语法是否有错误，并帮我修复，仅返回修复后的markdown内容：
+                var code = match.Groups[1].Value;
 
-                // 使用正则表达式匹配markdown中的mermaid代码块
-                var regex = new Regex(@"```mermaid\s*([\s\S]*?)```", RegexOptions.Multiline);
-                var matches = regex.Matches(markdown);
-
-                if (matches.Count > 0)
-                {
-                    var chat = kernel.GetRequiredService<IChatCompletionService>();
-
-                    foreach (Match match in matches)
-                    {
-                        string mermaidContent = match.Groups[1].Value.Trim();
-                        string originalBlock = match.Value;
-
-                        try
-                        {
-                            // 先校验mermaid语法是否正确，如果正确就不需要修复
-                            if (string.IsNullOrEmpty(mermaidContent))
-                            {
-                                continue;
-                            }
-
-                            bool needsRepair = true;
-                            try
-                            {
-                                // 使用Markdig解析Markdown
-                                var pipeline = new MarkdownPipelineBuilder().Build();
-                                var document = Markdown.Parse(originalBlock, pipeline);
-
-                                // 检查是否有语法错误，查找所有代码块
-                                var codeBlocks = document
-                                    .Descendants<FencedCodeBlock>()
-                                    .Where(block =>
-                                        block.Info?.Equals("mermaid", StringComparison.OrdinalIgnoreCase) ?? false)
-                                    .ToList();
-
-                                // 如果找到了mermaid代码块并且它有内容
-                                if (codeBlocks.Any() && codeBlocks[0].Lines.Count > 0)
-                                {
-                                    // Markdig至少成功解析了代码块结构，但可能内部语法还有问题
-                                    // 由于Markdig不验证mermaid语法本身，我们可能需要其他方式验证
-                                    // 或者直接使用AI修复所有mermaid块
-                                    needsRepair = false;
-                                }
-                            }
-                            catch
-                            {
-                                // 解析失败，需要修复
-                                needsRepair = true;
-                            }
-
-                            if (!needsRepair)
-                            {
-                                continue;
-                                ;
-                            }
-
-
-                            var history = new ChatHistory();
-
-                            history.AddUserMessage(Prompt.RepairMermaid
-                                .Replace("{{$mermaidContent}}", mermaidContent));
-
-                            var settings = new OpenAIPromptExecutionSettings
-                            {
-                                Temperature = 0
-                            };
-
-                            var response = chat.GetChatMessageContentAsync(history, settings, kernel).Result;
-
-                            if (!string.IsNullOrEmpty(response?.Content))
-                            {
-                                // 提取修复后的mermaid代码（去除可能的```mermaid和```）
-                                string fixedContent = response.Content.Trim();
-                                fixedContent = Regex.Replace(fixedContent, @"^```mermaid\s*", "",
-                                    RegexOptions.Multiline);
-                                fixedContent = Regex.Replace(fixedContent, @"\s*```$", "", RegexOptions.Multiline);
-
-                                // 创建新的mermaid代码块
-                                string newBlock = $"```mermaid\n{fixedContent}\n```";
-
-                                // 替换原始内容
-                                markdown = markdown.Replace(originalBlock, newBlock);
-                                Log.Information("修复mermaid");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // 发生错误时记录但继续处理其他mermaid块
-                            Log.Error($"修复Mermaid语法时出错: {ex.Message}");
-                        }
-                    }
-
-                    // 更新文件内容
-                    fileItem.Content = markdown;
-                }
+                // 只需要删除[]里面的(和)，它可能单独处理
+                var codeWithoutBrackets =
+                    Regex.Replace(code, @"\[[^\]]*\]", m => m.Value.Replace("(", "").Replace(")", ""));
+                // 然后替换原有内容
+                fileItem.Content = fileItem.Content.Replace(match.Value, $"```mermaid\n{codeWithoutBrackets}```");
             }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "修复mermaid语法失败");
-            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "修复mermaid语法失败");
         }
     }
 
@@ -501,7 +434,7 @@ public class DocumentsService
     /// 生成更新日志
     /// </summary>
     public async Task<(string content, string committer)> GenerateUpdateLogAsync(string gitPath,
-        string readme, string git_repository, string branch, Kernel kernel)
+        string readme, string gitRepositoryUrl, string branch, Kernel kernel)
     {
         // 读取git log
         using var repo = new Repository(gitPath, new RepositoryOptions());
@@ -519,11 +452,6 @@ public class DocumentsService
             commitMessage += "提交人：" + commit.Committer.Name + "\n提交内容\n<message>\n" + commit.Message +
                              "<message>";
 
-            // commitMessage += "修改文件列表\n<file>\n";
-            // // 扫码更改的文件
-            // commit.Tree.Select(x => x.Path).ToList().ForEach(x => { commitMessage += x + "\n"; });
-            // commitMessage += "</file>";
-
             commitMessage += "\n提交时间：" + commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss") + "\n";
         }
 
@@ -531,12 +459,12 @@ public class DocumentsService
 
         var str = string.Empty;
         await foreach (var item in kernel.InvokeStreamingAsync(plugin, new KernelArguments()
-        {
-            ["readme"] = readme,
-            ["git_repository"] = git_repository,
-            ["commit_message"] = commitMessage,
-            ["branch"] = branch
-        }))
+                       {
+                           ["readme"] = readme,
+                           ["git_repository"] = gitRepositoryUrl,
+                           ["commit_message"] = commitMessage,
+                           ["branch"] = branch
+                       }))
         {
             str += item;
         }
@@ -623,9 +551,9 @@ public class DocumentsService
         var sr = new StringBuilder();
 
         await foreach (var i in chat.GetStreamingChatMessageContentsAsync(history, new OpenAIPromptExecutionSettings()
-        {
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
-        }, kernel))
+                       {
+                           ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+                       }, kernel))
         {
             if (!string.IsNullOrEmpty(i.Content))
             {
@@ -803,52 +731,52 @@ public class DocumentsService
 
                 return true;
             })
-                          let fileInfo = new FileInfo(file)
-                          where fileInfo.Length < 1024 * 1024 * 1
-                          where !file.EndsWith(".png", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
-                          where !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".so", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".class", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".o", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".a", StringComparison.OrdinalIgnoreCase)
-                          where !file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".tar", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".bz2", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".xz", StringComparison.OrdinalIgnoreCase)
-                          where !file.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".flac", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".aac", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)
-                          where !file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".avi", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".mkv", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".mov", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase)
-                          where !file.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".doc", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
-                          where !file.EndsWith(".xls", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
-                          where !file.EndsWith(".css", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".scss", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".less", StringComparison.OrdinalIgnoreCase)
-                          where !file.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".htm", StringComparison.OrdinalIgnoreCase)
-                          // 过滤.ico
-                          where !file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) &&
-                                !file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
-                          select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
+            let fileInfo = new FileInfo(file)
+            where fileInfo.Length < 1024 * 1024 * 1
+            where !file.EndsWith(".png", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".so", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".class", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".o", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".a", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".tar", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".bz2", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".xz", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".flac", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".aac", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".avi", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".mkv", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".mov", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".doc", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".xls", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".css", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".scss", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".less", StringComparison.OrdinalIgnoreCase)
+            where !file.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".htm", StringComparison.OrdinalIgnoreCase)
+            // 过滤.ico
+            where !file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) &&
+                  !file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+            select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
 
         // 遍历所有目录，并递归扫描
         foreach (var directory in Directory.GetDirectories(directoryPath))

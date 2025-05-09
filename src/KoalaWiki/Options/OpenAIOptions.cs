@@ -13,17 +13,25 @@ public class OpenAIOptions
 
     public static string Endpoint { get; set; } = string.Empty;
 
+    public static string ModelProvider { get; set; } = string.Empty;
+
     public static void Config(IConfiguration configuration)
     {
-
         ChatModel = (configuration.GetValue<string>("CHAT_MODEL") ??
-                    configuration.GetValue<string>("ChatModel") ?? string.Empty).GetTrimmedValueOrEmpty();
+                     configuration.GetValue<string>("ChatModel") ?? string.Empty).GetTrimmedValueOrEmpty();
         AnalysisModel = (configuration.GetValue<string>("ANALYSIS_MODEL") ??
-                        configuration.GetValue<string>("AnalysisModel") ?? string.Empty).GetTrimmedValueOrEmpty();
+                         configuration.GetValue<string>("AnalysisModel") ?? string.Empty).GetTrimmedValueOrEmpty();
         ChatApiKey = (configuration.GetValue<string>("CHAT_API_KEY") ??
-                     configuration.GetValue<string>("ChatApiKey") ?? string.Empty).GetTrimmedValueOrEmpty();
+                      configuration.GetValue<string>("ChatApiKey") ?? string.Empty).GetTrimmedValueOrEmpty();
         Endpoint = (configuration.GetValue<string>("ENDPOINT") ??
-                   configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
+                    configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
+        ModelProvider = (configuration.GetValue<string>("MODEL_PROVIDER") ??
+                         configuration.GetValue<string>("ModelProvider")).GetTrimmedValueOrEmpty();
+
+        if (string.IsNullOrEmpty(ModelProvider))
+        {
+            ModelProvider = "OpenAI";
+        }
 
         // 检查参数
         if (string.IsNullOrEmpty(ChatModel))
@@ -46,10 +54,5 @@ public class OpenAIOptions
         {
             AnalysisModel = ChatModel;
         }
-    }
-
-    public static string ToStr()
-    {
-        return $"ChatModel:{ChatModel},AnalysisModel:{AnalysisModel},ChatApiKey:{ChatApiKey},Endpoint:{Endpoint}";
     }
 }

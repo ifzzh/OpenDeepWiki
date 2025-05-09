@@ -63,13 +63,13 @@ services:
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
       - TASK_MAX_SIZE_PER_USER=5 # Maximum parallel tasks for AI document generation per user
-      - REPAIR_MERMAID=1 # Whether to repair Mermaid, 1 for repair, others for no repair
       - CHAT_MODEL=DeepSeek-V3 # Model must support functions
       - ANALYSIS_MODEL= # Analysis model for generating repository directory structure
       - CHAT_API_KEY= # Your API key
       - LANGUAGE= # Default language for generation set to "Chinese"
       - ENDPOINT=https://api.token-ai.cn/v1
       - DB_TYPE=sqlite
+      - MODEL_PROVIDER=OpenAI # Model provider, by default OpenAI, supports Azure, OpenAI and Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
 ```
 
@@ -165,13 +165,13 @@ graph TD
 ### Environment Variables
   - KOALAWIKI_REPOSITORIES # Path for storing repositories
   - TASK_MAX_SIZE_PER_USER # Maximum parallel tasks for AI document generation per user
-  - REPAIR_MERMAID # Whether to repair Mermaid, 1 for repair, others for no repair
   - CHAT_MODEL # Model must support functions
   - ENDPOINT # API Endpoint
   - ANALYSIS_MODEL # Analysis model for generating repository directory structure
   - CHAT_API_KEY # Your API key
   - LANGUAGE # Change the language of the generated documents
   - DB_TYPE # Database type, default is sqlite
+  - MODEL_PROVIDER # Model provider, by default OpenAI, supports Azure, OpenAI and Anthropic
   - DB_CONNECTION_STRING # Database connection string
 
 ### Build for Different Architectures

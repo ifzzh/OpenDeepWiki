@@ -16,6 +16,7 @@ import {
   Steps,
   Collapse,
   Alert,
+  Progress,
 } from 'antd';
 import {
   HomeOutlined,
@@ -40,6 +41,7 @@ interface DocumentCatalogResponse {
   label: string;
   url: string;
   order: number;
+  disabled: boolean;
   children?: DocumentCatalogResponse[];
 }
 
@@ -134,31 +136,52 @@ export default function RepositoryLayoutClient({
       lineHeight: token.lineHeight,
     };
 
-    const iconStyle = {
-      marginRight: token.marginXS,
-      fontSize: token.fontSizeSM,
-    };
-
     return (
       <div key={item.key}>
         {item.children?.length ? (
           <>
-            <Link
-              href={`/${owner}/${name}/${item.url}`}
-              style={style}>
-              <span>{item.label}</span>
-            </Link>
+            {item.disabled ? (
+              <div
+                style={{
+                  ...style,
+                  color: token.colorTextDisabled,
+                  backgroundColor: 'transparent',
+                  cursor: 'not-allowed',
+                }}
+              >
+                <span>{item.label}</span>
+              </div>
+            ) : (
+              <Link
+                href={`/${owner}/${name}/${item.url}`}
+                style={style}>
+                <span>{item.label}</span>
+              </Link>
+            )}
             {item.children.sort((a, b) => a.order - b.order).map(child =>
               renderSidebarItem(child, level + 1)
             )}
           </>
         ) : (
-          <Link
-            href={`/${owner}/${name}/${item.url}`}
-            style={style}
-          >
-            <span>{item.label}</span>
-          </Link>
+          item.disabled ? (
+            <div
+              style={{
+                ...style,
+                color: token.colorTextDisabled,
+                backgroundColor: 'transparent',
+                cursor: 'not-allowed',
+              }}
+            >
+              <span>{item.label}</span>
+            </div>
+          ) : (
+            <Link
+              href={`/${owner}/${name}/${item.url}`}
+              style={style}
+            >
+              <span>{item.label}</span>
+            </Link>
+          )
         )}
       </div>
     );
@@ -213,12 +236,27 @@ export default function RepositoryLayoutClient({
         }}>
           <Flex align="center" justify="space-between" style={{ height: '100%' }}>
             <Flex align="center" gap={token.marginXS}>
-              <Button
-                type="text"
-                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                onClick={() => setCollapsed(!collapsed)}
-                style={{ fontSize: token.fontSizeLG }}
-              />
+              <Link href="/">
+                <span
+                  style={{
+                    color: token.colorPrimary,
+                    fontSize: token.fontSizeLG,
+                    fontWeight: 600,
+                    fontFamily: "'Montserrat', sans-serif",
+                    letterSpacing: '0.5px',
+                    cursor: 'pointer',
+                    transition: `color ${token.motionDurationMid}`,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                    // @ts-ignore
+                    '&:hover': {
+                      color: token.colorPrimaryHover,
+                    }
+                  }}
+                >
+                  OpenDeepWiki
+                </span>
+              </Link>
+
               <Typography.Title
                 level={4}
                 style={{
@@ -231,46 +269,43 @@ export default function RepositoryLayoutClient({
                 <Flex align="center" wrap={isMobile ? "wrap" : "nowrap"}>
                   <span
                     onClick={() => {
-                      window.open(`/${owner}`, '_blank');
-                    }}
-                    style={{
-                      color: token.colorPrimary,
-                      fontSize: isMobile ? token.fontSizeHeading5 : token.fontSizeHeading4,
-                      lineHeight: 1.2,
-                      cursor: 'pointer',
-                      marginRight: token.marginXS,
-                    }}>{owner}</span>
-                  <span
-                    style={{
-                      color: token.colorText,
-                      fontSize: isMobile ? token.fontSizeHeading5 : token.fontSizeHeading4,
-                      lineHeight: 1.2,
-                      cursor: 'default',
-                      marginRight: token.marginXS,
-                    }}>
-                    / 
-                  </span>
-                  <span
-                    onClick={() => {
                       if (initialCatalogData?.git) {
                         window.open(initialCatalogData.git, '_blank');
                       }
                     }}
                     style={{
                       color: token.colorText,
-                      fontSize: isMobile ? token.fontSizeHeading5 : token.fontSizeHeading4,
+                      fontSize: isMobile ? token.fontSizeLG : token.fontSizeHeading5,
                       lineHeight: 1.2,
                       cursor: 'pointer',
                       marginRight: token.marginXS,
-                    }}>{name}</span>
+                    }}>
+                    {owner}/{name}
+                  </span>
                 </Flex>
               </Typography.Title>
+              {initialCatalogData?.progress !== undefined && initialCatalogData?.progress < 100 && (
+                <Flex align="center" gap={token.marginXS}>
+                  <Progress 
+                    percent={initialCatalogData?.progress || 0} 
+                    size="small"
+                    style={{
+                      width: '80px',
+                      margin: 0
+                    }}
+                    showInfo={false}
+                  />
+                  <span>
+                    {initialCatalogData?.progress}%
+                  </span>
+                </Flex>
+              )}
             </Flex>
 
             <Flex align="center" gap={token.marginSM}>
-              <Button 
-                type="primary" 
-                icon={<ApiOutlined />} 
+              <Button
+                type="primary"
+                icon={<ApiOutlined />}
                 onClick={() => setIsMCPModalVisible(true)}
                 size={isMobile ? "small" : "middle"}
               >
@@ -288,8 +323,6 @@ export default function RepositoryLayoutClient({
             </Flex>
           </Flex>
         </Header>
-
-        {/* MCP Modal */}
         <Modal
           title={
             <Flex align="center" gap={token.marginXS}>
@@ -301,7 +334,6 @@ export default function RepositoryLayoutClient({
           onCancel={() => setIsMCPModalVisible(false)}
           footer={null}
           width={700}
-          bodyStyle={{ padding: token.paddingLG }}
           centered
         >
           <Flex vertical gap={token.marginMD}>
@@ -320,26 +352,21 @@ export default function RepositoryLayoutClient({
 
             <Card
               title="使用配置"
-              headStyle={{ 
-                background: token.colorBgLayout, 
-                borderBottom: `1px solid ${token.colorBorderSecondary}` 
-              }}
-              bordered
               style={{ marginBottom: token.marginMD }}
             >
               <Paragraph style={{ marginBottom: token.marginSM }}>
                 下面是Cursor的使用方式：
               </Paragraph>
-              
-              <div style={{ 
-                position: 'relative', 
-                backgroundColor: token.colorBgLayout, 
-                padding: token.paddingMD, 
+
+              <div style={{
+                position: 'relative',
+                backgroundColor: token.colorBgLayout,
+                padding: token.paddingMD,
                 borderRadius: token.borderRadiusLG,
                 marginBottom: token.marginMD
               }}>
-                <pre style={{ 
-                  margin: 0, 
+                <pre style={{
+                  margin: 0,
                   fontFamily: 'monospace',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word'
@@ -351,10 +378,10 @@ export default function RepositoryLayoutClient({
                     type="text"
                     icon={copySuccess ? <CheckOutlined style={{ color: token.colorSuccess }} /> : <CopyOutlined />}
                     onClick={copyToClipboard}
-                    style={{ 
-                      position: 'absolute', 
-                      top: token.paddingXS, 
-                      right: token.paddingXS 
+                    style={{
+                      position: 'absolute',
+                      top: token.paddingXS,
+                      right: token.paddingXS
                     }}
                   />
                 </Tooltip>
@@ -371,11 +398,6 @@ export default function RepositoryLayoutClient({
 
             <Card
               title="测试案例"
-              headStyle={{ 
-                background: token.colorBgLayout, 
-                borderBottom: `1px solid ${token.colorBorderSecondary}` 
-              }}
-              bordered
             >
               <Paragraph>
                 添加好仓库以后尝试进行测试提问（注意，请保证仓库已经处理完成）：
@@ -383,23 +405,23 @@ export default function RepositoryLayoutClient({
               <Paragraph strong style={{ color: token.colorPrimary }}>
                 OpenDeepWiki是什么？
               </Paragraph>
-              <div style={{ 
-                width: '100%', 
-                height: 'auto', 
+              <div style={{
+                width: '100%',
+                height: 'auto',
                 position: 'relative',
                 marginTop: token.marginMD,
                 borderRadius: token.borderRadiusLG,
                 overflow: 'hidden',
                 border: `1px solid ${token.colorBorderSecondary}`
               }}>
-                <img 
+                <img
                   src="/mcp.png"
                   alt="MCP测试效果"
-                  style={{ 
-                    width: '100%', 
-                    height: 'auto', 
+                  style={{
+                    width: '100%',
+                    height: 'auto',
                     display: 'block',
-                    objectFit: 'contain' 
+                    objectFit: 'contain'
                   }}
                 />
               </div>
@@ -412,21 +434,6 @@ export default function RepositoryLayoutClient({
           style={{
             marginTop: 64,
           }}>
-          {initialCatalogData?.items?.length > 0 && isMobile && !collapsed && (
-            <div
-              onClick={() => setCollapsed(true)}
-              style={{
-                position: 'fixed',
-                top: 64,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: token.colorBgMask,
-                zIndex: 998,
-                opacity: 0.5,
-              }}
-            />
-          )}
           {initialCatalogData?.items?.length > 0 ? (
             <Sider
               width={260}
@@ -450,6 +457,26 @@ export default function RepositoryLayoutClient({
               }}
             >
               <div style={{ padding: `${token.paddingMD}px 0` }}>
+                <Flex
+                  align="center"
+                  justify="space-between"
+                  style={{ 
+                    padding: `0 ${token.paddingXS}px ${token.paddingXS}px`,
+                    marginBottom: token.marginXS
+                  }}
+                >
+                  <Flex align="center">
+                    <Button
+                      type="text"
+                      icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                      onClick={() => setCollapsed(!collapsed)}
+                      style={{ 
+                        fontSize: token.fontSizeLG,
+                        marginLeft: token.marginXS
+                      }}
+                    />
+                  </Flex>
+                </Flex>
                 <Flex
                   vertical
                   style={{ padding: `0 ${token.paddingXS}px` }}
@@ -507,6 +534,28 @@ export default function RepositoryLayoutClient({
             transition: `all ${token.motionDurationMid}`,
             position: 'relative',
           }}>
+            {collapsed && (
+              <Button
+                type="text"
+                icon={<MenuUnfoldOutlined />}
+                onClick={() => setCollapsed(false)}
+                style={{
+                  position: 'fixed',
+                  left: token.marginXS,
+                  top: 72,
+                  zIndex: 999,
+                  fontSize: token.fontSizeLG,
+                  background: token.colorBgContainer,
+                  borderRadius: token.borderRadiusLG,
+                  boxShadow: token.boxShadowSecondary,
+                  width: 40,
+                  height: 40,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              />
+            )}
             <Breadcrumb
               items={generateBreadcrumb()}
               style={{
@@ -537,7 +586,7 @@ export default function RepositoryLayoutClient({
             left: 0,
             right: 0,
             margin: '0 auto',
-            maxWidth: isMobile ? '90%' : '80%',
+            maxWidth: isMobile ? '80%' : '70%',
             width: isMobile ? 'calc(100% - 32px)' : 'auto',
             zIndex: 900,
             boxShadow: token.boxShadowSecondary,
