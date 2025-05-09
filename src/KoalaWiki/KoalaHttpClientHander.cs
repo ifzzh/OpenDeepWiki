@@ -23,10 +23,31 @@ public sealed class KoalaHttpClientHandler : HttpClientHandler
                 json.max_tokens = maxToken;
                 json.max_completion_tokens = null;
             }
-            
+
+
+            var model = json.model;
+
+            if (model.ToString().Equals("qwen3-235b-a22b"))
+            {
+                // 关闭推理模式
+                json.enable_thinking = false;
+            }
             // 重写请求体
             request.Content = new StringContent(JsonConvert.SerializeObject(json),
                 System.Text.Encoding.UTF8, "application/json");
+        }
+        else
+        {
+            var model = json.model;
+
+            if (model.ToString().Equals("qwen3-235b-a22b"))
+            {
+                // 关闭推理模式
+                json.enable_thinking = false;
+                // 重写请求体
+                request.Content = new StringContent(JsonConvert.SerializeObject(json),
+                    System.Text.Encoding.UTF8, "application/json");
+            }
         }
 
         // 1. 启动计时

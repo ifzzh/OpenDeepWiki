@@ -14,6 +14,29 @@ OpenDeepWiki is an open-source project inspired by [DeepWiki](https://deepwiki.c
 - Understand core concepts of repositories
 - Generate code documentation
 - Automatically create README.md for code
+  MCP Support
+
+
+OpenDeepWiki supports MCP (Model Context Protocol)
+- Supports providing an MCPServer for a single repository and conducting analysis on a single repository.
+
+Usage: The following is the usage of cursor: 
+```json
+{
+  "mcpServers": {
+    "OpenDeepWiki":{
+      "url": "http://Your OpenDeepWiki service IP:port/sse?owner=AIDotNet&name=OpenDeepWiki"
+    }
+  }
+}
+```
+- owner: It is the name of the organization or owner of the repository.
+- name: It is the name of the repository. 
+
+After adding the repository, test by asking a question (please note that before doing this, the repository must be processed first): What is OpenDeepWiki? The effect is as shown in the picture: ! [](img/mcp.png)
+
+
+In this way, you can use OpenDeepWiki as an MCPServer, making it available for other AI models to call upon, facilitating the analysis and understanding of an open-source project.
 
 ## Features
 

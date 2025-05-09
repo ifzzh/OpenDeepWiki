@@ -17,9 +17,7 @@ export interface Repository {
   status: number;
   prompt: string;
   version: string;
-  model: string;
-  openAIKey: string;
-  openAIEndpoint: string;
+  isRecommended: boolean;
   createdAt: string;
   updatedAt?: string;
   error?:string;
@@ -30,7 +28,4 @@ export interface RepositoryFormValues {
   type: string;
   branch: string;
   prompt: string;
-  model: string;
-  openAIKey: string;
-  openAIEndpoint: string;
 } 

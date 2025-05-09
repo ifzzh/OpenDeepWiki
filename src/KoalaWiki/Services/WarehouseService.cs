@@ -162,7 +162,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         var query = access.Warehouses
             .AsNoTracking()
             .Where(x => x.Status == WarehouseStatus.Completed);
-        
+
         if (!string.IsNullOrWhiteSpace(keyword))
         {
             query = query.Where(x => x.Name.Contains(keyword) || x.Address.Contains(keyword));
@@ -170,6 +170,8 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
 
         var total = await query.CountAsync();
         var list = await query
+            // 推荐true排在前面
+            .OrderByDescending(x => x.IsRecommended)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

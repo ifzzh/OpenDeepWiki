@@ -228,7 +228,7 @@ public class DocumentsService
             }
             catch (Exception ex)
             {
-                Log.Logger.Warning("处理仓库；{path} ,处理标题：{name} 失败！", path, warehouse.Name);
+                Log.Logger.Warning("处理仓库；{path} ,处理标题：{name} 失败:{ex}", path, warehouse.Name, ex.ToString());
                 exception = ex;
                 retryCount++;
                 if (retryCount >= maxRetries)
@@ -255,6 +255,13 @@ public class DocumentsService
         var documents = new List<DocumentCatalog>();
         // 递归处理目录层次结构
         ProcessCatalogueItems(result.items, null, warehouse, document, documents);
+        
+        
+
+        // 将解析的目录结构保存到数据库
+        await dbContext.DocumentCatalogs.AddRangeAsync(documents);
+
+        await dbContext.SaveChangesAsync();
 
         var documentFileItems = new ConcurrentBag<DocumentFileItem>();
 
@@ -322,7 +329,6 @@ public class DocumentsService
         await Task.WhenAll(tasks);
 
 
-        // 将解析的目录结构保存到数据库
         await dbContext.DocumentCatalogs.AddRangeAsync(documents);
 
         if (Environment.GetEnvironmentVariable("REPAIR_MERMAID").GetTrimmedValueOrEmpty() == "1")
@@ -365,6 +371,8 @@ public class DocumentsService
             "o3-mini" => 100000,
             "Qwen/Qwen3-235B-A22B" => 32768,
             "grok-3" => 65536,
+            "qwen3-235b-a22b" => 16384,
+            "gemini-2.5-pro-preview-05-06" => 65536,
             // 官方默认只有8k
             "deepseek-chat" => 8192,
             _ => 8192

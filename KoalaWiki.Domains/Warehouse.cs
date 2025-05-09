@@ -75,6 +75,12 @@ public class Warehouse : Entity<string>
     /// 是否嵌入完成
     /// </summary>
     public bool IsEmbedded { get; set; }
+    
+    /// <summary>
+    /// 是否推荐
+    /// </summary>
+    /// <returns></returns>
+    public bool IsRecommended { get; set; }
 
     // /// <summary>
     // /// 使用模型

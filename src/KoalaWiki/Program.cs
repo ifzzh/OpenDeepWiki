@@ -1,9 +1,15 @@
+using System.Net.Mime;
+using System.Text.Json;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Extensions;
 using KoalaWiki.Git;
 using KoalaWiki.KoalaWarehouse;
+using KoalaWiki.MCP;
 using KoalaWiki.Options;
+using KoalaWiki.Tools;
 using Mapster;
+using ModelContextProtocol;
+using ModelContextProtocol.Protocol.Types;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -21,6 +27,8 @@ Console.WriteLine(OpenAIOptions.ToStr());
 
 #endregion
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddKoalaMcp();
 builder.Services.AddSerilog(Log.Logger);
 
 builder.Services.AddOpenApi();
@@ -60,6 +68,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+
+app.MapMcp("/api");
+app.MapSitemap();
 
 app.MapFast();
 

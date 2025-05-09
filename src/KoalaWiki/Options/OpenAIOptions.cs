@@ -15,10 +15,15 @@ public class OpenAIOptions
 
     public static void Config(IConfiguration configuration)
     {
-        ChatModel = (Environment.GetEnvironmentVariable("CHAT_MODEL") ?? configuration.GetValue<string>("ChatModel") ?? string.Empty).GetTrimmedValueOrEmpty();
-        AnalysisModel = (Environment.GetEnvironmentVariable("ANALYSIS_MODEL") ?? configuration.GetValue<string>("AnalysisModel") ?? string.Empty).GetTrimmedValueOrEmpty();
-        ChatApiKey = (Environment.GetEnvironmentVariable("CHAT_API_KEY") ?? configuration.GetValue<string>("ChatApiKey") ?? string.Empty).GetTrimmedValueOrEmpty();
-        Endpoint = (Environment.GetEnvironmentVariable("ENDPOINT") ?? configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
+
+        ChatModel = (configuration.GetValue<string>("CHAT_MODEL") ??
+                    configuration.GetValue<string>("ChatModel") ?? string.Empty).GetTrimmedValueOrEmpty();
+        AnalysisModel = (configuration.GetValue<string>("ANALYSIS_MODEL") ??
+                        configuration.GetValue<string>("AnalysisModel") ?? string.Empty).GetTrimmedValueOrEmpty();
+        ChatApiKey = (configuration.GetValue<string>("CHAT_API_KEY") ??
+                     configuration.GetValue<string>("ChatApiKey") ?? string.Empty).GetTrimmedValueOrEmpty();
+        Endpoint = (configuration.GetValue<string>("ENDPOINT") ??
+                   configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
 
         // 检查参数
         if (string.IsNullOrEmpty(ChatModel))

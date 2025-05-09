@@ -16,7 +16,20 @@ export default function RootLayout({
 
   return (
     <html lang="zh-CN">
-      <head />
+      <head>
+        <meta name="msvalidate.01" content="61D1D1BFCB7FDB548E411C30FC69B058" />
+        <Script >
+          {`
+            var _hmt = _hmt || [];
+            (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?44a79feb3bf1e77660bdbc00e1808896";
+              var s = document.getElementsByTagName("script")[0]; 
+              s.parentNode.insertBefore(hm, s);
+            })();
+          `}
+        </Script>
+      </head>
       <body >
         <Script id="api-url"
           type="text/javascript"
@@ -28,6 +41,8 @@ export default function RootLayout({
               `
           }}
         />
+
+
         <AntdRegistry>
           <ConfigProvider
             locale={zhCN}
