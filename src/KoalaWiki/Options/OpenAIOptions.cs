@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using KoalaWiki.Extensions;
+using Newtonsoft.Json;
 
 namespace KoalaWiki.Options;
 
@@ -14,14 +15,15 @@ public class OpenAIOptions
 
     public static void Config(IConfiguration configuration)
     {
-        ChatModel = configuration.GetValue<string>("CHAT_MODEL") ??
-                    configuration.GetValue<string>("ChatModel") ?? string.Empty;
-        AnalysisModel = configuration.GetValue<string>("ANALYSIS_MODEL") ??
-                        configuration.GetValue<string>("AnalysisModel") ?? string.Empty;
-        ChatApiKey = configuration.GetValue<string>("CHAT_API_KEY") ??
-                     configuration.GetValue<string>("ChatApiKey") ?? string.Empty;
-        Endpoint = configuration.GetValue<string>("ENDPOINT") ??
-                   configuration.GetValue<string>("Endpoint") ?? string.Empty;
+
+        ChatModel = (configuration.GetValue<string>("CHAT_MODEL") ??
+                    configuration.GetValue<string>("ChatModel") ?? string.Empty).GetTrimmedValueOrEmpty();
+        AnalysisModel = (configuration.GetValue<string>("ANALYSIS_MODEL") ??
+                        configuration.GetValue<string>("AnalysisModel") ?? string.Empty).GetTrimmedValueOrEmpty();
+        ChatApiKey = (configuration.GetValue<string>("CHAT_API_KEY") ??
+                     configuration.GetValue<string>("ChatApiKey") ?? string.Empty).GetTrimmedValueOrEmpty();
+        Endpoint = (configuration.GetValue<string>("ENDPOINT") ??
+                   configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
 
         // 检查参数
         if (string.IsNullOrEmpty(ChatModel))

@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
+using KoalaWiki.Extensions;
 using KoalaWiki.Options;
 using LibGit2Sharp;
 using Markdig;
@@ -24,7 +25,7 @@ public class DocumentsService
     static DocumentsService()
     {
         // 读取环境变量
-        var maxSize = Environment.GetEnvironmentVariable("TASK_MAX_SIZE_PER_USER");
+        var maxSize = Environment.GetEnvironmentVariable("TASK_MAX_SIZE_PER_USER").GetTrimmedValueOrEmpty();
         if (!string.IsNullOrEmpty(maxSize) && int.TryParse(maxSize, out var maxSizeInt))
         {
             TaskMaxSizePerUser = maxSizeInt;
@@ -328,7 +329,9 @@ public class DocumentsService
         await Task.WhenAll(tasks);
 
 
-        if (Environment.GetEnvironmentVariable("REPAIR_MERMAID") == "1")
+        await dbContext.DocumentCatalogs.AddRangeAsync(documents);
+
+        if (Environment.GetEnvironmentVariable("REPAIR_MERMAID").GetTrimmedValueOrEmpty() == "1")
         {
             //修复Mermaid语法错误
             RepairMermaid(kernel, documentFileItems);
@@ -528,12 +531,12 @@ public class DocumentsService
 
         var str = string.Empty;
         await foreach (var item in kernel.InvokeStreamingAsync(plugin, new KernelArguments()
-                       {
-                           ["readme"] = readme,
-                           ["git_repository"] = git_repository,
-                           ["commit_message"] = commitMessage,
-                           ["branch"] = branch
-                       }))
+        {
+            ["readme"] = readme,
+            ["git_repository"] = git_repository,
+            ["commit_message"] = commitMessage,
+            ["branch"] = branch
+        }))
         {
             str += item;
         }
@@ -620,9 +623,9 @@ public class DocumentsService
         var sr = new StringBuilder();
 
         await foreach (var i in chat.GetStreamingChatMessageContentsAsync(history, new OpenAIPromptExecutionSettings()
-                       {
-                           ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
-                       }, kernel))
+        {
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+        }, kernel))
         {
             if (!string.IsNullOrEmpty(i.Content))
             {
@@ -800,52 +803,52 @@ public class DocumentsService
 
                 return true;
             })
-            let fileInfo = new FileInfo(file)
-            where fileInfo.Length < 1024 * 1024 * 1
-            where !file.EndsWith(".png", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".so", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".class", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".o", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".a", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".tar", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".bz2", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".xz", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".flac", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".aac", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".avi", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".mkv", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".mov", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".doc", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".xls", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".css", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".scss", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".less", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".htm", StringComparison.OrdinalIgnoreCase)
-            // 过滤.ico
-            where !file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
-            select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
+                          let fileInfo = new FileInfo(file)
+                          where fileInfo.Length < 1024 * 1024 * 1
+                          where !file.EndsWith(".png", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+                          where !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".so", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".class", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".o", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".a", StringComparison.OrdinalIgnoreCase)
+                          where !file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".tar", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".bz2", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".xz", StringComparison.OrdinalIgnoreCase)
+                          where !file.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".flac", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".aac", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)
+                          where !file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".avi", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".mkv", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".mov", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase)
+                          where !file.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".doc", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
+                          where !file.EndsWith(".xls", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+                          where !file.EndsWith(".css", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".scss", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".less", StringComparison.OrdinalIgnoreCase)
+                          where !file.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".htm", StringComparison.OrdinalIgnoreCase)
+                          // 过滤.ico
+                          where !file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) &&
+                                !file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+                          select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
 
         // 遍历所有目录，并递归扫描
         foreach (var directory in Directory.GetDirectories(directoryPath))

@@ -1,4 +1,6 @@
-﻿namespace KoalaWiki.KoalaWarehouse;
+﻿using KoalaWiki.Extensions;
+
+namespace KoalaWiki.KoalaWarehouse;
 
 public static class Prompt
 {
@@ -7,7 +9,7 @@ public static class Prompt
     static Prompt()
     {
         // 获取环境变量
-        var language = Environment.GetEnvironmentVariable("LANGUAGE");
+        var language = Environment.GetEnvironmentVariable("LANGUAGE").GetTrimmedValueOrEmpty();
         if (!string.IsNullOrEmpty(language))
         {
             _language = language;
