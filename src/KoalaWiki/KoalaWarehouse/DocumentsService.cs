@@ -223,6 +223,19 @@ public class DocumentsService
                     str.Clear();
                     str.Append(extractedContent);
                 }
+                else
+                {
+                    // 尝试使用```json
+                    var jsonRegex = new Regex(@"```json(.*?)```", RegexOptions.Singleline);
+                    var jsonMatch = jsonRegex.Match(str.ToString());
+                    if (jsonMatch.Success)
+                    {
+                        // 提取到的内容
+                        var extractedContent = jsonMatch.Groups[1].Value;
+                        str.Clear();
+                        str.Append(extractedContent);
+                    }
+                }
 
                 try
                 {
