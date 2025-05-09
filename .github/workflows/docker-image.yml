@@ -10,10 +10,10 @@ jobs:
       - name: Set up Docker Buildx
         run: |
           docker buildx create --use
-      - name: Build Backend Image
-        run: ./build-image.sh
       - name: Login to Docker Registry
         run: docker login -u "${{ secrets.DOCKER_USERNAME }}" crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com --password="${{ secrets.DOCKER_PASSWORD }}"
+      - name: Build Backend Image
+        run: ./build-image.sh
       - name: Push Images
         run: |
           docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
