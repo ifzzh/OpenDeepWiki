@@ -11,7 +11,7 @@ REM Build backend image for amd64 platform
 echo Building backend image for amd64 platform...
 docker buildx build ^
     --platform linux/amd64 ^
-    -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki ^
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki ^
     -f src/KoalaWiki/Dockerfile ^
     --push .
 if %ERRORLEVEL% NEQ 0 (
@@ -23,7 +23,7 @@ REM Build backend image specifically for arm64 platform using Dockerfile.arm
 echo Building backend image for arm64 platform using Dockerfile.arm...
 docker buildx build ^
     --platform linux/arm64 ^
-    -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64 ^
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64 ^
     -f src/KoalaWiki/Dockerfile.arm ^
     --push .
 if %ERRORLEVEL% NEQ 0 (
@@ -36,7 +36,7 @@ echo Building frontend image for amd64 platform...
 pushd web
 docker buildx build ^
     --platform linux/amd64 ^
-    -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web ^
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web ^
     -f Dockerfile ^
     --push .
 if %ERRORLEVEL% NEQ 0 (
@@ -50,7 +50,7 @@ echo Building frontend image for arm64 platform...
 pushd web
 docker buildx build ^
     --platform linux/arm64 ^
-    -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64 ^
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64 ^
     -f Dockerfile ^
     --push .
 if %ERRORLEVEL% NEQ 0 (
