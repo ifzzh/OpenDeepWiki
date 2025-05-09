@@ -409,7 +409,7 @@ public class DocumentsService
             "Qwen/Qwen3-235B-A22B" => 16384,
             "grok-3" => 65536,
             "qwen3-235b-a22b" => 16384,
-            "gemini-2.5-pro-preview-05-06" => 65536,
+            "gemini-2.5-pro-preview-05-06" => 65535,
             _ => 8192
         };
     }
