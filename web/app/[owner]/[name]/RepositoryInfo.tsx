@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react';
-import { Row, Col,  Typography, Tag, Button, Skeleton, Avatar, theme, Divider, message } from 'antd';
+import { Row, Col, Typography, Tag, Button, Skeleton, Avatar, theme, Divider, message } from 'antd';
 import { StarOutlined, ForkOutlined, CalendarOutlined, ExclamationCircleOutlined, EyeOutlined, IssuesCloseOutlined, PlusOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 
@@ -30,7 +30,7 @@ import RepositoryForm from '../../components/RepositoryForm';
 import { submitWarehouse } from '../../services';
 import { RepositoryFormValues } from '../../types';
 
-const { Title,  Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 const { useToken } = theme;
 
 interface RepositoryInfoProps {
@@ -50,6 +50,7 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
     async function fetchGitHubRepo() {
       try {
         setLoading(true);
+
         const response = await fetch(`https://api.github.com/repos/${owner}/${name}`);
 
         if (!response.ok) {
@@ -68,6 +69,7 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
           });
 
           if (readmeResponse.ok) {
+
             const readmeHtml = await readmeResponse.text();
             setReadme(readmeHtml);
           }

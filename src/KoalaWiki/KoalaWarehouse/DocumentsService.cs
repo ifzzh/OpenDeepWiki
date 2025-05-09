@@ -264,6 +264,10 @@ public class DocumentsService
 
         documents.ForEach(x => x.IsCompleted = false);
 
+        // 删除遗留数据
+        await dbContext.DocumentCatalogs.Where(x => x.WarehouseId == warehouse.Id)
+            .ExecuteDeleteAsync();
+
         // 将解析的目录结构保存到数据库
         await dbContext.DocumentCatalogs.AddRangeAsync(documents);
 

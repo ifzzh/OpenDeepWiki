@@ -48,6 +48,7 @@ export default function DocumentPage() {
     const fetchDocument = async () => {
       try {
         setLoading(true);
+
         const response = await documentById(owner as string, name as string, path as string);
         if (response.isSuccess && response.data) {
           setDocument(response.data);
