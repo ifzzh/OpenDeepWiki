@@ -57,19 +57,55 @@ cd OpenDeepWiki
 ```
 
 2. Open the `docker-compose.yml` file and modify the following environment variables:
+
+OpenAI:
 ```yaml
 services:
   koalawiki:
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
-      - TASK_MAX_SIZE_PER_USER=5 # Maximum parallel tasks for AI document generation per user
+      - TASK_MAX_SIZE_PER_USER=5 # Maximum number of parallel document generation tasks per user by AI
       - CHAT_MODEL=DeepSeek-V3 # Model must support functions
-      - ANALYSIS_MODEL= # Analysis model for generating repository directory structure
+      - ANALYSIS_MODEL= # Analysis model used for generating repository directory structure
       - CHAT_API_KEY= # Your API key
-      - LANGUAGE= # Default language for generation set to "Chinese"
+      - LANGUAGE= # Set the default language for generation as "Chinese"
       - ENDPOINT=https://api.token-ai.cn/v1
       - DB_TYPE=sqlite
-      - MODEL_PROVIDER=OpenAI # Model provider, by default OpenAI, supports Azure, OpenAI and Anthropic
+      - MODEL_PROVIDER=OpenAI # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
+      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
+```
+
+AzureOpenAI:
+```yaml
+services:
+  koalawiki:
+    environment:
+      - KOALAWIKI_REPOSITORIES=/repositories
+      - TASK_MAX_SIZE_PER_USER=5 # Maximum number of parallel document generation tasks per user by AI
+      - CHAT_MODEL=DeepSeek-V3 # Model must support functions
+      - ANALYSIS_MODEL= # Analysis model used for generating repository directory structure
+      - CHAT_API_KEY= # Your API key
+      - LANGUAGE= # Set the default language for generation as "Chinese"
+      - ENDPOINT=https://your-azure-address.openai.azure.com/
+      - DB_TYPE=sqlite
+      - MODEL_PROVIDER=AzureOpenAI # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
+      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
+```
+
+Anthropic:
+```yaml
+services:
+  koalawiki:
+    environment:
+      - KOALAWIKI_REPOSITORIES=/repositories
+      - TASK_MAX_SIZE_PER_USER=5 # Maximum number of parallel document generation tasks per user by AI
+      - CHAT_MODEL=DeepSeek-V3 # Model must support functions
+      - ANALYSIS_MODEL= # Analysis model used for generating repository directory structure
+      - CHAT_API_KEY= # Your API key
+      - LANGUAGE= # Set the default language for generation as "Chinese"
+      - ENDPOINT=https://api.anthropic.com/
+      - DB_TYPE=sqlite
+      - MODEL_PROVIDER=Anthropic # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
 ```
 

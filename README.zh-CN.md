@@ -60,6 +60,8 @@ cd OpenDeepWiki
 ```
 
 2. 打开`docker-compose.yml`文件，修改以下环境变量：
+
+OpenAI：
 ```yaml
 services:
   koalawiki:
@@ -75,6 +77,41 @@ services:
       - MODEL_PROVIDER=OpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
 ```
+
+AzureOpenAI
+```yaml
+services:
+  koalawiki:
+    environment:
+      - KOALAWIKI_REPOSITORIES=/repositories
+      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
+      - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
+      - ANALYSIS_MODEL= # 分析模型，用于生成仓库目录结构
+      - CHAT_API_KEY= # 您的APIkey
+      - LANGUAGE= # 设置生成语言默认为"中文"
+      - ENDPOINT=https://您的Azure地址.openai.azure.com/
+      - DB_TYPE=sqlite
+      - MODEL_PROVIDER=AzureOpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
+      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
+```
+
+Anthropic
+```yaml
+services:
+  koalawiki:
+    environment:
+      - KOALAWIKI_REPOSITORIES=/repositories
+      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
+      - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
+      - ANALYSIS_MODEL= # 分析模型，用于生成仓库目录结构
+      - CHAT_API_KEY= # 您的APIkey
+      - LANGUAGE= # 设置生成语言默认为"中文"
+      - ENDPOINT=https://api.anthropic.com/
+      - DB_TYPE=sqlite
+      - MODEL_PROVIDER=Anthropic # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
+      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
+```
+
 
 > 💡 **如何获取APIKey:**
 > - 获取 Google API key [Google AI Studio](https://makersuite.google.com/app/apikey)
