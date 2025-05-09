@@ -52,7 +52,7 @@ pushd web > /dev/null
 docker buildx build \
     --platform linux/arm64 \
     -t crpi-j9ha7xwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64 \
-    -f Dockerfile \
+    -f Dockerfile.arm \
     --push .
 if [ $? -ne 0 ]; then
     echo "Error building frontend arm64 image!"
