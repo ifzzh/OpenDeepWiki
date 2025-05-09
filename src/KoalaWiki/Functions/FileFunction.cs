@@ -14,6 +14,8 @@ public class FileFunction(string gitPath)
     {
         try
         {
+            filePaths = filePaths.Distinct().ToArray();
+
             if (DocumentContext.DocumentStore?.Files != null)
             {
                 DocumentContext.DocumentStore.Files.AddRange(filePaths);

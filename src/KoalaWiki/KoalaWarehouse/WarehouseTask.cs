@@ -50,32 +50,34 @@ public class WarehouseTask(
                     .ExecuteUpdateAsync(x => x.SetProperty(a => a.Name, info.RepositoryName)
                         .SetProperty(x => x.Branch, info.BranchName)
                         .SetProperty(x => x.Version, info.Version)
-                        .SetProperty(x=>x.Status, WarehouseStatus.Processing)
+                        .SetProperty(x => x.Status, WarehouseStatus.Processing)
                         .SetProperty(x => x.OrganizationName, info.Organization), stoppingToken);
 
                 logger.LogInformation("更新仓库信息到数据库完成，仓库ID：{Id}", value.Id);
 
-                var document = new Document()
+                Document document;
+
+                if (await dbContext.Documents.AnyAsync(x => x.WarehouseId == value.Id, stoppingToken))
                 {
-                    GitPath = info.LocalPath,
-                    WarehouseId = value.Id,
-                    Status = WarehouseStatus.Processing,
-                    Description = value.Description,
-                    Id = Guid.NewGuid().ToString("N")
-                };
+                    document = await dbContext.Documents.FirstAsync(x => x.WarehouseId == value.Id, stoppingToken);
+                    logger.LogInformation("获取现有文档记录，文档ID：{Id}", document.Id);
+                }
+                else
+                {
+                    document = new Document
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        WarehouseId = value.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        LastUpdate = DateTime.UtcNow,
+                        Status = WarehouseStatus.Pending
+                    };
+                    logger.LogInformation("创建文档记录，文档ID：{Id}", document.Id);
+                    await dbContext.Documents.AddAsync(document, stoppingToken);
+                    logger.LogInformation("添加新文档记录完成，文档ID：{Id}", document.Id);
 
-                logger.LogInformation("创建文档记录，文档ID：{Id}", document.Id);
-
-                await dbContext.Documents.Where(x => x.WarehouseId == value.Id)
-                    .ExecuteDeleteAsync(stoppingToken);
-
-                logger.LogInformation("删除旧文档记录完成，仓库ID：{Id}", value.Id);
-
-                await dbContext.Documents.AddAsync(document, stoppingToken);
-
-                logger.LogInformation("添加新文档记录完成，文档ID：{Id}", document.Id);
-
-                await dbContext.SaveChangesAsync(stoppingToken);
+                    await dbContext.SaveChangesAsync(stoppingToken);
+                }
 
                 logger.LogInformation("数据库更改保存完成，开始处理文档。");
 
@@ -112,4 +114,3 @@ public class WarehouseTask(
         }
     }
 }
-

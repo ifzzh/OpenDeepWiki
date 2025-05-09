@@ -71,20 +71,20 @@ public class DocumentsService
             if (relativePath.StartsWith("."))
                 continue;
 
-            if (relativePath.Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
-                relativePath.Equals("README.txt", StringComparison.OrdinalIgnoreCase) ||
-                relativePath.Equals("README", StringComparison.OrdinalIgnoreCase))
-            {
-                // 忽略README文件
-                continue;
-            }
-
             catalogue.Append($"{relativePath}\n");
         }
 
         return catalogue.ToString();
     }
 
+    /// <summary>
+    /// Handles the asynchronous processing of a document within a specified warehouse, including parsing directory structures, generating update logs, and saving results to the database.
+    /// </summary>
+    /// <param name="document">The document to be processed.</param>
+    /// <param name="warehouse">The warehouse associated with the document.</param>
+    /// <param name="dbContext">The database context used for data operations.</param>
+    /// <param name="gitRepository">The Git repository address related to the document.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task HandleAsync(Document document, Warehouse warehouse, IKoalaWikiContext dbContext,
         string gitRepository)
     {
@@ -153,7 +153,7 @@ public class DocumentsService
 
         if (await dbContext.DocumentOverviews.AnyAsync(x => x.DocumentId == document.Id) == false)
         {
-            var overview = await GenerateProjectOverview(fileKernel, catalogue.ToString(), readme, gitRepository,
+            var overview = await GenerateProjectOverview(fileKernel, catalogue, gitRepository,
                 warehouse.Branch);
 
             // 可能需要先处理一下documentation_structure 有些模型不支持json
@@ -176,7 +176,6 @@ public class DocumentsService
             });
         }
 
-
         DocumentResultCatalogue? result = null;
 
         var retryCount = 0;
@@ -195,8 +194,7 @@ public class DocumentsService
                 StringBuilder str = new StringBuilder();
                 var history = new ChatHistory();
                 history.AddUserMessage(Prompt.AnalyzeCatalogue
-                    .Replace("{{$catalogue}}", catalogue.ToString())
-                    .Replace("{{$readme}}", readme));
+                    .Replace("{{$catalogue}}", catalogue));
 
                 await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history,
                                    new OpenAIPromptExecutionSettings()
@@ -284,12 +282,11 @@ public class DocumentsService
             // 尝试启动新任务，直到达到并发限制
             while (pendingDocuments.Count > 0 && runningTasks.Count < TaskMaxSizePerUser)
             {
-                if (pendingDocuments.TryTake(out var documentCatalog))
-                {
-                    var task = ProcessDocumentAsync(documentCatalog, fileKernel, catalogue, readme, gitRepository,
-                        warehouse.Branch, path, semaphore);
-                    runningTasks.Add(task);
-                }
+                if (!pendingDocuments.TryTake(out var documentCatalog)) continue;
+
+                var task = ProcessDocumentAsync(documentCatalog, fileKernel, catalogue, gitRepository,
+                    warehouse.Branch, path, semaphore);
+                runningTasks.Add(task);
             }
 
             // 如果没有正在运行的任务，退出循环
@@ -303,6 +300,14 @@ public class DocumentsService
             try
             {
                 var (catalog, fileItem, files) = await completedTask;
+
+                if (fileItem == null)
+                {
+                    // 构建失败
+                    Log.Logger.Error("处理仓库；{path} ,处理标题：{name} 失败:文件内容为空", path, catalog.Name);
+
+                    throw new Exception("处理失败，文件内容为空: " + catalog.Name);
+                }
 
                 // 更新文档状态
                 await dbContext.DocumentCatalogs.Where(x => x.Id == catalog.Id)
@@ -335,23 +340,21 @@ public class DocumentsService
     /// 处理单个文档的异步方法
     /// </summary>
     private async Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)> ProcessDocumentAsync(
-        DocumentCatalog catalog, Kernel kernel, string catalogue,
-        string readme, string gitRepository, string branch, string path, SemaphoreSlim semaphore)
+        DocumentCatalog catalog, Kernel kernel, string catalogue, string gitRepository, string branch, string path,
+        SemaphoreSlim semaphore)
     {
         int retryCount = 0;
         const int retries = 5;
         var files = new List<string>();
         DocumentContext.DocumentStore = new DocumentStore();
 
-        while (retryCount < retries)
+        while (true)
         {
             try
             {
                 await semaphore.WaitAsync();
                 Log.Logger.Information("处理仓库；{path} ,处理标题：{name}", path, catalog.Name);
-                var fileItem = await ProcessCatalogueItems(catalog, kernel, catalogue, readme,
-                    gitRepository, branch);
-
+                var fileItem = await ProcessCatalogueItems(catalog, kernel, catalogue, gitRepository, branch);
                 files.AddRange(DocumentContext.DocumentStore.Files);
 
                 Log.Logger.Information("处理仓库；{path} ,处理标题：{name} 完成！", path, catalog.Name);
@@ -488,8 +491,8 @@ public class DocumentsService
     /// 生成项目概述
     /// </summary>
     /// <returns></returns>
-    private async Task<string> GenerateProjectOverview(Kernel kernel, string catalog,
-        string readme, string gitRepository, string branch)
+    private async Task<string> GenerateProjectOverview(Kernel kernel, string catalog, string gitRepository,
+        string branch)
     {
         var sr = new StringBuilder();
 
@@ -503,8 +506,7 @@ public class DocumentsService
 
         history.AddUserMessage(Prompt.Overview.Replace("{{$catalogue}}", catalog)
             .Replace("{{$git_repository}}", gitRepository)
-            .Replace("{{$branch}}", branch)
-            .Replace("{{$readme}}", readme));
+            .Replace("{{$branch}}", branch));
 
         await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))
         {
@@ -534,7 +536,7 @@ public class DocumentsService
     /// 处理每一个标题产生文件内容
     /// </summary>
     private async Task<DocumentFileItem> ProcessCatalogueItems(DocumentCatalog catalog, Kernel kernel, string catalogue,
-        string readme, string git_repository, string branch)
+        string gitRepository, string branch)
     {
         var chat = kernel.Services.GetService<IChatCompletionService>();
 
@@ -543,8 +545,7 @@ public class DocumentsService
         history.AddUserMessage(Prompt.DefaultPrompt
             .Replace("{{$catalogue}}", catalogue)
             .Replace("{{$prompt}}", catalog.Prompt)
-            .Replace("{{$readme}}", readme)
-            .Replace("{{$git_repository}}", git_repository)
+            .Replace("{{$git_repository}}", gitRepository)
             .Replace("{{$branch}}", branch)
             .Replace("{{$title}}", catalog.Name));
 

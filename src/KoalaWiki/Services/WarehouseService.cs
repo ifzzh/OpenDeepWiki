@@ -179,7 +179,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         var list = await query
             // 推荐true排在前面
             .OrderByDescending(x => x.IsRecommended)
-            .ThenBy(x => x.Status == WarehouseStatus.Completed )
+            .ThenByDescending(x => x.Status == WarehouseStatus.Completed)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
