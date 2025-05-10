@@ -180,7 +180,7 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
         modelBuilder.Entity<ChatShareMessageItem>(options =>
         {
             options.HasKey(x => x.Id);
-
+            
             options.HasIndex(x => x.ChatShareMessageId);
             options.HasIndex(x => x.WarehouseId);
 

@@ -588,7 +588,7 @@ public class DocumentsService
                 sr.Append(i.Content);
             }
         }
-        
+
         // 擅长<thought_process></thought_process>标签的内容包括标签
         var thought_process = new Regex(@"<thought_process>(.*?)</thought_process>", RegexOptions.Singleline);
         var thought_process_match = thought_process.Match(sr.ToString());
@@ -599,7 +599,7 @@ public class DocumentsService
             sr.Clear();
             sr.Append(extractedContent);
         }
-        
+
 
         // 使用正则表达式将<blog></blog>中的内容提取
         var regex = new Regex(@"<data-blog>(.*?)</data-blog>", RegexOptions.Singleline);
@@ -634,18 +634,19 @@ public class DocumentsService
         return fileItem;
     }
 
-    private void ProcessCatalogueItems(List<DocumentResultCatalogueItem> items, string? parentId, Warehouse warehouse,
+    private static void ProcessCatalogueItems(List<DocumentResultCatalogueItem> items, string? parentId, Warehouse warehouse,
         Document document, List<DocumentCatalog>? documents)
     {
         int order = 0; // 创建排序计数器
         foreach (var item in items)
         {
+            item.title = item.title.Replace(" ", "");
             var documentItem = new DocumentCatalog
             {
                 WarehouseId = warehouse.Id,
                 Description = item.title,
                 DependentFile = item.dependent_file.ToList(),
-                Id = Guid.NewGuid().ToString("N"),
+                Id = Guid.NewGuid() + item.title,
                 Name = item.name,
                 Url = item.title,
                 DucumentId = document.Id,
