@@ -3,7 +3,7 @@
 [中文](README.zh-CN.md) | [English](README.md)
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/f91e3fe7-ef4d-4cfb-8b57-36eb1c449238" alt="KoalaWiki Logo" width="200" />
+  <img src="/favicon.png" alt="OpenDeepWiki Logo" width="200" />
   <h3>AI-Driven Code Knowledge Base</h3>
 </div>
 

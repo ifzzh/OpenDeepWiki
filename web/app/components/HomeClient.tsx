@@ -373,7 +373,6 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               <Card style={{ ...cardStyle, padding: 32, textAlign: 'center' }}>
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  imageStyle={{ height: 60 }}
                   description={
                     <Typography.Text style={{ color: customTheme.token.colorTextSecondary, fontSize: 15 }}>
                       {searchValue ? `没有找到与"${searchValue}"相关的仓库` : "暂无仓库数据"}
