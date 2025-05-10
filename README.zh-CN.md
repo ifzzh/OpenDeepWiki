@@ -134,7 +134,7 @@ make up
 make dev
 ```
 
-然后访问 http://localhost:80 即可访问知识库。
+然后访问 http://localhost:8090 即可访问知识库。
 
 更多命令可查看：
 ```bash
