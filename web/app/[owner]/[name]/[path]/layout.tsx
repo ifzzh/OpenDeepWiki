@@ -1,12 +1,6 @@
 import { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
 import { documentById } from '../../../services/warehouseService';
-
-type Props = {
-  params: { owner: string; name: string; path: string[] }
-  children: React.ReactNode
-}
-
 // 获取文档内容以生成更精确的SEO元数据
 async function getDocument(owner: string, name: string, path: string) {
   try {
@@ -23,8 +17,8 @@ async function getDocument(owner: string, name: string, path: string) {
 
 // 为页面生成动态元数据
 export async function generateMetadata(
-  { params }: Props,
-  parent: ResolvingMetadata
+  { params }: any,
+  parent: any
 ): Promise<Metadata> {
   const { owner, name, path } = params;
   const pathString = Array.isArray(path) ? path.join('/') : path;
@@ -73,6 +67,6 @@ export async function generateMetadata(
 export default function DocumentLayout({
   children,
   params
-}: Props) {
+}: any) {
   return children;
 } 
