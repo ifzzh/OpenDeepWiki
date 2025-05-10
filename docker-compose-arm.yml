@@ -1,8 +1,6 @@
 ﻿services:
   koalawiki:
     image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64
-    ports:
-      - 8080:8080
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
       - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大数量
@@ -23,8 +21,6 @@
       
   koalawiki-web:
     image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64
-    ports:
-      - 3000:3000
     environment:
       - NEXT_PUBLIC_API_URL=http://koalawiki:8080 # 用于提供给server的地址
     build:
