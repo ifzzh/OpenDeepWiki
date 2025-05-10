@@ -3,7 +3,7 @@
 [中文](README.zh-CN.md) | [English](README.md)
 
 <div align="center">
-  <img src="/favicon.png" alt="OpenDeepWiki Logo" width="200" />
+  <img src="/img/favicon.png" alt="OpenDeepWiki Logo" width="200" />
   <h3>AI-Driven Code Knowledge Base</h3>
 </div>
 
