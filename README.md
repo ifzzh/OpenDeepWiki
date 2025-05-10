@@ -130,7 +130,7 @@ make up
 make dev
 ```
 
-Then visit http://localhost:80 to access the knowledge base.
+Then visit http://localhost:8090 to access the knowledge base.
 
 For more commands:
 ```bash
