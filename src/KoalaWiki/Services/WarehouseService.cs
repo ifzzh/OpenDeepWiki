@@ -177,9 +177,26 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
 
         var total = await query.CountAsync();
         var list = await query
-            // 推荐true排在前面
+            .Select(x => new Warehouse()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Address = x.Address,
+                Description = x.Description,
+                Version = x.Version,
+                Status = x.Status,
+                Error = x.Error,
+                CreatedAt = x.CreatedAt,
+                IsRecommended = x.IsRecommended,
+                OrganizationName = x.OrganizationName,
+                Prompt = x.Prompt,
+                Branch = x.Branch,
+                Email = x.Email,
+                Type = x.Type,
+            })
             .OrderByDescending(x => x.IsRecommended)
             .ThenByDescending(x => x.Status == WarehouseStatus.Completed)
+            .ThenByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

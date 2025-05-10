@@ -1,6 +1,6 @@
-﻿using KoalaWiki.Domains;
+﻿using KoalaWiki.Entities;
 
-namespace KoalaWiki.Entities;
+namespace KoalaWiki.Domains;
 
 public class Document : Entity<string>
 {
@@ -34,7 +34,6 @@ public class Document : Entity<string>
     /// </summary>
     /// <returns></returns>
     public string GitPath { get; set; } = string.Empty;
-    
     
     /// <summary>
     /// 仓库状态

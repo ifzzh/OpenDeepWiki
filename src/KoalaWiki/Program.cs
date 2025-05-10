@@ -17,8 +17,12 @@ Log.Logger = new LoggerConfiguration()
 
 #region Options
 
-OpenAIOptions.Config(builder.Configuration);
+OpenAIOptions.InitConfig(builder.Configuration);
+builder.Configuration.GetSection(DocumentOptions.Name)
+    .Get<DocumentOptions>();
+
 #endregion
+
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddKoalaMcp();

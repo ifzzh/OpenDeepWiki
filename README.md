@@ -73,6 +73,7 @@ services:
       - DB_TYPE=sqlite
       - MODEL_PROVIDER=OpenAI # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
+      - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
 ```
 
 AzureOpenAI:
@@ -90,6 +91,7 @@ services:
       - DB_TYPE=sqlite
       - MODEL_PROVIDER=AzureOpenAI # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
+      - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
 ```
 
 Anthropic:
@@ -107,6 +109,7 @@ services:
       - DB_TYPE=sqlite
       - MODEL_PROVIDER=Anthropic # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
+      - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
 ```
 
 > 💡 **How to get an API Key:**
@@ -199,16 +202,17 @@ graph TD
 ## Advanced Configuration
 
 ### Environment Variables
-  - KOALAWIKI_REPOSITORIES # Path for storing repositories
-  - TASK_MAX_SIZE_PER_USER # Maximum parallel tasks for AI document generation per user
-  - CHAT_MODEL # Model must support functions
-  - ENDPOINT # API Endpoint
-  - ANALYSIS_MODEL # Analysis model for generating repository directory structure
-  - CHAT_API_KEY # Your API key
-  - LANGUAGE # Change the language of the generated documents
-  - DB_TYPE # Database type, default is sqlite
-  - MODEL_PROVIDER # Model provider, by default OpenAI, supports Azure, OpenAI and Anthropic
-  - DB_CONNECTION_STRING # Database connection string
+  - KOALAWIKI_REPOSITORIES  Path for storing repositories
+  - TASK_MAX_SIZE_PER_USER  Maximum parallel tasks for AI document generation per user
+  - CHAT_MODEL  Model must support functions
+  - ENDPOINT  API Endpoint
+  - ANALYSIS_MODEL  Analysis model for generating repository directory structure
+  - CHAT_API_KEY  Your API key
+  - LANGUAGE  Change the language of the generated documents
+  - DB_TYPE  Database type, default is sqlite
+  - MODEL_PROVIDER  Model provider, by default OpenAI, supports Azure, OpenAI and Anthropic
+  - DB_CONNECTION_STRING  Database connection string
+  - EnableSmartFilter Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
 
 ### Build for Different Architectures
 The Makefile provides commands to build for different CPU architectures:

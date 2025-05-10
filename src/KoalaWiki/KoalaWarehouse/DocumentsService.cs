@@ -3,14 +3,13 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Domains;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Extensions;
 using KoalaWiki.Functions;
 using KoalaWiki.Options;
 using LibGit2Sharp;
-using Markdig;
-using Markdig.Syntax;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -23,6 +22,14 @@ namespace KoalaWiki.KoalaWarehouse;
 public class DocumentsService
 {
     private static readonly int TaskMaxSizePerUser = 5;
+
+    /// <summary>
+    /// 内置的不包含包含后缀名
+    /// </summary>
+    /// <returns></returns>
+    private static readonly string[] BuiltInExcludedFiles =
+    [
+    ];
 
     static DocumentsService()
     {
@@ -46,15 +53,17 @@ public class DocumentsService
             // 需要去掉注释
             var lines = File.ReadAllLines(ignoreFilePath);
             var ignoreFiles = lines.Where(x => !string.IsNullOrWhiteSpace(x) && !x.StartsWith("#"))
-                .Select(x => x.Trim()).ToArray();
+                .Select(x => x.Trim()).ToList();
 
-            return ignoreFiles;
+            ignoreFiles.AddRange(DocumentOptions.ExcludedFiles);
+
+            return ignoreFiles.ToArray();
         }
 
         return [];
     }
 
-    public static string GetCatalogue(string path)
+    public static async Task<string> GetCatalogue(string path)
     {
         var ignoreFiles = GetIgnoreFiles(path);
 
@@ -73,6 +82,69 @@ public class DocumentsService
                 continue;
 
             catalogue.Append($"{relativePath}\n");
+        }
+
+        // 如果文件数量小于3000
+        if (pathInfos.Count < 3000)
+        {
+            // 直接返回
+            return catalogue.ToString();
+        }
+
+        // 如果不启用则直接返回
+        if (DocumentOptions.EnableSmartFilter == false)
+        {
+            return catalogue.ToString();
+        }
+
+        Log.Logger.Information("开始优化目录结构");
+
+        var analysisModel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey, path, OpenAIOptions.AnalysisModel);
+
+        var codeDirSimplifier = analysisModel.Plugins["CodeAnalysis"]["CodeDirSimplifier"];
+
+        var sb = new StringBuilder();
+
+        await foreach (var item in analysisModel.InvokeStreamingAsync(codeDirSimplifier, new KernelArguments(
+                           new OpenAIPromptExecutionSettings()
+                           {
+                               MaxTokens = GetMaxTokens(OpenAIOptions.AnalysisModel)
+                           })
+                       {
+                           ["code_files"] = catalogue.ToString(),
+                       }))
+        {
+            sb.Append(item);
+        }
+
+        // 正则表达式提取response_file
+        var regex = new Regex("<response_file>(.*?)</response_file>", RegexOptions.Singleline);
+        var match = regex.Match(sb.ToString());
+        if (match.Success)
+        {
+            // 提取到的内容
+            var extractedContent = match.Groups[1].Value;
+            catalogue.Clear();
+            catalogue.Append(extractedContent);
+        }
+        else
+        {
+            // 可能是```json
+            var jsonRegex = new Regex("```json(.*?)```", RegexOptions.Singleline);
+            var jsonMatch = jsonRegex.Match(sb.ToString());
+            if (jsonMatch.Success)
+            {
+                // 提取到的内容
+                var extractedContent = jsonMatch.Groups[1].Value;
+                catalogue.Clear();
+                catalogue.Append(extractedContent);
+            }
+            else
+            {
+                catalogue.Clear();
+                catalogue.Append(sb);
+            }
         }
 
         return catalogue.ToString();
@@ -98,8 +170,17 @@ public class DocumentsService
 
         var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
             OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
-
-        var catalogue = GetCatalogue(path);
+        
+        var catalogue = warehouse.OptimizedDirectoryStructure;
+        if (string.IsNullOrWhiteSpace(catalogue))
+        {
+            catalogue = await GetCatalogue(path);
+            if (!string.IsNullOrWhiteSpace(catalogue))
+            {
+                await dbContext.Warehouses.Where(x => x.Id == warehouse.Id)
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.OptimizedDirectoryStructure, catalogue));
+            }
+        }
 
         var readme = await ReadMeFile(path);
 
@@ -155,7 +236,7 @@ public class DocumentsService
         if (await dbContext.DocumentOverviews.AnyAsync(x => x.DocumentId == document.Id) == false)
         {
             var overview = await GenerateProjectOverview(fileKernel, catalogue, gitRepository,
-                warehouse.Branch);
+                warehouse.Branch, readme);
 
             // 可能需要先处理一下documentation_structure 有些模型不支持json
             var regex = new Regex(@"<blog>(.*?)</blog>",
@@ -263,9 +344,6 @@ public class DocumentsService
                     // 等待一段时间后重试
                     await Task.Delay(5000 * retryCount);
                 }
-            }
-            finally
-            {
             }
         }
 
@@ -514,7 +592,7 @@ public class DocumentsService
     /// </summary>
     /// <returns></returns>
     private async Task<string> GenerateProjectOverview(Kernel kernel, string catalog, string gitRepository,
-        string branch)
+        string branch, string readme)
     {
         var sr = new StringBuilder();
 
@@ -526,9 +604,10 @@ public class DocumentsService
         var chat = kernel.GetRequiredService<IChatCompletionService>();
         var history = new ChatHistory();
 
-        history.AddUserMessage(Prompt.Overview.Replace("{{$catalogue}}", catalog)
-            .Replace("{{$git_repository}}", gitRepository)
-            .Replace("{{$branch}}", branch));
+        history.AddUserMessage(Prompt.Overview.Replace("{{catalogue}}", catalog)
+            .Replace("{{git_repository}}", gitRepository)
+            .Replace("{{readme}}", readme)
+            .Replace("{{branch}}", branch));
 
         await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))
         {
@@ -634,7 +713,8 @@ public class DocumentsService
         return fileItem;
     }
 
-    private static void ProcessCatalogueItems(List<DocumentResultCatalogueItem> items, string? parentId, Warehouse warehouse,
+    private static void ProcessCatalogueItems(List<DocumentResultCatalogueItem> items, string? parentId,
+        Warehouse warehouse,
         Document document, List<DocumentCatalog>? documents)
     {
         int order = 0; // 创建排序计数器
@@ -666,7 +746,7 @@ public class DocumentsService
     /// 读取仓库的ReadMe文件
     /// </summary>
     /// <returns></returns>
-    private async Task<string> ReadMeFile(string path)
+    public static async Task<string> ReadMeFile(string path)
     {
         var readmePath = Path.Combine(path, "README.md");
         if (File.Exists(readmePath))
@@ -696,12 +776,6 @@ public class DocumentsService
             {
                 var filename = Path.GetFileName(file);
 
-                if (file.StartsWith("."))
-                {
-                    // 忽略以.开头的文件
-                    return false;
-                }
-
                 // 支持*的匹配
                 foreach (var pattern in ignoreFiles)
                 {
@@ -726,50 +800,8 @@ public class DocumentsService
                 return true;
             })
             let fileInfo = new FileInfo(file)
+            // 过滤掉大于1M的文件
             where fileInfo.Length < 1024 * 1024 * 1
-            where !file.EndsWith(".png", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".so", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".class", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".o", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".a", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".tar", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".bz2", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".xz", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".flac", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".aac", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".avi", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".mkv", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".mov", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".doc", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".xls", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".css", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".scss", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".less", StringComparison.OrdinalIgnoreCase)
-            where !file.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".htm", StringComparison.OrdinalIgnoreCase)
-            // 过滤.ico
-            where !file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) &&
-                  !file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
             select new PathInfo { Path = file, Name = fileInfo.Name, Type = "File" });
 
         // 遍历所有目录，并递归扫描

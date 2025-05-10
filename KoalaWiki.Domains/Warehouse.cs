@@ -82,18 +82,9 @@ public class Warehouse : Entity<string>
     /// <returns></returns>
     public bool IsRecommended { get; set; }
 
-    // /// <summary>
-    // /// 使用模型
-    // /// </summary>
-    // public string Model { get; set; } = string.Empty;
-    //
-    // /// <summary>
-    // /// OpenAI 密钥
-    // /// </summary>
-    // public string OpenAIKey { get; set; } = string.Empty;
-    //
-    // /// <summary>
-    // /// OpenAI 端点
-    // /// </summary>
-    // public string OpenAIEndpoint { get; set; } = string.Empty;
+    /// <summary>
+    /// 优化过的代码目录结构
+    /// </summary>
+    /// <returns></returns>
+    public string OptimizedDirectoryStructure { get; set; }
 }

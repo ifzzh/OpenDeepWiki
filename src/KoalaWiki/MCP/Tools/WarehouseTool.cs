@@ -55,13 +55,21 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
 
         var history = new ChatHistory();
 
-
-        var fileSource = DocumentsService.GetCatalogue(document.GitPath);
+        var catalogue = warehouse.OptimizedDirectoryStructure;
+        if (string.IsNullOrWhiteSpace(catalogue))
+        {
+            catalogue = await DocumentsService.GetCatalogue(document.GitPath);
+            if (!string.IsNullOrWhiteSpace(catalogue))
+            {
+                await koala.Warehouses.Where(x => x.Id == warehouse.Id)
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.OptimizedDirectoryStructure, catalogue));
+            }
+        }
 
         history.AddUserMessage(Prompt.DeepFirstPrompt
             .Replace("{{question}}", question)
             .Replace("{{git_repository_url}}", warehouse.Address)
-            .Replace("{{catalogue}}", string.Join('\n', fileSource)));
+            .Replace("{{catalogue}}", string.Join('\n', catalogue)));
 
         var first = true;
 

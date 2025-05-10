@@ -108,7 +108,7 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                     b.ToTable("ChatShareMessageItems");
                 });
 
-            modelBuilder.Entity("KoalaWiki.Entities.Document", b =>
+            modelBuilder.Entity("KoalaWiki.Domains.Document", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -157,6 +157,10 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("DependentFile")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
@@ -176,6 +180,10 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("ParentId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Url")
@@ -395,6 +403,10 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OptimizedDirectoryStructure")
                         .IsRequired()
                         .HasColumnType("text");
 

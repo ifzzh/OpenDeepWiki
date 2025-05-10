@@ -40,9 +40,7 @@ public class DocumentCatalog : Entity<string>
     /// </summary>
     public bool IsCompleted { get; set; } = false;
     
-    [NotMapped]
     public string Prompt { get; set; } = string.Empty;
     
-    [NotMapped]
     public List<string> DependentFile { get; set; } = new();
 }

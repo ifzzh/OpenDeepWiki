@@ -15,7 +15,7 @@ public class OpenAIOptions
 
     public static string ModelProvider { get; set; } = string.Empty;
 
-    public static void Config(IConfiguration configuration)
+    public static void InitConfig(IConfiguration configuration)
     {
         ChatModel = (configuration.GetValue<string>("CHAT_MODEL") ??
                      configuration.GetValue<string>("ChatModel") ?? string.Empty).GetTrimmedValueOrEmpty();
@@ -54,5 +54,6 @@ public class OpenAIOptions
         {
             AnalysisModel = ChatModel;
         }
+        
     }
 }

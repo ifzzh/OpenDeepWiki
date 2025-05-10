@@ -80,6 +80,11 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             .AsNoTracking()
             .Where(x => x.Name == name && x.OrganizationName == owner)
             .FirstOrDefaultAsync();
+        
+        if(query == null)
+        {
+            throw new NotFoundException("仓库不存在");
+        }
 
         // 找到catalog
         var id = await dbAccess.DocumentCatalogs

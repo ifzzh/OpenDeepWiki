@@ -1,4 +1,5 @@
 ﻿using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Domains;
 using KoalaWiki.Entities;
 using KoalaWiki.Git;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,8 @@ public class WarehouseTask(
 
             var warehouses = await dbContext!.Warehouses
                 .Where(x => x.Status == WarehouseStatus.Pending || x.Status == WarehouseStatus.Processing)
+                // 处理中优先
+                .OrderByDescending(x => x.Status == WarehouseStatus.Processing)
                 .ToListAsync(stoppingToken);
 
             foreach (var warehouse in warehouses)

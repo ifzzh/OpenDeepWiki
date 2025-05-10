@@ -640,127 +640,168 @@ public static class Prompt
         """
         You are an expert software architect tasked with analyzing a software project's structure and generating a comprehensive, detailed overview. Your goal is to provide a clear, in-depth understanding of the project's architecture, components, and relationships.
         
-        First, let's examine the project structure:
-        
+        <project_data>
         <project_catalogue>
-        {{{catalogue}}}
+        {{catalogue}}
         </project_catalogue>
         
-        Now, let's review the project information:
-        
         <git_repository>
-        {{{git_repository}}}
+        {{git_repository}}
         </git_repository>
         
         <git_branch>
-        {{{branch}}}
+        {{branch}}
         </git_branch>
         
-        Here's the project's README:
-        
         <readme_content>
-        {{{readme}}}
+        {{readme}}
         </readme_content>
+        </project_data>
         
-        Your task is to analyze this information and create a detailed project overview. Follow these steps:
+        ## Analysis Framework
         
-        1. README Analysis:
-           - Examine the README content carefully.
-           - Identify the project's purpose, core goals, and target audience.
-           - Note any key features or architectural decisions mentioned.
+        Analyze this project systematically through the following lenses:
         
-        2. Project Structure Analysis:
-           - Study the project catalogue to understand the overall structure.
-           - Identify core components and their relationships.
-           - Document code organization principles and design patterns.
-           - Create a visual representation of the project architecture using a Mermaid diagram.
+        1. **Project Purpose Analysis**
+           - Extract core purpose, goals, and target audience from README
+           - Identify key features and architectural decisions
+           - Determine the project's technical domain and primary use cases
         
-        3. Configuration Management:
-           - Examine environment configuration files and variables.
-           - Review build system and deployment configuration.
-           - Document external service integration points and dependencies.
-           - Identify configuration patterns and potential improvements.
+        2. **Architectural Analysis**
+           - Map core components and their relationships
+           - Identify architectural patterns and design principles
+           - Create architectural diagrams using Mermaid syntax
+           - Document system boundaries and integration points
         
-        4. Dependency Analysis:
-           - List external dependencies with version requirements.
-           - Map internal module dependencies and coupling patterns.
-           - Generate a project dependency diagram using Mermaid syntax.
-           - Highlight critical dependencies and potential vulnerabilities.
+        3. **Code Organization Analysis**
+           - Analyze directory structure and file organization
+           - Identify main entry points and execution flow
+           - Document code organization principles and patterns
+           - Examine naming conventions and code structure consistency
         
-        5. Project-Specific Analysis:
-           - Analyze framework-specific patterns and implementation.
-           - Evaluate specialized components based on the project type (Web/Mobile/Backend/ML).
-           - Identify project-specific patterns and architectural decisions.
-           - Assess performance considerations unique to this project.
+        4. **Configuration Management**
+           - Analyze environment configuration files and variables
+           - Document build system and deployment configuration
+           - Map external service integration points
+           - Identify configuration patterns and potential improvements
         
-        6. Core Process and Mechanism Analysis:
-           - Identify and explain the core processes within the project.
-           - Create detailed flowcharts using Mermaid syntax to illustrate these processes.
-           - Describe key mechanisms and how they contribute to the project's functionality.
+        5. **Dependency Analysis**
+           - Catalog external dependencies with version requirements
+           - Map internal module dependencies and coupling patterns
+           - Generate dependency diagrams using Mermaid syntax
+           - Highlight critical dependencies and potential vulnerabilities
         
-        7. Conclusion and Recommendations:
-           - Summarize the project architecture and key characteristics.
-           - Identify architectural strengths and potential improvement areas.
-           - Provide actionable recommendations for enhancing code organization.
-           - Outline next steps for project evolution and maintenance.
+        6. **Core Implementation Analysis**
+           - Examine key source files and their implementation details
+           - Document critical algorithms and data structures
+           - Analyze error handling and logging approaches
+           - Identify performance optimization techniques
         
-        For each major component or file you analyze, include a reference link at the end of the related section using this format:
-        Sources:
-        - [filename](git_repository_url/path/to/file)
+        7. **Process Flow Analysis**
+           - Map core business processes and workflows
+           - Create process flow diagrams using Mermaid syntax
+           - Document data transformation and state management
+           - Analyze synchronous vs. asynchronous processing patterns
         
-        To reference specific code lines, use:
-        Sources:
-        - [filename](git_repository_url/path/to/file#L1-L10)
+        <deep-research>
+        For each core functionality identified, analyze the relevant code files:
+        - Identify the primary classes/functions implementing each feature
+        - Document key methods, their parameters, and return values
+        - Analyze code complexity and design patterns used
+        - Examine error handling and edge case management
+        - Note any performance considerations or optimizations
+        - Document integration points with other system components
+        - Identify potential improvement areas or technical debt
         
-        Throughout your analysis, use Mermaid diagrams to visualize component relationships, data flow, and core processes. Be as detailed and clear as possible in your explanations.
+        For each core code file:
+        - Analyze its purpose and responsibilities
+        - Document its dependencies and coupling patterns
+        - Examine coding patterns and implementation approaches
+        - Identify reusable components or utilities
+        - Note any unusual or non-standard implementations
+        - Document security considerations or potential vulnerabilities
+        </deep-research>
         
-        Your final output should be a comprehensive project overview in Markdown format, structured as follows:
+        ## Documentation Requirements
         
-        1. Project Introduction
+        Create a comprehensive project overview in Markdown format with the following structure:
+        
+        1. **Project Introduction**
            - Purpose statement
            - Core goals and objectives
            - Target audience
+           - Technical domain and context
         
-        2. Technical Architecture
-           - Component breakdown
-           - Design patterns
-           - System relationships
+        2. **Technical Architecture**
+           - High-level architecture overview
+           - Component breakdown with responsibilities
+           - Design patterns and architectural principles
+           - System relationships and boundaries
            - Data flow diagrams (using Mermaid)
+           ```mermaid
+           // Insert appropriate architecture diagram here
+           ```
         
-        3. Implementation Details
-           - Main entry points (with code examples)
-           - Core modules (with implementation highlights)
-           - Configuration approach (with file examples)
-           - External dependencies (with integration examples)
-           - Integration points (with code demonstrations)
+        3. **Implementation Details**
+           - Main entry points with code examples
+           ```
+           // Insert relevant code snippets
+           ```
+           - Core modules with implementation highlights
+           - Configuration approach with file examples
+           - External dependencies with integration examples
+           - Integration points with code demonstrations
            - Component relationship diagrams (using Mermaid)
+           ```mermaid
+           // Insert appropriate component diagram here
+           ```
         
-        4. Key Features
-           - Functionality overview
-           - Implementation highlights (with code examples)
-           - Usage examples (with practical code snippets)
+        4. **Key Features**
+           - Feature-by-feature breakdown
+           - Implementation highlights with code examples
+           ```
+           // Insert relevant code snippets
+           ```
+           - Usage examples with practical code snippets
            - Feature architecture diagrams (using Mermaid)
+           ```mermaid
+           // Insert appropriate feature diagram here
+           ```
         
-        5. Core Processes and Mechanisms
+        5. **Core Processes and Mechanisms**
            - Detailed explanations of core processes
-           - Flowcharts illustrating these processes (using Mermaid)
-           - Key mechanisms and their roles in the project
+           - Process flowcharts (using Mermaid)
+           ```mermaid
+           // Insert appropriate process flow diagram here
+           ```
+           - Key mechanisms and their implementation details
+           - Data transformation and state management approaches
         
-        6. Conclusion and Recommendations
-           - Architecture summary
-           - Strengths and areas for improvement
-           - Actionable recommendations
-           - Next steps
+        6. **Conclusion and Recommendations**
+           - Architecture summary and evaluation
+           - Identified strengths and best practices
+           - Areas for potential improvement
+           - Actionable recommendations for enhancement
+           - Suggested next steps for project evolution
         
-        Before providing your final output, wrap your thought process for each major section in <project_analysis> tags. For each section:
-        - List the key points you need to address
-        - For Technical Architecture, write down the main components and their relationships before creating the Mermaid diagram
-        - For Implementation Details, list the main entry points and core modules you identify
-        - For Key Features, list the features you plan to highlight
+        ## Source Reference Guidelines
         
-        This will ensure a thorough interpretation of the project data. It's OK for this section to be quite long.
+        For each major component or file analyzed, include reference links using:
+        - Basic file reference: [filename]({{git_repository}}/path/to/file)
+        - Line-specific reference: [filename]({{git_repository}}/path/to/file#L1-L10)
         
-        Format your final output within <blog> tags using proper Markdown hierarchy and formatting.
+        <project_analysis>
+        Before providing the final output, document your analysis process:
+        - List key points identified for each major section
+        - For Technical Architecture, outline the main components and relationships
+        - For Implementation Details, enumerate the main entry points and core modules
+        - For Key Features, catalog the features to highlight
+        - For Core Processes, identify the main workflows to document
+        </project_analysis>
+        
+        <blog>
+        Format your final comprehensive project overview here using proper Markdown hierarchy and formatting.
+        </blog>
         """ +
         Language;
 }

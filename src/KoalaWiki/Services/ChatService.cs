@@ -70,7 +70,16 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             conversationHistory.Append($"{message.Role}: {message.Content}\n");
         }
 
-        var fileSource = DocumentsService.GetCatalogue(document.GitPath);
+        var catalogue = warehouse.OptimizedDirectoryStructure;
+        if (string.IsNullOrWhiteSpace(catalogue))
+        {
+            catalogue = await DocumentsService.GetCatalogue(document.GitPath);
+            if (!string.IsNullOrWhiteSpace(catalogue))
+            {
+                await koala.Warehouses.Where(x => x.Id == warehouse.Id)
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.OptimizedDirectoryStructure, catalogue));
+            }
+        }
 
         if (chatShareMessage.IsDeep)
         {
@@ -79,7 +88,7 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
                 history.AddUserMessage(Prompt.DeepFirstPrompt
                     .Replace("{{question}}", chatShareMessage!.Question)
                     .Replace("{{git_repository_url}}", warehouse.Address)
-                    .Replace("{{catalogue}}", string.Join('\n', fileSource)));
+                    .Replace("{{catalogue}}", string.Join('\n', catalogue)));
             }
             else
             {
@@ -87,7 +96,7 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
                     .Replace("{{$question}}", input.Question)
                     .Replace("{{$git_repository_url}}", warehouse.Address)
                     .Replace("{{$conversation_history}}", conversationHistory.ToString())
-                    .Replace("{{$catalogue}}", string.Join('\n', fileSource)));
+                    .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
         }
         else
@@ -97,7 +106,7 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
                 history.AddUserMessage(Prompt.FirstPrompt
                     .Replace("{{$question}}", chatShareMessage!.Question)
                     .Replace("{{$git_repository_url}}", warehouse.Address)
-                    .Replace("{{$catalogue}}", string.Join('\n', fileSource)));
+                    .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
             else
             {
@@ -105,7 +114,7 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
                     .Replace("{{$question}}", input.Question)
                     .Replace("{{$git_repository_url}}", warehouse.Address)
                     .Replace("{{$conversation_history}}", conversationHistory.ToString())
-                    .Replace("{{$catalogue}}", string.Join('\n', fileSource)));
+                    .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
         }
 
