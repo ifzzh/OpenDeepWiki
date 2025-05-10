@@ -98,7 +98,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             entity.Branch = string.Empty;
             entity.Type = "git";
             entity.CreatedAt = DateTime.UtcNow;
-
+            entity.OptimizedDirectoryStructure = string.Empty;
             entity.Id = Guid.NewGuid().ToString();
             await access.Warehouses.AddAsync(entity);
 
