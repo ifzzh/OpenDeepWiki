@@ -208,6 +208,7 @@ export default function RepositoryLayoutClient({
 
     return items;
   };
+  console.log(initialCatalogData);
 
   return (
     <ConfigProvider

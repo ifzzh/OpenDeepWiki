@@ -88,11 +88,13 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             builder.HasIndex(x => x.WarehouseId);
 
             builder.HasIndex(x => x.DucumentId);
-            
+
             builder.Property(x => x.DependentFile)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null));
+                    v => string.IsNullOrEmpty(v)
+                        ? new List<string>()
+                        : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null));
         }));
 
         modelBuilder.Entity<Document>((builder =>
@@ -185,7 +187,7 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
         modelBuilder.Entity<ChatShareMessageItem>(options =>
         {
             options.HasKey(x => x.Id);
-            
+
             options.HasIndex(x => x.ChatShareMessageId);
             options.HasIndex(x => x.WarehouseId);
 
