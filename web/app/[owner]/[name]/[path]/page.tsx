@@ -100,6 +100,7 @@ export default function DocumentPage() {
                 <SourceFiles
                   fileSource={document.fileSource}
                   owner={owner as string}
+                  branch={document.branch}
                   git={document.address}
                   name={name as string}
                   token={token}
