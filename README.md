@@ -229,8 +229,7 @@ make build-frontend-amd
 
 ## WeChat 
 
-![1000035457](https://github.com/user-attachments/assets/f1027d44-5453-4d39-86fc-a068bacf3afc)
-
+![2e3d38be0544d933e14c64e7de26f307](https://github.com/user-attachments/assets/f2024809-a3b9-44bd-98d9-142573c3206b)
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
