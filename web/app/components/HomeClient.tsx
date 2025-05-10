@@ -15,8 +15,8 @@ import { unstableSetRender } from 'antd';
 import { createRoot } from 'react-dom/client';
 import { homepage } from '../const/urlconst';
 
-const { Content, Header } = Layout;
-const { Title, Paragraph } = Typography;
+const { Content, Header, Footer } = Layout;
+const { Title, Paragraph, Text } = Typography;
 const { Search } = Input;
 
 // 自定义主题配置
@@ -468,6 +468,23 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
             />
           </div>
         </Content>
+        
+        <Footer style={{
+          textAlign: 'center',
+          background: customTheme.token.colorBgContainer,
+          padding: '12px 24px',
+          marginTop: 'auto',
+          borderTop: `1px solid #f0f0f0`
+        }}>
+          <Space direction="vertical" size={4}>
+            <Text type="secondary" style={{ fontSize: customTheme.token.fontSizeBase - 2 }}>
+              Powered by OpenDeepWiki
+            </Text>
+            <Text type="secondary" style={{ fontSize: customTheme.token.fontSizeBase - 2 }}>
+              Powered by .NET 9.0
+            </Text>
+          </Space>
+        </Footer>
       </Layout>
     </ConfigProvider>
   );
