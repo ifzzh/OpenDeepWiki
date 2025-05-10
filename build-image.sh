@@ -1,96 +1,45 @@
 #!/bin/bash
 
 echo "==========================================="
-echo "Building KoalaWiki Docker Images"
+echo "Building KoalaWiki Docker Images with BuildKit Multi-platform"
 echo "==========================================="
 
-# Enable Docker Buildx
-docker buildx create --use
+# Enable Docker Buildx with a new builder that supports multi-platform builds
+docker buildx create --name multiplatform-builder --use
 
-# Build backend image for amd64 platform
-echo "Building backend image for amd64 platform..."
+# Build and push backend images for multiple platforms at once
+echo "Building and pushing backend images for multiple platforms..."
 docker buildx build \
-    --platform linux/amd64 \
-    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki \
+    --platform linux/amd64,linux/arm64 \
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:latest \
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:amd64 \
     -f src/KoalaWiki/Dockerfile \
-    --load .
+    --push .
+
 if [ $? -ne 0 ]; then
-    echo "Error building backend amd64 image!"
+    echo "Error building and pushing backend images!"
     exit 1
 fi
 
-# Push backend amd64 image
-echo "Pushing backend amd64 image..."
-docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki
-if [ $? -ne 0 ]; then
-    echo "Error pushing backend amd64 image!"
-    exit 1
-fi
-
-# Build backend image specifically for arm64 platform using Dockerfile.arm
-echo "Building backend image for arm64 platform using Dockerfile.arm..."
-docker buildx build \
-    --platform linux/arm64 \
-    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64 \
-    -f src/KoalaWiki/Dockerfile.arm \
-    --load .
-if [ $? -ne 0 ]; then
-    echo "Error building backend arm64 image!"
-    exit 1
-fi
-
-# Push backend arm64 image
-echo "Pushing backend arm64 image..."
-docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki:arm64
-if [ $? -ne 0 ]; then
-    echo "Error pushing backend arm64 image!"
-    exit 1
-fi
-
-# Build frontend image for amd64 platform
-echo "Building frontend image for amd64 platform..."
+# Build and push frontend images for multiple platforms at once
+echo "Building and pushing frontend images for multiple platforms..."
 pushd web > /dev/null
 docker buildx build \
-    --platform linux/amd64 \
-    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web \
+    --platform linux/amd64,linux/arm64 \
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:latest \
+    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:amd64 \
     -f Dockerfile \
-    --load .
-if [ $? -ne 0 ]; then
-    echo "Error building frontend amd64 image!"
-    exit 1
-fi
+    --push .
 
-# Push frontend amd64 image
-echo "Pushing frontend amd64 image..."
-docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web
 if [ $? -ne 0 ]; then
-    echo "Error pushing frontend amd64 image!"
+    echo "Error building and pushing frontend images!"
     exit 1
 fi
 popd > /dev/null
 
-# Build frontend image for arm64 platform 
-echo "Building frontend image for arm64 platform..."
-pushd web > /dev/null
-docker buildx build \
-    --platform linux/arm64 \
-    -t crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64 \
-    -f Dockerfile.arm \
-    --load .
-if [ $? -ne 0 ]; then
-    echo "Error building frontend arm64 image!"
-    exit 1
-fi
-
-# Push frontend arm64 image
-echo "Pushing frontend arm64 image..."
-docker push crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/koala-wiki-web:arm64
-if [ $? -ne 0 ]; then
-    echo "Error pushing frontend arm64 image!"
-    exit 1
-fi
-popd > /dev/null
+# Clean up the builder
+docker buildx rm multiplatform-builder
 
 echo "==========================================="
-echo "Images built and pushed successfully!"
+echo "All images built and pushed successfully!"
 echo "==========================================="
