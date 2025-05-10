@@ -4,14 +4,34 @@ on:
     branches: [ main ]
 jobs:
   build:
+    strategy:
+      matrix:
+        image: [
+          { name: 'koala-wiki', type: 'backend', platform: 'amd64', dockerfile: 'src/KoalaWiki/Dockerfile', context: '.' },
+          { name: 'koala-wiki', type: 'backend', platform: 'arm64', dockerfile: 'src/KoalaWiki/Dockerfile.arm', context: '.', tag: ':arm64' },
+          { name: 'koala-wiki-web', type: 'frontend', platform: 'amd64', dockerfile: 'web/Dockerfile', context: 'web' },
+          { name: 'koala-wiki-web', type: 'frontend', platform: 'arm64', dockerfile: 'web/Dockerfile.arm', context: 'web', tag: ':arm64' }
+        ]
+      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Docker Buildx
-        run: |
-          docker buildx create --use
+        uses: docker/setup-buildx-action@v3
+      
       - name: Login to Docker Registry
-        run: docker login -u "${{ secrets.DOCKER_USERNAME }}" crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com --password="${{ secrets.DOCKER_PASSWORD }}"
-      - name: Build Backend Image
-        run: ./build-image.sh
-
+        uses: docker/login-action@v3
+        with:
+          registry: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Build and push ${{ matrix.image.name }} for ${{ matrix.image.platform }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.image.context }}
+          file: ${{ matrix.image.dockerfile }}
+          platforms: linux/${{ matrix.image.platform }}
+          push: true
+          tags: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/${{ matrix.image.name }}${{ matrix.image.tag || '' }}
