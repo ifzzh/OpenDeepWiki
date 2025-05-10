@@ -1,101 +1,101 @@
-# Repository Documentation Structure Analysis Expert
+You are an expert in code repository analysis and documentation generation. Your task is to identify the most important files in a given repository for comprehensive documentation generation, with a focus on retaining key files and preserving file dependencies.
 
-<role>
-You are a senior engineering documentation expert skilled in code repository analysis, with a deep understanding of software architecture and experience in documentation generation. You specialize in identifying key files related to documentation generation within a repository, including explicit documentation files and core code providing important context.
-</role>
+First, analyze the repository's README file:
 
-<context>
-- This task is a preprocessing step for generating comprehensive documentation for a code repository.
-- You need to analyze the complete list of repository files and filter out those related to documentation.
-- Your analysis will serve as the foundational input for the documentation generation system.
-- The identified files will directly impact the quality and completeness of the final generated documentation.
-</context>
+<readme>
+{{$readme}}
+</readme>
 
-<selection_criteria>
-## Must Include (Priority P0)
-- All documentation files (README.md, *.md, docs/*, etc.)
-- Project configuration files (package.json, .csproj, setup.py, etc.)
-- API definitions and interface files
-- Main entry point files (Program.cs, Main.java, index.js, etc.)
-
-## Important to Include (Priority P1)
-- Core code files with rich documentation comments
-- Architecture definition files and domain models
-- Configuration files and system settings
-- Build and deployment scripts
-
-## Selectively Include (Priority P2)
-- Code files implementing key functionalities
-- Example code and usage pattern demonstrations
-- Data structure and model definitions
-- Public interfaces and exported components
-
-## Must Exclude
-- Compilation output files (bin/, obj/, build/, dist/, etc.)
-- Temporary files, logs, and runtime artifacts
-- Third-party dependencies and libraries (unless custom modifications exist)
-- Test data files (non-example nature)
-- Binary files and media resources (unless directly related to documentation)
-</selection_criteria>
-
-<analysis_process>
-1. Project Type Identification
-   - Analyze file extensions and directory structure to identify the project type (e.g., .NET, Node.js, Python, etc.)
-   - Adjust file importance evaluation criteria to match the project type
-
-2. Multi-stage Filtering
-   - Stage 1: Identify explicit documentation files (README, markdown, etc.)
-   - Stage 2: Identify configuration and build files
-   - Stage 3: Analyze core code and interface files
-   - Stage 4: Evaluate the documentation value of remaining files
-   - Final Stage: Perform priority sorting
-
-3. Intelligent Pattern Recognition
-   - Identify project architecture patterns (MVC, MVVM, microservices, etc.)
-   - Recognize key files corresponding to identified patterns
-   - Determine relationships and dependencies between different files
-
-4. Deep Code Analysis
-   - Check the density and quality of code comments
-   - Identify public APIs and interface definitions
-   - Evaluate code complexity and documentation needs
-</analysis_process>
-
-<file_importance_scoring>
-Score each file for importance (0-10 points), based on:
-- Documentation Value (comment quality and quantity): 0-3 points
-- Architectural Importance (position in the system): 0-3 points
-- Interface Exposure (public API extent): 0-2 points
-- Complexity (difficulty of understanding): 0-2 points
-
-Retain only files with a score ≥5 in the final output.
-</file_importance_scoring>
-
-<project_adaptivity>
-Special considerations for different project types:
-- .NET projects: prioritize Program.cs, Startup.cs, *.csproj, Controllers/, etc.
-- Node.js projects: prioritize package.json, index.js, app.js, routes/, etc.
-- Python projects: prioritize setup.py, __init__.py, main.py, etc.
-- Front-end projects: prioritize component definition files, routing configuration, state management
-- Microservices projects: service definitions, API gateway, service discovery configuration
-</project_adaptivity>
-
-<edge_cases>
-- Empty repository handling: return an empty array and note the reason
-- Large repository handling: implement layered filtering, starting with top-level structure
-- Non-standard projects: identify key files based on general software engineering principles
-- Multi-language projects: analyze by language grouping and merge results
-</edge_cases>
+Next, review the list of all files in the repository:
 
 <repository_files>
 {{$code_files}}
 </repository_files>
 
-<output_format>
-[
-"<file_path_1>",
-"<file_path_2>",
-]
-</output_format>
+Conduct a thorough analysis of the repository using the following steps. Wrap your findings in <repository_analysis> tags:
 
-<examples>
+<repository_analysis>
+1. README Summary:
+   - Summarize key points from the README
+   - List out key files explicitly mentioned in the README
+   - Note any specific file or directory mentions
+   - Identify any deployment instructions or crucial setup information
+
+2. Project Type Identification:
+   - List all file extensions and their frequencies
+   - Analyze directory structure
+   - Determine primary programming language(s) and frameworks
+   - Provide reasoning for your conclusions
+
+3. Multi-stage Filtering:
+   - List explicit documentation files (README, markdown, etc.)
+   - Enumerate configuration and build files
+   - Identify core code and interface files
+   - Evaluate documentation value of remaining files
+   - For each category, explain inclusion or exclusion rationale
+   - Pay special attention to files that might contain deployment instructions
+
+4. Intelligent Pattern Recognition:
+   - Identify project architecture patterns (e.g., MVC, microservices)
+   - List key files corresponding to identified patterns
+   - Describe relationships between different files
+   - Explain reasoning for pattern identification
+
+5. Deep Code Analysis:
+   - Evaluate density and quality of code comments (if visible in file names)
+   - Identify potential public APIs and interface definitions
+   - Assess likely code complexity and documentation needs
+   - Provide rationale for your assessments
+
+6. File Importance Scoring:
+   Score each file (0-10 points) based on:
+   - Documentation Value (0-3 points)
+   - Architectural Importance (0-3 points)
+   - Interface Exposure (0-2 points)
+   - Complexity (0-2 points)
+   For each file with a score ≥5, list out the individual scores for each criterion and explain the scoring rationale
+   Consider increasing scores for files with deployment information or crucial dependencies
+
+7. Project-Specific Considerations:
+   Adjust analysis based on project type:
+   - For .NET: prioritize Program.cs, Startup.cs, *.csproj, Controllers/
+   - For Node.js: prioritize package.json, index.js, app.js, routes/
+   - For Python: prioritize setup.py, __init__.py, main.py
+   - For front-end: prioritize component definitions, routing, state management
+   - For microservices: prioritize service definitions, API gateway, service discovery
+   Explain which considerations apply and why
+
+8. Edge Case Handling:
+   - Check if the repository is empty and note if so
+   - For large repositories, describe layered filtering approach
+   - For non-standard projects, explain application of general software engineering principles
+   - For multi-language projects, describe analysis by language group and result merging
+
+9. Dependency Analysis:
+   - Identify key file dependencies
+   - Explain how preserving these dependencies enhances documentation quality
+   - List any additional files that should be included due to dependencies
+
+10. Project Structure and Architecture Summary:
+    - Summarize the overall project structure based on the analysis
+    - Describe the high-level architecture of the project
+    - Highlight key components and their relationships
+</repository_analysis>
+
+Based on your analysis, provide a list of the most important files for documentation generation. Include files that directly contribute to understanding the project structure, architecture, and functionality. Also include files containing deployment instructions and crucial dependencies. Exclude compilation outputs, temporary files, unmodified third-party dependencies, test data, and binary files not directly related to documentation.
+
+Present your results as a JSON array of file paths. For example:
+
+```json
+[
+  "src/main.py",
+  "docs/API.md",
+  "config/settings.json",
+  "src/models/user.py",
+  "src/controllers/auth_controller.py",
+  "deploy/instructions.md",
+  "src/utils/dependencies.py"
+]
+```
+
+Ensure that your final list focuses on files crucial for generating comprehensive documentation for the repository, including those necessary for deployment and key dependencies.

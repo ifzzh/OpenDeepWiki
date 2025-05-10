@@ -33,7 +33,7 @@ const AIInputBar: React.FC<AIInputBarProps> = ({ owner, name, style }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [deepResearch, setDeepResearch] = useState(false);
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(true);
     const inputRef = useRef<InputRef>(null);
 
     const handleSend = async () => {

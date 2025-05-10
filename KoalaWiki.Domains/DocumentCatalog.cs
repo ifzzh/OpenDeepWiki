@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using KoalaWiki.Domains;
-
-namespace KoalaWiki.Entities;
+﻿namespace KoalaWiki.Domains;
 
 public class DocumentCatalog : Entity<string>
 {

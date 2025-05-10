@@ -57,6 +57,11 @@
       "name": "code_files",
       "description": "代码文件列表",
       "required": true
+    },
+    {
+      "name": "readme",
+      "description": "当前仓库文档",
+      "required": true
     }
   ]
 }

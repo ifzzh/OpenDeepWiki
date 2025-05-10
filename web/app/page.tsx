@@ -10,9 +10,9 @@ export default async function Home({ searchParams = {} }: any) {
   // 从 URL 参数中获取分页信息
   const page = Number(resolvedSearchParams?.page) || 1;
   const pageSize = Number(resolvedSearchParams?.pageSize) || 20;
-
+  const keyword = resolvedSearchParams?.keyword || '';
   // 在服务端获取初始数据
-  const response = await getWarehouse(page, pageSize,'');
+  const response = await getWarehouse(page, pageSize,keyword);
   const initialRepositories = response.success ? response.data.items : [];
   const initialTotal = response.success ? response.data.total : 0;
 
@@ -23,6 +23,7 @@ export default async function Home({ searchParams = {} }: any) {
         initialTotal={initialTotal}
         initialPage={page}
         initialPageSize={pageSize}
+        initialSearchValue={keyword}
       />
     </Suspense>
   );

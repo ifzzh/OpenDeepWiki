@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react';
 import { Button, Typography, Layout, Space, Input, Empty, Card, Row, Col, Statistic, Tooltip, Pagination, message, ConfigProvider } from 'antd';
-import { 
-  PlusOutlined, 
-  DatabaseOutlined, 
+import {
+  PlusOutlined,
+  DatabaseOutlined,
   GithubOutlined,
 } from '@ant-design/icons';
 import RepositoryForm from './RepositoryForm';
@@ -84,15 +84,18 @@ interface HomeClientProps {
   initialTotal: number;
   initialPage: number;
   initialPageSize: number;
+  initialSearchValue: string;
 }
 
-export default function HomeClient({ initialRepositories, initialTotal, initialPage, initialPageSize }: HomeClientProps) {
+export default function HomeClient({ initialRepositories, initialTotal, initialPage, initialPageSize, initialSearchValue }: HomeClientProps) {
   const [repositories, setRepositories] = useState<Repository[]>(initialRepositories);
   const [formVisible, setFormVisible] = useState(false);
   const [lastRepoModalVisible, setLastRepoModalVisible] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState<string>(initialSearchValue);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
+  const [logoRotate, setLogoRotate] = useState<'none' | 'cw' | 'ccw'>('none');
+  const [underlineWidth, setUnderlineWidth] = useState(0);
 
   const handleAddRepository = async (values: RepositoryFormValues) => {
     try {
@@ -127,14 +130,15 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
   const handlePageChange = (page: number, size?: number) => {
     setCurrentPage(page);
     if (size) setPageSize(size);
-    // 刷新页面以获取新数据
-    window.location.href = `/?page=${page}&pageSize=${size || pageSize}`;
+    window.location.href = `/?page=${page}&pageSize=${size || pageSize}&keyword=${searchValue}`;
   };
 
-  const filteredRepositories = repositories.filter(repo => 
-    repo.name.toLowerCase().includes(searchValue.toLowerCase()) || 
-    repo.address.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const handleSearch = (value: string) => {
+    setSearchValue(value);
+    setCurrentPage(1);
+    setPageSize(initialPageSize);
+    window.location.href = `/?page=${1}&pageSize=${initialPageSize}&keyword=${value}`;
+  };
 
   // 计算统计数据
   const stats = {
@@ -143,15 +147,6 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
     lastUpdated: repositories.length ? new Date(
       Math.max(...repositories.map(repo => new Date(repo.createdAt).getTime()))
     ).toLocaleDateString('zh-CN') : '-'
-  };
-
-  // 自定义样式
-  const headerStyle = {
-    background: customTheme.token.colorPrimary,
-    padding: '0 24px',
-    height: 64,
-    lineHeight: '64px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
   };
 
   const contentStyle = {
@@ -218,7 +213,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
   return (
     <ConfigProvider theme={customTheme as any}>
       <Layout style={{ minHeight: '100vh' }}>
-        <Header 
+        <Header
           style={{
             background: customTheme.token.colorPrimary,
             padding: '0 24px',
@@ -228,21 +223,21 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
           }}
         >
-          <div 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
-              maxWidth: 1200, 
-              margin: '0 auto', 
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              maxWidth: 1200,
+              margin: '0 auto',
               width: '100%',
               height: '100%'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Typography.Title level={3} style={{ 
-                color: 'white', 
-                margin: 0, 
+              <Typography.Title level={3} style={{
+                color: 'white',
+                margin: 0,
                 fontSize: 22,
                 letterSpacing: '0.5px',
                 fontWeight: 600
@@ -259,13 +254,70 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 开源的DeepWiki，让您眼前一亮！
               </span>
             </div>
-            
+
             <Space size={16} align="center">
+              <div
+                style={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={() => {
+                  setLogoRotate('cw');
+                  setUnderlineWidth(100);
+                }}
+                onMouseLeave={() => {
+                  setLogoRotate('ccw');
+                  setUnderlineWidth(0);
+                }}
+                onTransitionEnd={() => setLogoRotate('none')}
+              >
+                <span style={{
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: 14,
+                  fontWeight: 400,
+                  opacity: 0.8,
+                  display: 'flex',
+                  position: 'relative',
+                  userSelect: 'none',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  powered by
+                  <span style={{
+                    position: 'relative',
+                    color: 'white',
+                    userSelect: 'none',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    display: 'flex',
+                    fontWeight: 600,
+                    gap: '4px'
+                  }}>
+                    OpenDeepWiki
+                  </span>
+                  <img
+                    src="/logo.png"
+                    alt="OpenDeepWiki"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      transition: 'transform 0.6s cubic-bezier(0.4,0,0.2,1)',
+                      transform:
+                        logoRotate === 'cw'
+                          ? 'rotate(360deg)'
+                          : logoRotate === 'ccw'
+                            ? 'rotate(-180deg)'
+                            : 'rotate(0deg)'
+                    }}
+                  />
+                </span>
+              </div>
               <Tooltip title="源码地址" placement="bottom">
-                <Button 
-                  type="text" 
-                  icon={<GithubOutlined style={{ fontSize: 18 }} />} 
-                  style={{ 
+                <Button
+                  type="text"
+                  icon={<GithubOutlined style={{ fontSize: 18 }} />}
+                  style={{
                     color: 'white',
                     height: 40,
                     width: 40,
@@ -275,7 +327,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                     justifyContent: 'center',
                     background: 'rgba(255, 255, 255, 0.1)',
                     transition: 'all 0.3s'
-                  }} 
+                  }}
                   href={homepage}
                   target="_blank"
                 />
@@ -296,21 +348,21 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                           AI驱动的代码知识库
                         </Title>
                         <Paragraph style={paragraphStyle}>
-                        OpenDeepWiki 是参考DeepWiki作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成等功能。
+                          OpenDeepWiki 是参考DeepWiki作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成等功能。
                         </Paragraph>
                         <Space size={16}>
-                          <Button 
-                            type="primary" 
-                            size="large" 
-                            icon={<PlusOutlined />} 
+                          <Button
+                            type="primary"
+                            size="large"
+                            icon={<PlusOutlined />}
                             onClick={() => setFormVisible(true)}
                             style={primaryButtonStyle}
                           >
                             添加新仓库
                           </Button>
-                          <Button 
-                            type="default" 
-                            size="large" 
+                          <Button
+                            type="default"
+                            size="large"
                             onClick={handleLastRepoQuery}
                             style={buttonStyle}
                           >
@@ -323,21 +375,21 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       <Row gutter={[16, 16]}>
                         <Col span={12}>
                           <div style={statisticStyle}>
-                            <Statistic 
-                              title={<Typography.Text style={{ color: customTheme.token.colorTextSecondary }}>仓库总数</Typography.Text>} 
-                              value={stats.totalRepositories} 
+                            <Statistic
+                              title={<Typography.Text style={{ color: customTheme.token.colorTextSecondary }}>仓库总数</Typography.Text>}
+                              value={stats.totalRepositories}
                               valueStyle={{ color: customTheme.token.colorText, fontWeight: 600 }}
-                              prefix={<DatabaseOutlined style={{ color: customTheme.token.colorPrimary }} />} 
+                              prefix={<DatabaseOutlined style={{ color: customTheme.token.colorPrimary }} />}
                             />
                           </div>
                         </Col>
                         <Col span={12}>
                           <div style={statisticStyle}>
-                            <Statistic 
-                              title={<Typography.Text style={{ color: customTheme.token.colorTextSecondary }}>Git仓库</Typography.Text>} 
-                              value={stats.gitRepos} 
+                            <Statistic
+                              title={<Typography.Text style={{ color: customTheme.token.colorTextSecondary }}>Git仓库</Typography.Text>}
+                              value={stats.gitRepos}
                               valueStyle={{ color: customTheme.token.colorText, fontWeight: 600 }}
-                              prefix={<GithubOutlined style={{ color: customTheme.token.colorPrimary }} />} 
+                              prefix={<GithubOutlined style={{ color: customTheme.token.colorPrimary }} />}
                             />
                           </div>
                         </Col>
@@ -354,13 +406,14 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 <Search
                   placeholder="搜索仓库名称或地址"
                   allowClear
-                  onSearch={value => setSearchValue(value)}
+                  value={searchValue}
+                  onSearch={value => handleSearch(value)}
                   onChange={e => setSearchValue(e.target.value)}
                   style={searchStyle}
                 />
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />} 
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
                   onClick={() => setFormVisible(true)}
                   style={primaryButtonStyle}
                 >
@@ -368,8 +421,8 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 </Button>
               </Space>
             </div>
-            
-            {filteredRepositories.length === 0 ? (
+
+            {repositories.length === 0 ? (
               <Card style={{ ...cardStyle, padding: 32, textAlign: 'center' }}>
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -386,10 +439,10 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               </Card>
             ) : (
               <>
-                <RepositoryList repositories={filteredRepositories} />
+                <RepositoryList repositories={repositories} />
                 {!searchValue && initialTotal > pageSize && (
                   <div style={{ textAlign: 'center', marginTop: 24 }}>
-                    <Pagination 
+                    <Pagination
                       current={currentPage}
                       pageSize={pageSize}
                       total={initialTotal}
@@ -402,13 +455,13 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 )}
               </>
             )}
-            
+
             <RepositoryForm
               open={formVisible}
               onCancel={() => setFormVisible(false)}
               onSubmit={handleAddRepository}
             />
-            
+
             <LastRepoModal
               open={lastRepoModalVisible}
               onCancel={() => setLastRepoModalVisible(false)}

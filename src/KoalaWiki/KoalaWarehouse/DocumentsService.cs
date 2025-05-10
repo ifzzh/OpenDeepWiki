@@ -63,7 +63,32 @@ public class DocumentsService
         return [];
     }
 
-    public static async Task<string> GetCatalogue(string path)
+    public static string GetCatalogue(string path)
+    {
+        var ignoreFiles = GetIgnoreFiles(path);
+
+        var pathInfos = new List<PathInfo>();
+        // 递归扫描目录所有文件和目录
+        ScanDirectory(path, pathInfos, ignoreFiles);
+        var catalogue = new StringBuilder();
+
+        foreach (var info in pathInfos)
+        {
+            // 删除前缀 Constant.GitPath
+            var relativePath = info.Path.Replace(path, "").TrimStart('\\');
+
+            // 过滤.开头的文件
+            if (relativePath.StartsWith("."))
+                continue;
+
+            catalogue.Append($"{relativePath}\n");
+        }
+
+        // 直接返回
+        return catalogue.ToString();
+    }
+
+    public static async Task<string> GetCatalogueSmartFilterAsync(string path, string readme)
     {
         var ignoreFiles = GetIgnoreFiles(path);
 
@@ -113,6 +138,7 @@ public class DocumentsService
                            })
                        {
                            ["code_files"] = catalogue.ToString(),
+                           ["readme"] = readme
                        }))
         {
             sb.Append(item);
@@ -150,6 +176,55 @@ public class DocumentsService
         return catalogue.ToString();
     }
 
+    public static async Task<string> GenerateReadMe(Warehouse warehouse, string path,
+        IKoalaWikiContext koalaWikiContext)
+    {
+        var readme = await ReadMeFile(path);
+
+        var catalogue = GetCatalogue(path);
+
+        if (string.IsNullOrEmpty(readme))
+        {
+            var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+                OpenAIOptions.ChatApiKey,
+                path, OpenAIOptions.ChatModel);
+
+            var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+                OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
+
+            // 生成README
+            var generateReadmePlugin = kernel.Plugins["CodeAnalysis"]["GenerateReadme"];
+            var generateReadme = await fileKernel.InvokeAsync(generateReadmePlugin, new KernelArguments(
+                new OpenAIPromptExecutionSettings()
+                {
+                    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                    Temperature = 0.5,
+                })
+            {
+                ["catalogue"] = catalogue,
+                ["git_repository"] = warehouse.Address,
+                ["branch"] = warehouse.Branch
+            });
+
+            readme = generateReadme.ToString();
+            // 可能需要先处理一下documentation_structure 有些模型不支持json
+            var readmeRegex = new Regex(@"<readme>(.*?)</readme>", RegexOptions.Singleline);
+            var readmeMatch = readmeRegex.Match(readme);
+
+            if (readmeMatch.Success)
+            {
+                // 提取到的内容
+                var extractedContent = readmeMatch.Groups[1].Value;
+                readme = extractedContent;
+            }
+
+            await koalaWikiContext.Warehouses.Where(x => x.Id == warehouse.Id)
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.Readme, readme));
+        }
+
+        return readme;
+    }
+
     /// <summary>
     /// Handles the asynchronous processing of a document within a specified warehouse, including parsing directory structures, generating update logs, and saving results to the database.
     /// </summary>
@@ -170,11 +245,14 @@ public class DocumentsService
 
         var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
             OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
-        
+
+        var readme = await GenerateReadMe(warehouse, path, dbContext);
+
         var catalogue = warehouse.OptimizedDirectoryStructure;
+
         if (string.IsNullOrWhiteSpace(catalogue))
         {
-            catalogue = await GetCatalogue(path);
+            catalogue = await GetCatalogueSmartFilterAsync(path, readme);
             if (!string.IsNullOrWhiteSpace(catalogue))
             {
                 await dbContext.Warehouses.Where(x => x.Id == warehouse.Id)
@@ -182,40 +260,9 @@ public class DocumentsService
             }
         }
 
-        var readme = await ReadMeFile(path);
-
-        if (string.IsNullOrEmpty(readme))
-        {
-            // 生成README
-            var generateReadmePlugin = kernel.Plugins["CodeAnalysis"]["GenerateReadme"];
-            var generateReadme = await fileKernel.InvokeAsync(generateReadmePlugin, new KernelArguments(
-                new OpenAIPromptExecutionSettings()
-                {
-                    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-                    Temperature = 0.5,
-                })
-            {
-                ["catalogue"] = catalogue,
-                ["git_repository"] = gitRepository,
-                ["branch"] = warehouse.Branch
-            });
-
-            readme = generateReadme.ToString();
-            // 可能需要先处理一下documentation_structure 有些模型不支持json
-            var readmeRegex = new Regex(@"<readme>(.*?)</readme>", RegexOptions.Singleline);
-            var readmeMatch = readmeRegex.Match(readme);
-
-            if (readmeMatch.Success)
-            {
-                // 提取到的内容
-                var extractedContent = readmeMatch.Groups[1].Value;
-                readme = extractedContent;
-            }
-        }
 
         await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
             .ExecuteDeleteAsync();
-
 
         // 开始生成
         var (git, committer) = await GenerateUpdateLogAsync(document.GitPath, readme,

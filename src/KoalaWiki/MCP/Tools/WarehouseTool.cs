@@ -55,10 +55,12 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
 
         var history = new ChatHistory();
 
+        var readme = await DocumentsService.GenerateReadMe(warehouse, document.GitPath, koala);
+
         var catalogue = warehouse.OptimizedDirectoryStructure;
         if (string.IsNullOrWhiteSpace(catalogue))
         {
-            catalogue = await DocumentsService.GetCatalogue(document.GitPath);
+            catalogue = await DocumentsService.GetCatalogueSmartFilterAsync(document.GitPath, readme);
             if (!string.IsNullOrWhiteSpace(catalogue))
             {
                 await koala.Warehouses.Where(x => x.Id == warehouse.Id)

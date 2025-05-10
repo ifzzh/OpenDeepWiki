@@ -1,5 +1,6 @@
 ﻿using FastService;
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Domains;
 using KoalaWiki.Entities;
 using LibGit2Sharp;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +46,6 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             var time = DateTime.Now - document.LastUpdate;
             lastUpdate = time.Days == 0 ? $"{time.Hours}小时前" : $"{time.Days}天前";
 
-            // 如果超过7天，显示日期
             if (time.Days > 7)
             {
                 lastUpdate = document.LastUpdate.ToString("yyyy-MM-dd");

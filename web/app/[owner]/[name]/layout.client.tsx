@@ -32,7 +32,7 @@ import { useEffect, useState } from 'react';
 import AIInputBar from '../../components/AIInputBar';
 import Image from 'next/image';
 
-const { Header, Content, Sider } = Layout;
+const { Header, Content, Sider, Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
@@ -573,9 +573,25 @@ export default function RepositoryLayoutClient({
             }}>
               {children}
             </div>
-
           </Content>
         </Layout>
+        
+        <Footer style={{
+          textAlign: 'center',
+          background: token.colorBgContainer,
+          padding: `${token.paddingSM}px ${token.paddingLG}px`,
+          marginTop: 'auto',
+          borderTop: `1px solid ${token.colorBorderSecondary}`
+        }}>
+          <Space direction="vertical" size={token.sizeXS}>
+            <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+              Powered by OpenDeepWiki
+            </Text>
+            <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+              Powered by .NET 9.0
+            </Text>
+          </Space>
+        </Footer>
       </Layout>
       {initialCatalogData?.items?.length > 0 && (
         <AIInputBar
@@ -589,7 +605,7 @@ export default function RepositoryLayoutClient({
             margin: '0 auto',
             maxWidth: isMobile ? '80%' : '70%',
             width: isMobile ? 'calc(100% - 32px)' : 'auto',
-            zIndex: 900,
+            zIndex: 1001,
             boxShadow: token.boxShadowSecondary,
             borderRadius: token.borderRadiusLG,
           }}
