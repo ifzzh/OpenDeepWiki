@@ -76,4 +76,13 @@
       <ProjectReference Include="..\..\Provider\KoalaWiki.Provider.Sqlite\KoalaWiki.Provider.Sqlite.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="KoalaWarehouse\DocumentsService.Commit.cs">
+        <DependentUpon>DocumentsService.cs</DependentUpon>
+      </Compile>
+      <Compile Update="KoalaWarehouse\DocumentsService.Catalogue.cs">
+        <DependentUpon>DocumentsService.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

@@ -9,6 +9,6 @@ public class LanguagePromptFilter : IPromptRenderFilter
     {
         await next(context);
 
-        context.RenderedPrompt += Environment.NewLine + Prompt.Language;
+        context.RenderedPrompt = "/no_think " + context.RenderedPrompt + Environment.NewLine + Prompt.Language;
     }
 }

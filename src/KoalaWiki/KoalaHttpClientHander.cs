@@ -25,22 +25,24 @@ public sealed class KoalaHttpClientHandler : HttpClientHandler
             }
 
 
-            var model = json.model;
+            var model = $"{json.model}";
 
-            if (model.ToString().Equals("qwen3-235b-a22b"))
+            if (model.StartsWith("qwen3", StringComparison.CurrentCultureIgnoreCase))
             {
                 // 关闭推理模式
                 json.enable_thinking = false;
             }
+
             // 重写请求体
             request.Content = new StringContent(JsonConvert.SerializeObject(json),
                 System.Text.Encoding.UTF8, "application/json");
         }
         else
         {
-            var model = json.model;
+            var model = $"{json.model}";
 
-            if (model.ToString().Equals("qwen3-235b-a22b"))
+
+            if (model.StartsWith("qwen3", StringComparison.CurrentCultureIgnoreCase))
             {
                 // 关闭推理模式
                 json.enable_thinking = false;

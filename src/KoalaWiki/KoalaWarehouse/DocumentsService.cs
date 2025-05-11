@@ -19,7 +19,7 @@ using Serilog;
 
 namespace KoalaWiki.KoalaWarehouse;
 
-public class DocumentsService
+public partial class DocumentsService
 {
     private static readonly int TaskMaxSizePerUser = 5;
 
@@ -110,7 +110,7 @@ public class DocumentsService
         }
 
         // 如果文件数量小于3000
-        if (pathInfos.Count < 3000)
+        if (pathInfos.Count < 800)
         {
             // 直接返回
             return catalogue.ToString();
@@ -260,7 +260,6 @@ public class DocumentsService
             }
         }
 
-
         await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
             .ExecuteDeleteAsync();
 
@@ -280,127 +279,38 @@ public class DocumentsService
             LastUpdate = DateTime.Now,
         });
 
-        if (await dbContext.DocumentOverviews.AnyAsync(x => x.DocumentId == document.Id) == false)
+        var overview = await GenerateProjectOverview(fileKernel, catalogue, gitRepository,
+            warehouse.Branch, readme);
+
+        // 先删除<project_analysis>标签内容
+        var project_analysis = new Regex(@"<project_analysis>(.*?)</project_analysis>",
+            RegexOptions.Singleline);
+        var project_analysis_match = project_analysis.Match(overview);
+        if (project_analysis_match.Success)
         {
-            var overview = await GenerateProjectOverview(fileKernel, catalogue, gitRepository,
-                warehouse.Branch, readme);
-
-            // 先删除<project_analysis>标签内容
-            var project_analysis = new Regex(@"<project_analysis>(.*?)</project_analysis>",
-                RegexOptions.Singleline);
-            var project_analysis_match = project_analysis.Match(overview);
-            if (project_analysis_match.Success)
-            {
-                // 删除到的内容包括标签
-                overview = overview.Replace(project_analysis_match.Value, "");
-            }
-
-            // 可能需要先处理一下documentation_structure 有些模型不支持json
-            var regex = new Regex(@"<blog>(.*?)</blog>",
-                RegexOptions.Singleline);
-            var match = regex.Match(overview);
-
-            if (match.Success)
-            {
-                // 提取到的内容
-                overview = match.Groups[1].Value;
-            }
-
-            await dbContext.DocumentOverviews.AddAsync(new DocumentOverview()
-            {
-                Content = overview,
-                Title = "",
-                DocumentId = document.Id,
-                Id = Guid.NewGuid().ToString("N")
-            });
+            // 删除到的内容包括标签
+            overview = overview.Replace(project_analysis_match.Value, "");
         }
 
-        DocumentResultCatalogue? result = null;
+        // 可能需要先处理一下documentation_structure 有些模型不支持json
+        var overviewmatch = new Regex(@"<blog>(.*?)</blog>",
+            RegexOptions.Singleline).Match(overview);
 
-        var retryCount = 0;
-        const int maxRetries = 5;
-        Exception? exception = null;
-
-        while (retryCount < maxRetries)
+        if (overviewmatch.Success)
         {
-            try
-            {
-                var analysisModel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
-                    OpenAIOptions.ChatApiKey, path, OpenAIOptions.AnalysisModel, false);
-
-                var chat = analysisModel.Services.GetService<IChatCompletionService>();
-
-                StringBuilder str = new StringBuilder();
-                var history = new ChatHistory();
-                history.AddUserMessage(Prompt.AnalyzeCatalogue
-                        .Replace("{{code_files}}", catalogue)
-                        .Replace("{{repository_name}}", warehouse.Name))
-                    ;
-                await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history,
-                                   new OpenAIPromptExecutionSettings()
-                                   {
-                                       ToolCallBehavior = ToolCallBehavior.RequireFunction(
-                                           analysisModel.Plugins["FileFunction"]["ReadFiles"].Metadata
-                                               .ToOpenAIFunction(), true),
-                                       Temperature = 0.5,
-                                       MaxTokens = GetMaxTokens(OpenAIOptions.AnalysisModel)
-                                   }, analysisModel))
-                {
-                    str.Append(item);
-                }
-
-                // 可能需要先处理一下documentation_structure 有些模型不支持json
-                var regex = new Regex(@"<documentation_structure>(.*?)</documentation_structure>",
-                    RegexOptions.Singleline);
-                var match = regex.Match(str.ToString());
-
-                if (match.Success)
-                {
-                    // 提取到的内容
-                    var extractedContent = match.Groups[1].Value;
-                    str.Clear();
-                    str.Append(extractedContent);
-                }
-
-                // 尝试使用```json
-                var jsonRegex = new Regex(@"```json(.*?)```", RegexOptions.Singleline);
-                var jsonMatch = jsonRegex.Match(str.ToString());
-                if (jsonMatch.Success)
-                {
-                    // 提取到的内容
-                    var extractedContent = jsonMatch.Groups[1].Value;
-                    str.Clear();
-                    str.Append(extractedContent);
-                }
-
-                try
-                {
-                    result = JsonConvert.DeserializeObject<DocumentResultCatalogue>(str.ToString().Trim());
-                }
-                catch (Exception ex)
-                {
-                    Log.Logger.Error("反序列化失败: {ex}, 原始字符串: {str}", ex.ToString(), str.ToString().Trim());
-                    throw;
-                }
-
-                break;
-            }
-            catch (Exception ex)
-            {
-                Log.Logger.Warning("处理仓库；{path} ,处理标题：{name} 失败:{ex}", path, warehouse.Name, ex.ToString());
-                exception = ex;
-                retryCount++;
-                if (retryCount >= maxRetries)
-                {
-                    Console.WriteLine($"处理 {warehouse.Name} 失败，已重试 {retryCount} 次，错误：{ex.Message}");
-                }
-                else
-                {
-                    // 等待一段时间后重试
-                    await Task.Delay(5000 * retryCount);
-                }
-            }
+            // 提取到的内容
+            overview = overviewmatch.Groups[1].Value;
         }
+
+        await dbContext.DocumentOverviews.AddAsync(new DocumentOverview()
+        {
+            Content = overview,
+            Title = "",
+            DocumentId = document.Id,
+            Id = Guid.NewGuid().ToString("N")
+        });
+
+        var (result, exception) = await GenerateThinkCatalogue(path, catalogue, gitRepository, warehouse);
 
         if (result == null)
         {
@@ -533,13 +443,10 @@ public class DocumentsService
                 }
             }
         }
-
-        // 不应该执行到这里，因为要么成功返回，要么抛出异常
-        throw new Exception($"处理文档 {catalog.Name} 失败");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetMaxTokens(string model)
+    public static int? GetMaxTokens(string model)
     {
         return model switch
         {
@@ -552,11 +459,13 @@ public class DocumentsService
             "o4-mini" => 16384,
             "doubao-1-5-pro-256k-250115" => 12288,
             "o3-mini" => 16384,
-            "Qwen/Qwen3-235B-A22B" => 16384,
+            "Qwen/Qwen3-235B-A22B" => null,
             "grok-3" => 65536,
-            "qwen3-235b-a22b" => 16384,
+            "qwen3-235b-a22b" => 65535,
             "gemini-2.5-pro-preview-05-06" => 65535,
-            _ => 8192
+            "gemini-2.5-flash-preview-04-17" => 65535,
+            "Qwen3-32B" => 32768,
+            _ => null
         };
     }
 
@@ -586,60 +495,6 @@ public class DocumentsService
         {
             Log.Error(ex, "修复mermaid语法失败");
         }
-    }
-
-    /// <summary>
-    /// 生成更新日志
-    /// </summary>
-    public async Task<(string content, string committer)> GenerateUpdateLogAsync(string gitPath,
-        string readme, string gitRepositoryUrl, string branch, Kernel kernel)
-    {
-        // 读取git log
-        using var repo = new Repository(gitPath, new RepositoryOptions());
-
-        var log = repo.Commits
-            .OrderByDescending(x => x.Committer.When)
-            // 只要最近的10条
-            .Take(20)
-            .OrderBy(x => x.Committer.When)
-            .ToList();
-
-        string commitMessage = string.Empty;
-        foreach (var commit in log)
-        {
-            commitMessage += "提交人：" + commit.Committer.Name + "\n提交内容\n<message>\n" + commit.Message +
-                             "<message>";
-
-            commitMessage += "\n提交时间：" + commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss") + "\n";
-        }
-
-        var plugin = kernel.Plugins["CodeAnalysis"]["CommitAnalyze"];
-
-        var str = string.Empty;
-        await foreach (var item in kernel.InvokeStreamingAsync(plugin, new KernelArguments()
-                       {
-                           ["readme"] = readme,
-                           ["git_repository"] = gitRepositoryUrl,
-                           ["commit_message"] = commitMessage,
-                           ["branch"] = branch
-                       }))
-        {
-            str += item;
-        }
-
-        var regex = new Regex(@"<changelog>(.*?)</changelog>",
-            RegexOptions.Singleline);
-        var match = regex.Match(str);
-
-        if (match.Success)
-        {
-            // 提取到的内容
-            str = match.Groups[1].Value;
-        }
-
-        // 获取最近一次提交
-        var lastCommit = log.First();
-        return (str, lastCommit.Committer.Name);
     }
 
     /// <summary>
