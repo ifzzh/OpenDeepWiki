@@ -109,8 +109,6 @@ public partial class DocumentsService
                                    {
                                        ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                                        Temperature = 0.5,
-                                       ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat(),
-                                       // 这里使用分析模型的最大token
                                        MaxTokens = GetMaxTokens(OpenAIOptions.AnalysisModel)
                                    }, analysisModel))
                 {

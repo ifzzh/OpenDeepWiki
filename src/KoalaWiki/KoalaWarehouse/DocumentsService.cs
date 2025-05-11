@@ -260,25 +260,6 @@ public partial class DocumentsService
             }
         }
 
-        await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
-            .ExecuteDeleteAsync();
-
-        // 开始生成
-        var (git, committer) = await GenerateUpdateLogAsync(document.GitPath, readme,
-            warehouse.Address,
-            warehouse.Branch,
-            kernel);
-
-        await dbContext.DocumentCommitRecords.AddAsync(new DocumentCommitRecord()
-        {
-            WarehouseId = warehouse.Id,
-            CreatedAt = DateTime.Now,
-            Author = committer,
-            Id = Guid.NewGuid().ToString("N"),
-            CommitMessage = git,
-            LastUpdate = DateTime.Now,
-        });
-
         var overview = await GenerateProjectOverview(fileKernel, catalogue, gitRepository,
             warehouse.Branch, readme);
 
@@ -301,6 +282,9 @@ public partial class DocumentsService
             // 提取到的内容
             overview = overviewmatch.Groups[1].Value;
         }
+
+        await dbContext.DocumentOverviews.Where(x => x.DocumentId == document.Id)
+            .ExecuteDeleteAsync();
 
         await dbContext.DocumentOverviews.AddAsync(new DocumentOverview()
         {
@@ -398,6 +382,28 @@ public partial class DocumentsService
                 Log.Logger.Error("处理文档失败: {ex}", ex.ToString());
             }
         }
+        
+        
+        await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
+            .ExecuteDeleteAsync();
+
+        // 开始生成
+        var (git, committer) = await GenerateUpdateLogAsync(document.GitPath, readme,
+            warehouse.Address,
+            warehouse.Branch,
+            kernel);
+
+        await dbContext.DocumentCommitRecords.AddAsync(new DocumentCommitRecord()
+        {
+            WarehouseId = warehouse.Id,
+            CreatedAt = DateTime.Now,
+            Author = committer,
+            Id = Guid.NewGuid().ToString("N"),
+            CommitMessage = git,
+            LastUpdate = DateTime.Now,
+        });
+
+        
     }
 
     /// <summary>
@@ -578,20 +584,8 @@ public partial class DocumentsService
             }
         }
 
-        // 擅长<thought_process></thought_process>标签的内容包括标签
-        var thought_process = new Regex(@"<thought_process>(.*?)</thought_process>", RegexOptions.Singleline);
-        var thought_process_match = thought_process.Match(sr.ToString());
-        if (thought_process_match.Success)
-        {
-            // 提取到的内容
-            var extractedContent = thought_process_match.Groups[1].Value;
-            sr.Clear();
-            sr.Append(extractedContent);
-        }
-
-
         // 使用正则表达式将<blog></blog>中的内容提取
-        var regex = new Regex(@"<data-blog>(.*?)</data-blog>", RegexOptions.Singleline);
+        var regex = new Regex(@"<docs>(.*?)</docs>", RegexOptions.Singleline);
 
         var match = regex.Match(sr.ToString());
 
