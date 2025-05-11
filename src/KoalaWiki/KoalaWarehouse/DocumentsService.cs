@@ -285,6 +285,16 @@ public class DocumentsService
             var overview = await GenerateProjectOverview(fileKernel, catalogue, gitRepository,
                 warehouse.Branch, readme);
 
+            // 先删除<project_analysis>标签内容
+            var project_analysis = new Regex(@"<project_analysis>(.*?)</project_analysis>",
+                RegexOptions.Singleline);
+            var project_analysis_match = project_analysis.Match(overview);
+            if (project_analysis_match.Success)
+            {
+                // 删除到的内容包括标签
+                overview = overview.Replace(project_analysis_match.Value, "");
+            }
+
             // 可能需要先处理一下documentation_structure 有些模型不支持json
             var regex = new Regex(@"<blog>(.*?)</blog>",
                 RegexOptions.Singleline);
@@ -351,7 +361,7 @@ public class DocumentsService
                     str.Clear();
                     str.Append(extractedContent);
                 }
-                
+
                 // 尝试使用```json
                 var jsonRegex = new Regex(@"```json(.*?)```", RegexOptions.Singleline);
                 var jsonMatch = jsonRegex.Match(str.ToString());
@@ -362,7 +372,7 @@ public class DocumentsService
                     str.Clear();
                     str.Append(extractedContent);
                 }
-                
+
                 try
                 {
                     result = JsonConvert.DeserializeObject<DocumentResultCatalogue>(str.ToString().Trim());
