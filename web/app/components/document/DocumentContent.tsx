@@ -4,12 +4,15 @@ import remarkToc from 'remark-toc';
 import remarkMath from 'remark-math';
 import rehypeSlug from 'rehype-slug';
 import rehypeKatex from 'rehype-katex';
+import { Flexbox } from 'react-layout-kit';
 
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { Markdown, Mermaid } from '@lobehub/ui';
 import { markdownElements } from './MarkdownElements';
 import { Alert } from 'antd';
 import RenderThinking from './Component';
+
+import { normalizeThinkTags, remarkCaptureThink } from './thinking/remarkPlugin';
 
 interface DocumentContentProps {
   document: any;
@@ -38,30 +41,33 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
   }, [document?.content]);
 
   // 提取和处理 antThinking 标签内容
+  // useEffect(() => {
+  //   if (document?.content) {
+  //     const content = document.content;
+  //     const thinkingRegex = /<antThinking\b[^>]*>([\S\s]*?)(?:<\/antThinking>|$)/g;
+  //     const thinking: string[] = [];
+      
+  //     // 提取所有 antThinking 标签内容并保存
+  //     let match;
+  //     while ((match = thinkingRegex.exec(content)) !== null) {
+  //       thinking.push(match[1] || '');
+  //     }
+      
+  //     // 移除所有 antThinking 标签
+  //     const cleanedContent = content.replace(/<antThinking\b[^>]*>[\S\s]*?(?:<\/antThinking>|$)/g, '');
+      
+  //     setProcessedContent(cleanedContent);
+  //     setThinkingContents(thinking);
+  //   }
+  // }, [document?.content]);
+
   useEffect(() => {
     if (document?.content) {
-      const content = document.content;
-      const thinkingRegex = /<antThinking\b[^>]*>([\S\s]*?)(?:<\/antThinking>|$)/g;
-      const thinking: string[] = [];
-      
-      // 提取所有 antThinking 标签内容并保存
-      let match;
-      while ((match = thinkingRegex.exec(content)) !== null) {
-        thinking.push(match[1] || '');
-      }
-      
-      // 移除所有 antThinking 标签
-      const cleanedContent = content.replace(/<antThinking\b[^>]*>[\S\s]*?(?:<\/antThinking>|$)/g, '');
-      
-      setProcessedContent(cleanedContent);
-      setThinkingContents(thinking);
+      setProcessedContent(normalizeThinkTags(document.content));
     }
   }, [document?.content]);
 
   const rehypePlugins = markdownElements.map((element) => element.rehypePlugin);
-  const components = Object.fromEntries(
-    markdownElements.map((element) => [element.tag, element.Component]),
-  );
 
   return (
     <div ref={contentRef} style={{
@@ -70,20 +76,27 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
       borderRadius: '0px',
       color: token.colorText
     }}>
-      {/* 渲染提取出的 antThinking 内容 */}
       {thinkingContents.map((content, index) => (
         <RenderThinking key={`thinking-${index}`}>
           {content}
         </RenderThinking>
       ))}
-      
       <div className="markdown-content">
         <Markdown
           variant='chat'
-          title={document?.title}
-          remarkPlugins={[remarkGfm, remarkToc, remarkMath]}
+          fullFeaturedCodeBlock={true}
+          components={{
+            think: (props: any) => (
+              <Flexbox style={{ marginBottom: 20 }}>
+                <RenderThinking>
+                  {props.children}
+                </RenderThinking>
+              </Flexbox>
+            ),
+          }}
+          remarkPlugins={[remarkCaptureThink,remarkGfm, remarkToc, remarkMath]}
           rehypePlugins={[
-            ...rehypePlugins,
+            // ...rehypePlugins,
             rehypeRaw,
             rehypeSlug,
             rehypeKatex,

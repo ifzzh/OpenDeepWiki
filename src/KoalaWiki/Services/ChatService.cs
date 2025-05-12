@@ -140,7 +140,6 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             // sse
             context.Response.Headers.ContentType = "text/event-stream";
             context.Response.Headers.CacheControl = "no-cache";
-            first = false;
             
             await foreach (var chatItem in chat.GetStreamingChatMessageContentsAsync(history,
                                new OpenAIPromptExecutionSettings()
@@ -152,41 +151,41 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             {
 
                 // 发送数据
-                if (chatItem.InnerContent is StreamingChatCompletionUpdate message)
+                if (chatItem.InnerContent is not StreamingChatCompletionUpdate message) continue;
+                
+                if (message.Usage is { InputTokenCount: > 0 })
                 {
-                    if (message.Usage is { InputTokenCount: > 0 })
-                    {
-                        requestToken += message.Usage.InputTokenCount;
-                        completionToken += message.Usage.OutputTokenCount;
-                    }
+                    requestToken += message.Usage.InputTokenCount;
+                    completionToken += message.Usage.OutputTokenCount;
+                }
 
-                    if (DocumentContext.DocumentStore.Files.Count > 0)
-                    {
-                        await context.Response.WriteAsync($"data: {JsonSerializer.Serialize(new
-                        {
-                            type = "tool",
-                            content = DocumentContext.DocumentStore.Files.Distinct(),
-                        }, JsonSerializerOptions.Web)}\n\n");
-                        files.AddRange(DocumentContext.DocumentStore.Files.Distinct());
-                        await context.Response.Body.FlushAsync();
-                        DocumentContext.DocumentStore.Files = [];
-                        continue;
-                    }
-
-                    if (string.IsNullOrEmpty(chatItem.Content))
-                    {
-                        continue;
-                    }
-
-                    answer.Append(chatItem.Content);
-
+                if (DocumentContext.DocumentStore.Files.Count > 0)
+                {
                     await context.Response.WriteAsync($"data: {JsonSerializer.Serialize(new
                     {
-                        type = "message",
-                        content = chatItem.Content,
+                        type = "tool",
+                        content = DocumentContext.DocumentStore.Files.Distinct(),
                     }, JsonSerializerOptions.Web)}\n\n");
+                    
+                    files.AddRange(DocumentContext.DocumentStore.Files.Distinct());
                     await context.Response.Body.FlushAsync();
+                    DocumentContext.DocumentStore.Files = [];
+                    continue;
                 }
+
+                if (string.IsNullOrEmpty(chatItem.Content))
+                {
+                    continue;
+                }
+
+                answer.Append(chatItem.Content);
+
+                await context.Response.WriteAsync($"data: {JsonSerializer.Serialize(new
+                {
+                    type = "message",
+                    content = chatItem.Content,
+                }, JsonSerializerOptions.Web)}\n\n");
+                await context.Response.Body.FlushAsync();
             }
 
             sw.Stop();

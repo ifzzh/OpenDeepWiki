@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Layout, Row, Col, Button, Typography, theme, Spin, Empty, List, message as messageApi, Tooltip } from 'antd';
-import { FileTextOutlined, GithubFilled, CopyOutlined, FileOutlined, FileMarkdownOutlined, FileImageOutlined, FileExcelOutlined, FileWordOutlined, FilePdfOutlined, FileUnknownOutlined, CodeOutlined } from '@ant-design/icons';
+import { Layout, Row, Col, Button, Typography, theme, Spin, Empty, List, message as messageApi, Tooltip, ConfigProvider, Skeleton, Card, Divider } from 'antd';
+import { FileTextOutlined, GithubFilled, CopyOutlined, FileOutlined, FileMarkdownOutlined, FileImageOutlined, FileExcelOutlined, FileWordOutlined, FilePdfOutlined, FileUnknownOutlined, CodeOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { getChatShareMessageList } from '../../services/chatShareMessageServce';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { homepage } from '../../const/urlconst';
 import { API_URL, fetchSSE, getFileContent } from '../../services';
 import { DocumentContent } from '../../components/document';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 const { useToken } = theme;
 
 // 定义消息类型
@@ -19,7 +19,6 @@ interface ChatMessage {
   sender: 'user' | 'ai';
   loading?: boolean;
 }
-
 
 export default function SearchPage({ }: any) {
   const { token } = useToken();
@@ -43,6 +42,7 @@ export default function SearchPage({ }: any) {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState('');
   const [fileContentLoading, setFileContentLoading] = useState(false);
+  const [showFileContent, setShowFileContent] = useState(false);
 
   // 初始化页面时，如果有初始消息，自动发送
   useEffect(() => {
@@ -117,37 +117,34 @@ export default function SearchPage({ }: any) {
           display: 'flex',
           flexDirection: 'row',
           justifyContent: isUser ? 'flex-end' : 'flex-start',
+          marginBottom: token.marginMD,
         }}
       >
         <div
           style={{
-            maxWidth: '80%',
-            padding: token.paddingSM,
+            maxWidth: '85%',
+            padding: `${token.paddingMD}px ${token.paddingLG}px`,
             borderRadius: token.borderRadiusLG,
-            backgroundColor: token.colorBgElevated,
+            backgroundColor: isUser ? token.colorPrimaryBg : token.colorBgContainer,
             color: token.colorText,
-            fontSize: token.fontSize,
+            boxShadow: `0 1px 2px rgba(0, 0, 0, 0.03)`,
           }}
         >
           {msg.loading ? (
             <Spin size="small" />
           ) : (
             isUser ? (
-              <div style={{
-                fontSize: '14px',
-              }}>
+              <Text style={{ fontSize: token.fontSizeSM }}>
                 {msg.content}
-              </div>
+              </Text>
             ) : (
-              <div className="markdown-content" style={{ color: token.colorText }}>
+              <div className="markdown-content">
                 <DocumentContent
-                  document={{
-                    content: msg.content
-                  }}
+                  document={{ content: msg.content }}
                   owner=''
                   name=''
                   token={token}
-                ></DocumentContent>
+                />
               </div>
             )
           )}
@@ -248,31 +245,31 @@ export default function SearchPage({ }: any) {
     scrollToBottom();
   }, [messages]);
 
-  // 根据文件扩展名获取对应的图标放入组件内
+  // 根据文件扩展名获取对应的图标
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
 
     switch (extension) {
       case 'md':
       case 'markdown':
-        return <FileMarkdownOutlined style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }} />;
+        return <FileMarkdownOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
       case 'jpg':
       case 'jpeg':
       case 'png':
       case 'gif':
       case 'svg':
-        return <FileImageOutlined style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }} />;
+        return <FileImageOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
       case 'xlsx':
       case 'xls':
       case 'csv':
-        return <FileExcelOutlined style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }} />;
+        return <FileExcelOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
       case 'doc':
       case 'docx':
-        return <FileWordOutlined style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }} />;
+        return <FileWordOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
       case 'pdf':
-        return <FilePdfOutlined style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }} />;
+        return <FilePdfOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
       case 'json':
-        return <CodeOutlined style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }} />;
+        return <CodeOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
       case 'js':
       case 'ts':
       case 'tsx':
@@ -289,9 +286,9 @@ export default function SearchPage({ }: any) {
       case 'css':
       case 'scss':
       case 'less':
-        return <FileOutlined style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }} />;
+        return <FileOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
       default:
-        return <FileUnknownOutlined style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }} />;
+        return <FileUnknownOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
     }
   };
 
@@ -322,328 +319,294 @@ export default function SearchPage({ }: any) {
     }
   };
 
+  // 文件点击处理
+  const handleFileClick = async (path: string) => {
+    setSelectedFile(path);
+    setShowFileContent(true);
+    setFileContentLoading(true);
+    
+    try {
+      const { data } = await getFileContent(warehouseId, path);
+      setFileContent(data.data);
+    } catch (error) {
+      messageApi.error('获取文件内容失败');
+    } finally {
+      setFileContentLoading(false);
+    }
+  };
+
+  // 渲染文件骨架屏
+  const renderFileSkeleton = () => {
+    return Array(3).fill(null).map((_, index) => (
+      <div key={index} style={{ padding: token.paddingSM, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+        <Skeleton 
+          active 
+          avatar={{ shape: 'square', size: 'default' }} 
+          paragraph={{ rows: 1, width: ['80%'] }} 
+          title={{ width: '40%' }}
+        />
+      </div>
+    ));
+  };
+
   return (
-    <Layout style={{ minHeight: '100vh', backgroundColor: token.colorBgLayout }}>
-      <Row >
-        <Col xs={24} sm={24} md={14} lg={14} xl={14}>
-          <div style={{
-            height: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
-            <div style={{
-              padding: `${token.paddingSM}px ${token.paddingMD}px`,
-              borderBottom: `1px solid ${token.colorBorderSecondary}`,
-              backgroundColor: token.colorBgContainer,
-              display: 'flex',
-              alignItems: 'center',
-              borderTopLeftRadius: token.borderRadiusLG,
-              borderTopRightRadius: token.borderRadiusLG,
-            }}>
-              <a href="/" style={{
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: token.colorPrimary,
-                textDecoration: 'none',
-                cursor: 'pointer'
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgLayout: '#f0f2f5',
+          colorBgContainer: '#ffffff',
+          colorBgElevated: '#ffffff',
+          colorPrimaryBg: 'rgba(22, 119, 255, 0.08)',
+          colorBorderSecondary: '#f0f0f0',
+          borderRadius: 8,
+        },
+        components: {
+          Card: {
+            colorBorderSecondary: 'transparent',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+          }
+        }
+      }}
+    >
+      <Layout style={{ minHeight: '100vh', backgroundColor: token.colorBgLayout }}>
+        <Row gutter={16} style={{ height: '100vh', padding: '16px' }}>
+          {/* 聊天区域 */}
+          <Col xs={24} sm={24} md={14} lg={16} xl={16} style={{ height: '100%' }}>
+            <Card 
+              bodyStyle={{ 
+                padding: 0, 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column' 
+              }}
+              style={{ height: '100%', borderRadius: '12px' }}
+              bordered={false}
+            >
+              <div style={{
+                padding: '16px 24px',
+                borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                backgroundColor: token.colorBgContainer,
+                borderTopLeftRadius: '12px',
+                borderTopRightRadius: '12px',
               }}>
-                <span>OpenDeepWiki</span>
-              </a>
-              <Button type='text'
-                onClick={() => {
-                  window.open(homepage)
+                <a href="/" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: token.fontSizeLG,
+                  fontWeight: 600,
+                  color: token.colorPrimary,
+                  textDecoration: 'none',
+                }}>
+                  <Title level={4} style={{ margin: 0, color: token.colorPrimary }}>OpenDeepWiki</Title>
+                </a>
+              </div>
+
+              <div
+                ref={messagesContainerRef}
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '24px',
+                  backgroundColor: token.colorBgContainer,
+                  borderBottomLeftRadius: '12px',
+                  borderBottomRightRadius: '12px',
                 }}
               >
-                <GithubFilled />
-              </Button>
-            </div>
-
-            <div
-              ref={messagesContainerRef}
-              style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: token.paddingMD,
-                backgroundColor: token.colorBgContainer,
-              }}
-            >
-              {messages.length === 0 ? (
-                <Empty
-                  description="开始一个新的对话"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              ) : (
-                messages.map((msg, index) => renderMessage(msg, index))
-              )}
-            </div>
-
-            {/* 底部输入区域 */}
-            {/* <div
-              style={{
-                padding: token.paddingSM,
-                backgroundColor: token.colorBgElevated,
-                borderTop: `1px solid ${token.colorBorderSecondary}`,
-                borderBottomLeftRadius: token.borderRadiusLG,
-                borderBottomRightRadius: token.borderRadiusLG,
-              }}
-            >
-              <div style={{ display: 'flex', gap: token.marginXS }}>
-                <TextArea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="输入您的问题..."
-                  autoSize={{ minRows: 1, maxRows: 3 }}
-                  onPressEnter={(e) => {
-                    if (!e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  style={{ flex: 1 }}
-                  disabled={loading}
-                />
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  onClick={() => handleSendMessage()}
-                  loading={loading}
-                  disabled={!message.trim()}
-                  style={{ height: 'auto' }}
-                >
-                  发送
-                </Button>
+                {messages.length === 0 ? (
+                  <Empty
+                    description={<Text type="secondary">开始一个新的对话</Text>}
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    style={{ marginTop: '20%' }}
+                  />
+                ) : (
+                  messages.map((msg, index) => renderMessage(msg, index))
+                )}
               </div>
-            </div> */}
-          </div>
-        </Col>
+            </Card>
+          </Col>
 
-        <Col xs={24} sm={24} md={10} lg={10} xl={10}>
-          <div style={{
-            height: '100vh',
-            overflow: 'auto',
-            backgroundColor: token.colorBgContainer,
-            borderLeft: `1px solid ${token.colorBorderSecondary}`,
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
-            <div style={{
-              padding: `${token.paddingSM}px ${token.paddingMD}px`,
-              borderBottom: `1px solid ${token.colorBorderSecondary}`,
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: token.colorBgElevated,
-            }}>
-              <FileTextOutlined style={{ marginRight: token.marginXS, color: token.colorPrimary }} />
-              <Text strong>引用文件</Text>
-              {fileListLoading && <Spin size="small" style={{ marginLeft: 'auto' }} />}
-            </div>
-
-            {fileListLoading ? (
-              <div style={{ padding: token.paddingLG, display: 'flex', justifyContent: 'center' }}>
-                <Spin tip="加载引用文件..." />
-              </div>
-            ) : referenceFiles.length > 0 ? (
-              <>
-                <List
-                  itemLayout="horizontal"
-                  dataSource={referenceFiles}
-                  renderItem={(item) => (
-                    <List.Item
-                      style={{
-                        padding: `${token.paddingSM}px ${token.paddingMD}px`,
-                        transition: 'all 0.3s',
-                        cursor: 'pointer',
-                        borderRadius: token.borderRadiusSM,
-                        margin: `${token.marginXS}px ${token.marginSM}px`,
-                        boxShadow: `0 1px 2px 0 ${token.colorBorderSecondary}`,
-                        backgroundColor: selectedFile === item.path ? token.colorBgTextHover : token.colorBgContainer,
-                      }}
-                      className="reference-file-item"
-                      onClick={async () => {
-                        setFileContentLoading(true)
-                        try {
-                          const { data } = await getFileContent(warehouseId, item.path);
-                          setSelectedFile(item.path)
-                          setFileContent(data.data);
-                        } finally {
-                          setFileContentLoading(false)
-                        }
-                      }}
-                      onMouseEnter={(e) => {
-                        if (selectedFile !== item.path) {
-                          e.currentTarget.style.backgroundColor = token.colorBgTextHover;
-                        }
-                        e.currentTarget.style.boxShadow = `0 3px 6px -4px ${token.colorBgMask}`;
-                      }}
-                      onMouseLeave={(e) => {
-                        if (selectedFile !== item.path) {
-                          e.currentTarget.style.backgroundColor = token.colorBgContainer;
-                        }
-                        e.currentTarget.style.boxShadow = `0 1px 2px 0 ${token.colorBorderSecondary}`;
-                      }}
-                    >
-                      <List.Item.Meta
-                        avatar={
-                          <div style={{
-                            backgroundColor: token.colorPrimaryBg,
-                            borderRadius: token.borderRadiusSM,
-                            width: 40,
-                            height: 40,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: `0 2px 4px 0 ${token.colorBorderSecondary}`,
-                          }}>
-                            {getFileIcon(item.title)}
-                          </div>
-                        }
-                        title={
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Text strong style={{ fontSize: token.fontSizeSM }}>{item.title}</Text>
-                            <Tooltip title="查看文件">
-                              <Button
-                                type="text"
-                                size="small"
-                                icon={<FileOutlined />}
-                                style={{
-                                  opacity: 0.7,
-                                  color: token.colorTextSecondary,
-                                }}
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  setFileContentLoading(true)
-                                  try {
-                                    const { data } = await getFileContent(warehouseId, item.path);
-                                    setSelectedFile(item.path)
-                                    setFileContent(data.data);
-                                  } finally {
-                                    setFileContentLoading(false)
-                                  }
-                                }}
-                              />
-                            </Tooltip>
-                          </div>
-                        }
-                        description={
-                          <Text
-                            type="secondary"
-                            ellipsis={{ tooltip: item.path }}
-                            style={{ fontSize: token.fontSize * 0.85 }}
-                          >
-                            {item.path}
-                          </Text>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                  style={{
-                    maxHeight: '30%',
-                    overflowY: 'auto',
-                    padding: `${token.paddingXS}px 0`,
-                    flex: '0 0 auto',
-                  }}
-                />
-
-                {/* 文件内容区域 */}
-                {fileContent && (
+          {/* 文件资源区域 */}
+          <Col xs={24} sm={24} md={10} lg={8} xl={8} style={{ height: '100%' }}>
+            <Card 
+              bodyStyle={{ 
+                padding: 0, 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column' 
+              }}
+              style={{ height: '100%', borderRadius: '12px' }}
+              bordered={false}
+            >
+              {showFileContent && selectedFile ? (
+                // 文件内容视图
+                <div style={{ 
+                  height: '100%', 
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
                   <div style={{
-                    flex: '1 1 auto',
-                    padding: token.paddingSM,
-                    borderTop: `1px solid ${token.colorBorderSecondary}`,
+                    padding: '16px',
+                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
                     display: 'flex',
-                    flexDirection: 'column'
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                   }}>
-                    <div style={{
-                      padding: `${token.paddingXS}px ${token.paddingSM}px`,
-                      marginBottom: token.marginSM,
-                      backgroundColor: token.colorBgElevated,
-                      borderRadius: token.borderRadiusSM,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}>
-                      <Text strong style={{ fontSize: token.fontSizeSM }}>
-                        {selectedFile ? selectedFile.split('/').pop() : '文件内容'}
-                      </Text>
-                      {selectedFile && (
-                        <Tooltip title="复制路径">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<CopyOutlined />}
-                            onClick={() => {
-                              navigator.clipboard.writeText(selectedFile);
-                              messageApi.success('路径已复制');
-                            }}
-                          />
-                        </Tooltip>
-                      )}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <Button 
+                        type="text" 
+                        icon={<ArrowLeftOutlined />} 
+                        onClick={() => setShowFileContent(false)}
+                        style={{ marginRight: '8px' }}
+                      />
+                      <Text strong>{selectedFile.split('/').pop()}</Text>
                     </div>
+                    <Tooltip title="复制路径">
+                      <Button
+                        type="text"
+                        icon={<CopyOutlined />}
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedFile);
+                          messageApi.success('路径已复制');
+                        }}
+                      />
+                    </Tooltip>
+                  </div>
 
+                  <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
                     {fileContentLoading ? (
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                        <Spin tip="加载文件内容..." />
+                      <div style={{ padding: '16px' }}>
+                        <Skeleton active paragraph={{ rows: 10 }} />
                       </div>
-                    ) : selectedFile ? (
-                      <div
-                        style={{
-                          flex: 1,
-                          overflowY: 'auto',
-                          borderRadius: token.borderRadiusSM,
-                          border: `1px solid ${token.colorBorderSecondary}`,
-                          backgroundColor: token.colorBgElevated
+                    ) : (
+                      <SyntaxHighlighter
+                        language={getLanguageFromExtension(selectedFile.split('/').pop() || '')}
+                        PreTag="div"
+                        customStyle={{
+                          margin: 0,
+                          padding: '16px',
+                          fontSize: token.fontSizeSM,
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          height: '100%',
+                          overflow: 'auto',
                         }}
                       >
-                        <SyntaxHighlighter
-                          language={getLanguageFromExtension(selectedFile.split('/').pop() || '')}
-                          PreTag="div"
-                          customStyle={{
-                            margin: 0,
-                            padding: token.paddingSM,
-                            fontSize: token.fontSize * 0.9,
-                            backgroundColor: 'transparent',
-                            height: '100%'
-                          }}
-                        >
-                          {fileContent}
-                        </SyntaxHighlighter>
-                      </div>
+                        {fileContent}
+                      </SyntaxHighlighter>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                // 文件列表视图
+                <>
+                  <div style={{
+                    padding: '16px 24px',
+                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTopLeftRadius: '12px',
+                    borderTopRightRadius: '12px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <FileTextOutlined style={{ marginRight: '8px', color: token.colorPrimary }} />
+                      <Text strong>引用文件</Text>
+                    </div>
+                    {fileListLoading && <Spin size="small" />}
+                  </div>
+
+                  <div style={{ 
+                    flex: 1, 
+                    overflowY: 'auto',
+                    backgroundColor: token.colorBgContainer,
+                    borderBottomLeftRadius: '12px',
+                    borderBottomRightRadius: '12px',
+                  }}>
+                    {fileListLoading ? (
+                      // 骨架屏加载
+                      renderFileSkeleton()
+                    ) : referenceFiles.length > 0 ? (
+                      <List
+                        itemLayout="horizontal"
+                        dataSource={referenceFiles}
+                        renderItem={(item) => (
+                          <List.Item
+                            style={{
+                              padding: '12px 16px',
+                              cursor: 'pointer',
+                              borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                              transition: 'all 0.2s',
+                            }}
+                            onClick={() => handleFileClick(item.path)}
+                            className="file-item-hover"
+                          >
+                            <List.Item.Meta
+                              avatar={
+                                <div style={{
+                                  width: 40,
+                                  height: 40,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  backgroundColor: token.colorPrimaryBg,
+                                  borderRadius: '8px'
+                                }}>
+                                  {getFileIcon(item.title)}
+                                </div>
+                              }
+                              title={<Text strong>{item.title}</Text>}
+                              description={
+                                <Text
+                                  type="secondary"
+                                  ellipsis={{ tooltip: item.path }}
+                                  style={{ fontSize: token.fontSizeSM }}
+                                >
+                                  {item.path}
+                                </Text>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
                     ) : (
                       <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="请选择一个文件查看内容"
-                        style={{ margin: token.marginMD }}
+                        description={
+                          <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center', 
+                            gap: '4px' 
+                          }}>
+                            <Text type="secondary">暂无引用文件</Text>
+                            <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                              系统会在回答过程中自动识别相关文件
+                            </Text>
+                          </div>
+                        }
+                        style={{
+                          margin: 0,
+                          padding: '48px 24px',
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                        }}
                       />
                     )}
-                  </div>)}
-              </>
-            ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Text type="secondary">暂无引用文件</Text>
-                    <Text type="secondary" style={{ fontSize: token.fontSize * 0.85 }}>
-                      系统会在回答过程中自动识别相关文件
-                    </Text>
                   </div>
-                }
-                style={{
-                  margin: token.marginLG,
-                  padding: token.paddingLG,
-                  height: 'calc(100% - 150px)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              />
-            )}
-          </div>
-        </Col>
-      </Row>
-    </Layout>
+                </>
+              )}
+            </Card>
+          </Col>
+        </Row>
+      </Layout>
+
+      <style jsx global>{`
+        .file-item-hover:hover {
+          background-color: ${token.colorPrimaryBg};
+        }
+      `}</style>
+    </ConfigProvider>
   );
 } 
