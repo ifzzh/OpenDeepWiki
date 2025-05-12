@@ -74,6 +74,7 @@ services:
       - MODEL_PROVIDER=OpenAI # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
+      - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
 ```
 
 AzureOpenAI:
@@ -92,6 +93,7 @@ services:
       - MODEL_PROVIDER=AzureOpenAI # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
+      - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
 ```
 
 Anthropic:
@@ -110,6 +112,7 @@ services:
       - MODEL_PROVIDER=Anthropic # Model provider, default is OpenAI, supports AzureOpenAI and Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
+      - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
 ```
 
 > 💡 **How to get an API Key:**
@@ -213,6 +216,7 @@ graph TD
   - MODEL_PROVIDER  Model provider, by default OpenAI, supports Azure, OpenAI and Anthropic
   - DB_CONNECTION_STRING  Database connection string
   - EnableSmartFilter Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
+  - UPDATE_INTERVAL Warehouse increment update interval, unit: days
 
 ### Build for Different Architectures
 The Makefile provides commands to build for different CPU architectures:

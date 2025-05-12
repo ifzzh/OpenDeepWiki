@@ -144,12 +144,15 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                     b.ToTable("Documents");
                 });
 
-            modelBuilder.Entity("KoalaWiki.Entities.DocumentCatalog", b =>
+            modelBuilder.Entity("KoalaWiki.Domains.DocumentCatalog", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedTime")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DependentFile")
@@ -165,6 +168,9 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
@@ -194,6 +200,8 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("DucumentId");
+
+                    b.HasIndex("IsDeleted");
 
                     b.HasIndex("Name");
 

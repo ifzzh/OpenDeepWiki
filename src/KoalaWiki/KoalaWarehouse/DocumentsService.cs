@@ -317,101 +317,42 @@ public partial class DocumentsService
 
         await dbContext.SaveChangesAsync();
 
-        // 提供5个并发的信号量,很容易触发429错误
-        var semaphore = new SemaphoreSlim(TaskMaxSizePerUser);
+        await HandlePendingDocumentsAsync(documents, fileKernel, catalogue, gitRepository, warehouse, path, dbContext);
 
-        // 等待中的任务列表
-        var pendingDocuments = new ConcurrentBag<DocumentCatalog>(documents);
-        var runningTasks = new List<Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)>>();
-
-        // 开始处理文档，直到所有文档都处理完成
-        while (pendingDocuments.Count > 0 || runningTasks.Count > 0)
-        {
-            // 尝试启动新任务，直到达到并发限制
-            while (pendingDocuments.Count > 0 && runningTasks.Count < TaskMaxSizePerUser)
-            {
-                if (!pendingDocuments.TryTake(out var documentCatalog)) continue;
-
-                var task = ProcessDocumentAsync(documentCatalog, fileKernel, catalogue, gitRepository,
-                    warehouse.Branch, path, semaphore);
-                runningTasks.Add(task);
-            }
-
-            // 如果没有正在运行的任务，退出循环
-            if (runningTasks.Count == 0)
-                break;
-
-            // 等待任意一个任务完成
-            var completedTask = await Task.WhenAny(runningTasks);
-            runningTasks.Remove(completedTask);
-
-            try
-            {
-                var (catalog, fileItem, files) = await completedTask;
-
-                if (fileItem == null)
-                {
-                    // 构建失败
-                    Log.Logger.Error("处理仓库；{path} ,处理标题：{name} 失败:文件内容为空", path, catalog.Name);
-
-                    throw new Exception("处理失败，文件内容为空: " + catalog.Name);
-                }
-
-                // 更新文档状态
-                await dbContext.DocumentCatalogs.Where(x => x.Id == catalog.Id)
-                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsCompleted, true));
-
-                // 修复Mermaid语法错误
-                RepairMermaid(fileItem);
-
-                await dbContext.DocumentFileItems.AddAsync(fileItem);
-                await dbContext.DocumentFileItemSources.AddRangeAsync(files.Select(x => new DocumentFileItemSource()
-                {
-                    Address = x,
-                    DocumentFileItemId = fileItem.Id,
-                    Name = x,
-                    Id = Guid.NewGuid().ToString("N"),
-                }));
-
-                await dbContext.SaveChangesAsync();
-
-                Log.Logger.Information("处理仓库；{path}, 处理标题：{name} 完成并保存到数据库！", path, catalog.Name);
-            }
-            catch (Exception ex)
-            {
-                Log.Logger.Error("处理文档失败: {ex}", ex.ToString());
-            }
-        }
-        
-        
         await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
             .ExecuteDeleteAsync();
 
         // 开始生成
-        var (git, committer) = await GenerateUpdateLogAsync(document.GitPath, readme,
+        var committer = await GenerateUpdateLogAsync(document.GitPath, readme,
             warehouse.Address,
             warehouse.Branch,
             kernel);
 
-        await dbContext.DocumentCommitRecords.AddAsync(new DocumentCommitRecord()
+        var record = committer.Select(x => new DocumentCommitRecord()
         {
             WarehouseId = warehouse.Id,
             CreatedAt = DateTime.Now,
-            Author = committer,
+            Author = string.Empty,
             Id = Guid.NewGuid().ToString("N"),
-            CommitMessage = git,
-            LastUpdate = DateTime.Now,
+            CommitMessage = x.description,
+            Title = x.title,
+            LastUpdate = x.date,
         });
 
-        
+        // 如果重新生成则需要清空之前记录
+        await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
+            .ExecuteDeleteAsync();
+
+        await dbContext.DocumentCommitRecords.AddRangeAsync(record);
     }
 
     /// <summary>
     /// 处理单个文档的异步方法
     /// </summary>
-    private async Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)> ProcessDocumentAsync(
-        DocumentCatalog catalog, Kernel kernel, string catalogue, string gitRepository, string branch, string path,
-        SemaphoreSlim semaphore)
+    private static async Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)>
+        ProcessDocumentAsync(
+            DocumentCatalog catalog, Kernel kernel, string catalogue, string gitRepository, string branch, string path,
+            SemaphoreSlim semaphore)
     {
         int retryCount = 0;
         const int retries = 5;
@@ -479,7 +420,7 @@ public partial class DocumentsService
     /// Mermaid可能存在语法错误，使用大模型进行修复
     /// </summary>
     /// <param name="fileItem"></param>
-    private void RepairMermaid(DocumentFileItem fileItem)
+    private static void RepairMermaid(DocumentFileItem fileItem)
     {
         try
         {
@@ -552,7 +493,8 @@ public partial class DocumentsService
     /// <summary>
     /// 处理每一个标题产生文件内容
     /// </summary>
-    private async Task<DocumentFileItem> ProcessCatalogueItems(DocumentCatalog catalog, Kernel kernel, string catalogue,
+    private static async Task<DocumentFileItem> ProcessCatalogueItems(DocumentCatalog catalog, Kernel kernel,
+        string catalogue,
         string gitRepository, string branch, string path)
     {
         var chat = kernel.Services.GetService<IChatCompletionService>();

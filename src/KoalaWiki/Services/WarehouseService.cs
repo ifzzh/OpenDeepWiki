@@ -1,5 +1,6 @@
 ﻿using FastService;
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Domains;
 using KoalaWiki.Dto;
 using KoalaWiki.Entities;
 using KoalaWiki.Functions;

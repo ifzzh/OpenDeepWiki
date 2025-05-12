@@ -39,5 +39,12 @@ public class DocumentCatalog : Entity<string>
     
     public string Prompt { get; set; } = string.Empty;
     
+    /// <summary>
+    /// 是否删除
+    /// </summary>
+    public bool IsDeleted { get; set; } = false;
+    
+    public DateTime? DeletedTime { get; set; } = null;
+    
     public List<string> DependentFile { get; set; } = new();
 }

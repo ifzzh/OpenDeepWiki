@@ -3,9 +3,9 @@ using LibGit2Sharp;
 using Microsoft.SemanticKernel;
 using Newtonsoft.Json;
 
-namespace KoalaWiki.KoalaWarehouse;
+namespace KoalaWiki.WarehouseProcessing;
 
-public partial class DocumentsService
+public partial class WarehouseProcessingTask
 {
     /// <summary>
     /// 生成更新日志

@@ -35,7 +35,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             .FirstOrDefaultAsync();
 
         var documentCatalogs = await dbAccess.DocumentCatalogs
-            .Where(x => x.WarehouseId == warehouse.Id)
+            .Where(x => x.WarehouseId == warehouse.Id && x.IsDeleted == false)
             .ToListAsync();
 
         string lastUpdate;
@@ -80,8 +80,8 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             .AsNoTracking()
             .Where(x => x.Name == name && x.OrganizationName == owner)
             .FirstOrDefaultAsync();
-        
-        if(query == null)
+
+        if (query == null)
         {
             throw new NotFoundException("仓库不存在");
         }
@@ -89,7 +89,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
         // 找到catalog
         var id = await dbAccess.DocumentCatalogs
             .AsNoTracking()
-            .Where(x => x.WarehouseId == query.Id && x.Url == path)
+            .Where(x => x.WarehouseId == query.Id && x.Url == path && x.IsDeleted == false)
             .Select(x => x.Id)
             .FirstOrDefaultAsync();
 
