@@ -26,7 +26,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
         // 如果没有找到仓库，返回空列表
         if (warehouse == null)
         {
-            throw new NotFoundException("仓库不存在");
+            throw new NotFoundException($"仓库不存在，请检查仓库名称和组织名称:{organizationName} {name}");
         }
 
         var document = await dbAccess.Documents
@@ -83,7 +83,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
 
         if (query == null)
         {
-            throw new NotFoundException("仓库不存在");
+            throw new NotFoundException($"仓库不存在，请检查仓库名称和组织名称:{owner} {name}");
         }
 
         // 找到catalog

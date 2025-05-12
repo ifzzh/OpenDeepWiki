@@ -58,7 +58,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         // 如果没有找到仓库，返回空列表
         if (warehouse == null)
         {
-            throw new NotFoundException("仓库不存在");
+            throw new NotFoundException($"仓库不存在，请检查仓库名称和组织名称:{owner} {name}");
         }
 
         var commit = await access.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
@@ -96,7 +96,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
                 input.Address += ".git";
             }
 
-            var value = await access.Warehouses.FirstOrDefaultAsync(x => x.Address == input.Address);
+            var value = await access.Warehouses.FirstOrDefaultAsync(x =>  x.Address.ToLower() == input.Address.ToLower());
             // 判断这个仓库是否已经添加
             if (value?.Status is WarehouseStatus.Completed or WarehouseStatus.Pending or WarehouseStatus.Processing)
 
@@ -106,7 +106,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
 
             // 删除旧的仓库
             var oldWarehouse = await access.Warehouses
-                .Where(x => x.Address == input.Address)
+                .Where(x => x.Address.ToLower() == input.Address.ToLower())
                 .ExecuteDeleteAsync();
 
             var entity = mapper.Map<Warehouse>(input);
@@ -155,7 +155,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         // 如果没有找到仓库，返回空列表
         if (query == null)
         {
-            throw new NotFoundException("仓库不存在");
+            throw new NotFoundException($"仓库不存在，请检查仓库名称和组织名称:{owner} {name}");
         }
 
         var document = await access.Documents

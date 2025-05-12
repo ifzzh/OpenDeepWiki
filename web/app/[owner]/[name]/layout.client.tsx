@@ -145,7 +145,6 @@ export default function RepositoryLayoutClient({
     };
 
     const formatUpdateDate = (lastUpdate: string) => {
-      console.log(lastUpdate);
       if (!lastUpdate) return '';
       const date = new Date(lastUpdate);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
