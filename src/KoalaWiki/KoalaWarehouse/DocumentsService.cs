@@ -409,8 +409,8 @@ public partial class DocumentsService
             "Qwen/Qwen3-235B-A22B" => null,
             "grok-3" => 65536,
             "qwen3-235b-a22b" => 65535,
-            "gemini-2.5-pro-preview-05-06" => 65535,
-            "gemini-2.5-flash-preview-04-17" => 65535,
+            "gemini-2.5-pro-preview-05-06" => 32768,
+            "gemini-2.5-flash-preview-04-17" => 32768,
             "Qwen3-32B" => 32768,
             _ => null
         };
