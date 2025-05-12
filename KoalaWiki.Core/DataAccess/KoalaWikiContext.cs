@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,7 +33,25 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
     {
+        BeforeSaveChanges();
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        BeforeSaveChanges();
+        return base.SaveChanges();
+    }
+
+    private void BeforeSaveChanges()
+    {
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry is { State: EntityState.Added, Entity: ICreateEntity creationAudited })
+            {
+                creationAudited.CreatedAt = DateTime.UtcNow;
+            }
+        }
     }
 
     public async Task RunMigrateAsync()

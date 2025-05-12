@@ -42,6 +42,7 @@ interface DocumentCatalogResponse {
   url: string;
   order: number;
   disabled: boolean;
+  lastUpdate: string;
   children?: DocumentCatalogResponse[];
 }
 
@@ -135,6 +136,20 @@ export default function RepositoryLayoutClient({
       fontSize: token.fontSizeSM,
       lineHeight: token.lineHeight,
     };
+    const isRecentlyUpdated = (lastUpdate) => {
+      if (!lastUpdate) return false;
+      const updateDate = new Date(lastUpdate);
+      const now = new Date();
+      const oneWeek = 7 * 24 * 60 * 60 * 1000; // 一周的毫秒数
+      return now.getTime() - updateDate.getTime() < oneWeek;
+    };
+
+    const formatUpdateDate = (lastUpdate: string) => {
+      console.log(lastUpdate);
+      if (!lastUpdate) return '';
+      const date = new Date(lastUpdate);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    };
 
     return (
       <div key={item.key}>
@@ -155,7 +170,22 @@ export default function RepositoryLayoutClient({
               <Link
                 href={`/${owner}/${name}/${item.url}`}
                 style={style}>
-                <span>{item.label}</span>
+                <span style={{ position: 'relative' }}>
+                  {item.label}
+                  {isRecentlyUpdated(item.lastUpdate) && (
+                    <Tooltip title={`最近更新: ${formatUpdateDate(item.lastUpdate)}`}>
+                      <span style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: -8,
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        backgroundColor: token.colorError,
+                      }} />
+                    </Tooltip>
+                  )}
+                </span>
               </Link>
             )}
             {item.children.sort((a, b) => a.order - b.order).map(child =>
@@ -179,7 +209,22 @@ export default function RepositoryLayoutClient({
               href={`/${owner}/${name}/${item.url}`}
               style={style}
             >
-              <span>{item.label}</span>
+              <span style={{ position: 'relative' }}>
+                {item.label}
+                {isRecentlyUpdated(item.lastUpdate) && (
+                  <Tooltip title={`最近更新: ${formatUpdateDate(item.lastUpdate)}`}>
+                    <span style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: -8,
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: token.colorError,
+                    }} />
+                  </Tooltip>
+                )}
+              </span>
             </Link>
           )
         )}
@@ -208,7 +253,6 @@ export default function RepositoryLayoutClient({
 
     return items;
   };
-  console.log(initialCatalogData);
 
   return (
     <ConfigProvider

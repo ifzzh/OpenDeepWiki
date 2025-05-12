@@ -73,7 +73,15 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             value.AppendLine($" {record.CommitMessage}");
         }
 
-        return new DocumentCommitRecord();
+        return new DocumentCommitRecord()
+        {
+            CommitId = "",
+            CommitMessage = value.ToString(),
+            CreatedAt = DateTime.Now,
+            Title = "更新日志",
+            LastUpdate = DateTime.Now,
+            WarehouseId = warehouse.Id,
+        };
     }
 
     /// <summary>

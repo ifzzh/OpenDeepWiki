@@ -71,9 +71,6 @@ export default function ChangelogPage({ params }: { params: Promise<PageParams> 
       maxWidth: 800, 
       margin: '0 auto', 
       padding: token.paddingLG,
-      backgroundColor: token.colorBgContainer,
-      borderRadius: token.borderRadiusLG,
-      boxShadow: token.boxShadowTertiary
     }}>
       <Title level={2} style={{ marginBottom: token.marginLG, color: token.colorTextHeading }}>
         更新日志

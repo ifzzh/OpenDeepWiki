@@ -67,6 +67,13 @@ public partial class WarehouseProcessingTask
                     commitPrompt.AppendLine("</commit>");
                 }
             }
+            else
+            {
+                logger.LogInformation("没有更新的提交记录");
+                
+                // 如果没有更新的提交记录，直接返回
+                return;
+            }
 
 
             logger.LogInformation("步骤2: 获取文档目录");

@@ -142,6 +142,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
                     Url = item.Url,
                     item.Description,
                     key = item.Id,
+                    lastUpdate = item.CreatedAt,
                     // 是否启用
                     disabled = item.IsCompleted == false
                 });
@@ -154,6 +155,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
                     item.Description,
                     Url = item.Url,
                     key = item.Id,
+                    lastUpdate = item.CreatedAt,
                     children,
                     // 是否启用
                     disabled = item.IsCompleted == false
@@ -185,6 +187,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
                 children.Add(new
                 {
                     label = child.Name,
+                    lastUpdate = child.CreatedAt,
                     Url = child.Url,
                     key = child.Id,
                     child.Description,
@@ -200,6 +203,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
                     key = child.Id,
                     Url = child.Url,
                     child.Description,
+                    lastUpdate = child.CreatedAt,
                     children = subChildren,
                     // 是否启用
                     disabled = child.IsCompleted == false
