@@ -1,19 +1,14 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
 using KoalaWiki.Core.DataAccess;
-using KoalaWiki.Domains;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using ModelContextProtocol;
-using ModelContextProtocol.Server;
 using OpenAI.Chat;
 
-namespace KoalaWiki.Tools;
+namespace KoalaWiki.MCP.Tools;
 
 public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoalaWikiContext koala)
 {
@@ -70,7 +65,7 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
 
         history.AddUserMessage(Prompt.DeepFirstPrompt
             .Replace("{{question}}", question)
-            .Replace("{{git_repository_url}}", warehouse.Address)
+            .Replace("{{git_repository_url}}", warehouse.Address.Replace(".git",""))
             .Replace("{{catalogue}}", string.Join('\n', catalogue)));
 
         var first = true;

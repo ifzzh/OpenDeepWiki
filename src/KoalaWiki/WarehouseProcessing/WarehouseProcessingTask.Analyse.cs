@@ -86,8 +86,7 @@ public partial class WarehouseProcessingTask
             var history = new ChatHistory();
 
             var prompt = Prompt.AnalyzeNewCatalogue
-                .Replace("{{git_repository}}", warehouse.Address)
-                .Replace("{{readme}}", warehouse.Readme)
+                .Replace("{{git_repository}}", warehouse.Address.Replace(".git",""))
                 .Replace("{{document_catalogue}}", JsonSerializer.Serialize(catalogues, JsonSerializerOptions.Web))
                 .Replace("{{git_commit}}", commitPrompt.ToString())
                 .Replace("{{catalogue}}", warehouse.OptimizedDirectoryStructure);

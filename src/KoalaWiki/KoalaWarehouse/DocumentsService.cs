@@ -183,7 +183,7 @@ public partial class DocumentsService
 
         var catalogue = GetCatalogue(path);
 
-        if (string.IsNullOrEmpty(readme))
+        if (string.IsNullOrEmpty(readme) && string.IsNullOrEmpty(warehouse.Readme))
         {
             var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
                 OpenAIOptions.ChatApiKey,
@@ -202,7 +202,7 @@ public partial class DocumentsService
                 })
             {
                 ["catalogue"] = catalogue,
-                ["git_repository"] = warehouse.Address,
+                ["git_repository"] = warehouse.Address.Replace(".git",""),
                 ["branch"] = warehouse.Branch
             });
 

@@ -70,18 +70,8 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             conversationHistory.Append($"{message.Role}: {message.Content}\n");
         }
 
-        var readme = await DocumentsService.GenerateReadMe(warehouse, document.GitPath, koala);
 
         var catalogue = warehouse.OptimizedDirectoryStructure;
-        if (string.IsNullOrWhiteSpace(catalogue))
-        {
-            catalogue = await DocumentsService.GetCatalogueSmartFilterAsync(document.GitPath, readme);
-            if (!string.IsNullOrWhiteSpace(catalogue))
-            {
-                await koala.Warehouses.Where(x => x.Id == warehouse.Id)
-                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.OptimizedDirectoryStructure, catalogue));
-            }
-        }
 
         if (chatShareMessage.IsDeep)
         {
@@ -89,14 +79,14 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             {
                 history.AddUserMessage(Prompt.DeepFirstPrompt
                     .Replace("{{question}}", chatShareMessage!.Question)
-                    .Replace("{{git_repository_url}}", warehouse.Address)
+                    .Replace("{{git_repository_url}}", warehouse.Address.Replace(".git",""))
                     .Replace("{{catalogue}}", string.Join('\n', catalogue)));
             }
             else
             {
                 history.AddUserMessage(Prompt.HistoryPrompt
                     .Replace("{{$question}}", input.Question)
-                    .Replace("{{$git_repository_url}}", warehouse.Address)
+                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git",""))
                     .Replace("{{$conversation_history}}", conversationHistory.ToString())
                     .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
@@ -107,14 +97,14 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             {
                 history.AddUserMessage(Prompt.FirstPrompt
                     .Replace("{{$question}}", chatShareMessage!.Question)
-                    .Replace("{{$git_repository_url}}", warehouse.Address)
+                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git",""))
                     .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
             else
             {
                 history.AddUserMessage(Prompt.HistoryPrompt
                     .Replace("{{$question}}", input.Question)
-                    .Replace("{{$git_repository_url}}", warehouse.Address)
+                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git",""))
                     .Replace("{{$conversation_history}}", conversationHistory.ToString())
                     .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
@@ -147,6 +137,11 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
 
         try
         {
+            // sse
+            context.Response.Headers.ContentType = "text/event-stream";
+            context.Response.Headers.CacheControl = "no-cache";
+            first = false;
+            
             await foreach (var chatItem in chat.GetStreamingChatMessageContentsAsync(history,
                                new OpenAIPromptExecutionSettings()
                                {
@@ -155,13 +150,6 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
                                    Temperature = 0.5,
                                }, fileKernel))
             {
-                if (first)
-                {
-                    // sse
-                    context.Response.Headers.ContentType = "text/event-stream";
-                    context.Response.Headers.CacheControl = "no-cache";
-                    first = false;
-                }
 
                 // 发送数据
                 if (chatItem.InnerContent is StreamingChatCompletionUpdate message)
