@@ -53,18 +53,24 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
                     foreach (var warehouse in warehouses)
                     {
                         await HandleAnalyseAsync(warehouse, dbContext);
-                        
+
                         // 更新git记录
                         await dbContext.Documents
                             .Where(x => x.WarehouseId == warehouse.Id)
                             .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.Now), stoppingToken);
 
-                        
+
                     }
                 }
             }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "处理仓库失败");
+            }
             finally
             {
+                // 等待一段时间再继续处理
+                await Task.Delay(1000 * 60, stoppingToken);
             }
         }
     }

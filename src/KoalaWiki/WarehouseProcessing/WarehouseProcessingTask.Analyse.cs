@@ -47,9 +47,8 @@ public partial class WarehouseProcessingTask
             {
                 using var repo = new Repository(document.GitPath);
 
-                foreach (var commit in commits)
+                foreach (var commitItem in commits.Select(commit => repo.Lookup<Commit>(commit.Sha)))
                 {
-                    var commitItem = repo.Lookup<Commit>(commit.Sha);
                     commitPrompt.AppendLine($"<commit>\n{commitItem.Message}");
                     // 获取当前更新的文件列表
                     if (commitItem.Parents.Any())
@@ -57,7 +56,6 @@ public partial class WarehouseProcessingTask
                         var parent = commitItem.Parents.First();
                         var comparison = repo.Diff.Compare<TreeChanges>(parent.Tree, commitItem.Tree);
 
-                        commitPrompt.AppendLine("修改的文件:");
                         foreach (var change in comparison)
                         {
                             commitPrompt.AppendLine($" - {change.Status}: {change.Path}");
@@ -84,6 +82,7 @@ public partial class WarehouseProcessingTask
             logger.LogInformation("获取到 {CatalogCount} 个目录项", catalogues.Count);
 
             logger.LogInformation("步骤3: 创建内核并准备分析");
+            
             // 先得到树形结构
             var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
                 OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.ChatModel, false);
@@ -129,7 +128,6 @@ public partial class WarehouseProcessingTask
                                    {
                                        MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.AnalysisModel),
                                        Temperature = 0.5,
-                                       ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                                    }, kernel))
                 {
                     if (!string.IsNullOrEmpty(item.Content))
