@@ -158,7 +158,7 @@ public partial class WarehouseProcessingTask
                 return result;
             });
 
-            logger.LogInformation("步骤5: 处理分析结果，长度为 {ResultLength} 字符", st.Length);
+             logger.LogInformation("步骤5: 处理分析结果，长度为 {ResultLength} 字符", st.Length);
 
             // 这里可以继续处理分析结果
 
@@ -202,11 +202,21 @@ public partial class WarehouseProcessingTask
 
             logger.LogInformation("仓库 {WarehouseName} 分析完成", warehouse.Name);
 
-            // 更新文档的最后更新时间
-            await dbContext.Documents
-                .Where(x => x.Id == document.Id)
-                .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.UtcNow)
-                    .SetProperty(a => a.Status, WarehouseStatus.Completed));
+            var commitResult = await GenerateUpdateLogAsync(document.GitPath, warehouse, warehouse.Readme,
+                warehouse.Address, warehouse.Branch, dbContext);
+
+            await dbContext.DocumentCommitRecords.AddRangeAsync(commitResult.Select(x => new DocumentCommitRecord()
+            {
+                WarehouseId = warehouse.Id,
+                CreatedAt = DateTime.Now,
+                Author = string.Empty,
+                Id = Guid.NewGuid().ToString("N"),
+                CommitMessage = x.description,
+                Title = x.title,
+                LastUpdate = x.date,
+            }));
+
+            await dbContext.SaveChangesAsync();
         }
         catch (Exception ex)
         {

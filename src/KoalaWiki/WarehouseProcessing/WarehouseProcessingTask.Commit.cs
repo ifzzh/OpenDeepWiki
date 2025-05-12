@@ -1,5 +1,9 @@
 ﻿using System.Text.RegularExpressions;
+using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Entities;
+using KoalaWiki.Options;
 using LibGit2Sharp;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Newtonsoft.Json;
 
@@ -11,16 +15,27 @@ public partial class WarehouseProcessingTask
     /// 生成更新日志
     /// </summary>
     public async Task<List<CommitResultDto>> GenerateUpdateLogAsync(string gitPath,
-        string readme, string gitRepositoryUrl, string branch, Kernel kernel)
+        Warehouse warehouse,
+        string readme, string gitRepositoryUrl, string branch, IKoalaWikiContext koalaWikiContext)
     {
+        // 获取仓库上次最近更新时间
+        var records = await koalaWikiContext.DocumentCommitRecords
+            .Where(x => x.WarehouseId == warehouse.Id)
+            // 获取最近的记录LastUpdate
+            .OrderByDescending(x => x.LastUpdate).FirstOrDefaultAsync();
+
         // 读取git log
         using var repo = new Repository(gitPath, new RepositoryOptions());
 
+        // 大于records的提交时间内容
         var log = repo.Commits
+            .Where(x => records == null || x.Committer.When > records?.LastUpdate)
             .OrderByDescending(x => x.Committer.When)
-            .Take(20)
-            .OrderBy(x => x.Committer.When)
+            .ThenBy(x => x.Committer.When)
             .ToList();
+
+        var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint, OpenAIOptions.ChatApiKey, gitPath,
+            OpenAIOptions.ChatModel);
 
         string commitMessage = string.Empty;
         foreach (var commit in log)
@@ -39,7 +54,7 @@ public partial class WarehouseProcessingTask
                            ["readme"] = readme,
                            ["git_repository"] = gitRepositoryUrl,
                            ["commit_message"] = commitMessage,
-                           ["branch"] = branch
+                           ["git_branch"] = branch
                        }))
         {
             str += item;
@@ -47,7 +62,7 @@ public partial class WarehouseProcessingTask
 
         var regex = new Regex(@"<changelog>(.*?)</changelog>",
             RegexOptions.Singleline);
-        
+
         var match = regex.Match(str);
 
         if (match.Success)

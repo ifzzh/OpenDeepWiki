@@ -53,6 +53,13 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
                     foreach (var warehouse in warehouses)
                     {
                         await HandleAnalyseAsync(warehouse, dbContext);
+                        
+                        // 更新git记录
+                        await dbContext.Documents
+                            .Where(x => x.WarehouseId == warehouse.Id)
+                            .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.Now), stoppingToken);
+
+                        
                     }
                 }
             }

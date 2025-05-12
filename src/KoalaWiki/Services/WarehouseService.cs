@@ -1,4 +1,5 @@
-﻿using FastService;
+﻿using System.Text;
+using FastService;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains;
 using KoalaWiki.Dto;
@@ -60,9 +61,19 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             throw new NotFoundException("仓库不存在");
         }
 
-        var commit = await access.DocumentCommitRecords.FirstOrDefaultAsync(x => x.WarehouseId == warehouse.Id);
+        var commit = await access.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
+            .ToListAsync();
 
-        return commit;
+        var value = new StringBuilder();
+
+        foreach (var record in commit)
+        {
+            // 拼接一个更新模板
+            value.AppendLine($"## {record.LastUpdate:yyyy-MM-dd HH:mm:ss} {record.Title}");
+            value.AppendLine($" {record.CommitMessage}");
+        }
+
+        return new DocumentCommitRecord();
     }
 
     /// <summary>

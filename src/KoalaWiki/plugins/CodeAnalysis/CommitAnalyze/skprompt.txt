@@ -29,7 +29,8 @@ Before generating the changelog, analyze the provided information and record you
    - Extract and list key change types (e.g., feature, fix, refactor, docs)
    - Determine when changes occurred (date information)
    - Note any breaking changes or important warnings
-
+   - The format of date is YYYY-MM-DD HH:mm:ss
+   
 2. Organize changes by time:
    - Create a timeline of changes, grouping them by date
    - For changes within the last 7 days: Create detailed daily entries
@@ -63,7 +64,7 @@ After completing your analysis, generate the changelog using the following JSON 
 <changelog>
 [
   {
-    "date": "YYYY-MM-DD",
+    "date": "YYYY-MM-DD HH:mm:ss",
     "title": "Changelog for [Project Name]",
     "description": "A brief overview of the updates, including new features, bug fixes, and other changes."
   }
