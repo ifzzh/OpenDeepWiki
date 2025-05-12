@@ -16,6 +16,8 @@ public class WarehouseTask(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // 读取现有的仓库
+        await Task.Delay(1000, stoppingToken);
+
 
         await using (var scope = service.CreateAsyncScope())
         {
@@ -44,7 +46,7 @@ public class WarehouseTask(
             {
                 // 先拉取仓库
                 logger.LogInformation("开始拉取仓库：{Address}", value.Address);
-                var info = GitService.PullRepository(value.Address, value?.GitUserName ?? string.Empty,
+                var info = GitService.CloneRepository(value.Address, value?.GitUserName ?? string.Empty,
                     value?.GitPassword ?? string.Empty, value?.Branch);
 
                 logger.LogInformation("仓库拉取完成：{RepositoryName}, 分支：{BranchName}", info.RepositoryName, info.BranchName);

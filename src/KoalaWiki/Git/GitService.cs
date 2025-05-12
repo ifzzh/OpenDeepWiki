@@ -19,11 +19,78 @@ public class GitService
         return (repositoryPath, organization);
     }
 
+    public static List<Commit> PullRepository(
+        [Description("仓库地址")] string repositoryUrl,
+        string commitId,
+        string userName = "",
+        string password = "")
+    {
+        var (localPath, organization) = GetRepositoryPath(repositoryUrl);
+        var pullOptions = new PullOptions
+        {
+            FetchOptions = new FetchOptions()
+            {
+                CertificateCheck = (_, _, _) => true,
+                CredentialsProvider = (_url, _user, _cred) =>
+                    new UsernamePasswordCredentials
+                    {
+                        Username = userName,
+                        Password = password
+                    }
+            }
+        };
+        
+        // 先克隆
+        if (!Directory.Exists(localPath))
+        {
+            var cloneOptions = new CloneOptions
+            {
+                FetchOptions =
+                {
+                    CertificateCheck = (_, _, _) => true,
+                    CredentialsProvider = (_url, _user, _cred) =>
+                        new UsernamePasswordCredentials
+                        {
+                            Username = userName,
+                            Password = password
+                        }
+                }
+            };
+            Repository.Clone(repositoryUrl, localPath, cloneOptions);
+        }
+
+        // pull仓库
+        using var repo = new Repository(localPath);
+        
+        var result = Commands.Pull(repo, new Signature("KoalaWiki", "239573049@qq.com", DateTimeOffset.Now),
+            pullOptions);
+        
+        // commitId是上次提交id，根据commitId获取到到现在的所有提交记录
+        if (!string.IsNullOrEmpty(commitId))
+        {
+            var commit = repo.Lookup<Commit>(commitId);
+            if (commit != null)
+            {
+                // 获取从指定commitId到HEAD的所有提交记录
+                var filter = new CommitFilter
+                {
+                    IncludeReachableFrom = repo.Head.Tip,
+                    ExcludeReachableFrom = commit,
+                    SortBy = CommitSortStrategies.Time
+                };
+                var commits = repo.Commits.QueryBy(filter).ToList();
+                return commits;
+            }
+        }
+
+        return [];
+    }
+
     /// <summary>
     /// 拉取指定仓库
     /// </summary>
     /// <returns></returns>
-    public static GitRepositoryInfo PullRepository(
+    public static GitRepositoryInfo CloneRepository(
         [Description("仓库地址")] string repositoryUrl,
         string userName = "",
         string password = "",

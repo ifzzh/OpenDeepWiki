@@ -89,6 +89,8 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
 
             builder.HasIndex(x => x.DucumentId);
 
+            builder.HasIndex(x => x.IsDeleted);
+
             builder.Property(x => x.DependentFile)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),

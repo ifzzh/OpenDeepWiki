@@ -5,8 +5,11 @@ import remarkMath from 'remark-math';
 import rehypeSlug from 'rehype-slug';
 import rehypeKatex from 'rehype-katex';
 
-import React, { ReactNode, useEffect, useRef } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { Markdown, Mermaid } from '@lobehub/ui';
+import { markdownElements } from './MarkdownElements';
+import { Alert } from 'antd';
+import RenderThinking from './Component';
 
 interface DocumentContentProps {
   document: any;
@@ -22,6 +25,8 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
   token
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
+  const [processedContent, setProcessedContent] = useState<string>('');
+  const [thinkingContents, setThinkingContents] = useState<string[]>([]);
 
   // 添加处理代码块的功能
   useEffect(() => {
@@ -32,9 +37,31 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
     });
   }, [document?.content]);
 
-  const customRender = (node: any) => {
-    return node;
-  };
+  // 提取和处理 antThinking 标签内容
+  useEffect(() => {
+    if (document?.content) {
+      const content = document.content;
+      const thinkingRegex = /<antThinking\b[^>]*>([\S\s]*?)(?:<\/antThinking>|$)/g;
+      const thinking: string[] = [];
+      
+      // 提取所有 antThinking 标签内容并保存
+      let match;
+      while ((match = thinkingRegex.exec(content)) !== null) {
+        thinking.push(match[1] || '');
+      }
+      
+      // 移除所有 antThinking 标签
+      const cleanedContent = content.replace(/<antThinking\b[^>]*>[\S\s]*?(?:<\/antThinking>|$)/g, '');
+      
+      setProcessedContent(cleanedContent);
+      setThinkingContents(thinking);
+    }
+  }, [document?.content]);
+
+  const rehypePlugins = markdownElements.map((element) => element.rehypePlugin);
+  const components = Object.fromEntries(
+    markdownElements.map((element) => [element.tag, element.Component]),
+  );
 
   return (
     <div ref={contentRef} style={{
@@ -43,24 +70,26 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
       borderRadius: '0px',
       color: token.colorText
     }}>
+      {/* 渲染提取出的 antThinking 内容 */}
+      {thinkingContents.map((content, index) => (
+        <RenderThinking key={`thinking-${index}`}>
+          {content}
+        </RenderThinking>
+      ))}
+      
       <div className="markdown-content">
         <Markdown
-          enableImageGallery
-          enableLatex
-          enableMermaid
-          enableCustomFootnotes
-          allowHtml
-          componentProps={{
-            mermaid: {
-              fullFeatured: true,
-            }
-          }}
-          customRender={customRender}
+          variant='chat'
           title={document?.title}
           remarkPlugins={[remarkGfm, remarkToc, remarkMath]}
-          rehypePlugins={[rehypeRaw, rehypeSlug, rehypeKatex]}
+          rehypePlugins={[
+            ...rehypePlugins,
+            rehypeRaw,
+            rehypeSlug,
+            rehypeKatex,
+          ]}
         >
-          {document?.content || ''}
+          {processedContent}
         </Markdown>
       </div>
 
@@ -195,6 +224,13 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
         .markdown-content h2 + p,
         .markdown-content h3 + p {
           margin-top: 16px;
+        }
+
+        /* AntThinking 内容样式 */
+        .ant-thinking-content {
+          white-space: pre-wrap;
+          font-size: 14px;
+          line-height: 1.6;
         }
       `}</style>
     </div>

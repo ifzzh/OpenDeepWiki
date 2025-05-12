@@ -77,6 +77,7 @@ services:
       - MODEL_PROVIDER=OpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
+      - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
 ```
 
 AzureOpenAI
@@ -95,6 +96,7 @@ services:
       - MODEL_PROVIDER=AzureOpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
+      - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
 ```
 
 Anthropic
@@ -113,6 +115,7 @@ services:
       - MODEL_PROVIDER=Anthropic # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
+      - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
 ```
 
 
@@ -217,6 +220,7 @@ graph TD
   - DB_CONNECTION_STRING  数据库连接字符串
   - MODEL_PROVIDER  模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
   - EnableSmartFilter 是否启用智能过滤，这可能影响AI得到仓库的文件目录
+  - UPDATE_INTERVAL 仓库增量更新间隔，单位天
 
 ### 针对不同架构的构建
 Makefile提供了针对不同CPU架构构建的命令：

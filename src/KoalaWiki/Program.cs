@@ -4,6 +4,7 @@ using KoalaWiki.Git;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.MCP;
 using KoalaWiki.Options;
+using KoalaWiki.WarehouseProcessing;
 using Mapster;
 using Scalar.AspNetCore;
 using Serilog;
@@ -45,6 +46,7 @@ builder.Services
     });
 
 builder.Services.AddHostedService<WarehouseTask>();
+builder.Services.AddHostedService<WarehouseProcessingTask>();
 
 builder.Services.AddDbContext(builder.Configuration);
 

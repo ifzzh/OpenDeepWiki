@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
-using KoalaWiki.Tools;
+using KoalaWiki.MCP.Tools;
 using ModelContextProtocol.Protocol.Types;
 using Serilog;
 
