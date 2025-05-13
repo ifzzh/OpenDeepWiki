@@ -34,6 +34,7 @@ builder.Services.WithFast();
 builder.Services.AddSingleton<WarehouseStore>();
 builder.Services.AddSingleton<GitService>();
 builder.Services.AddSingleton<DocumentsService>();
+builder.Services.AddSingleton<GlobalMiddleware>();
 
 builder.Services
     .AddCors(options =>
@@ -61,6 +62,9 @@ using (var scope = app.Services.CreateScope())
     await dbContext.RunMigrateAsync();
 }
 
+// 添加中间件
+app.UseSerilogRequestLogging();
+
 app.UseCors("AllowAll");
 if (app.Environment.IsDevelopment())
 {
@@ -69,6 +73,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapMcp("/api");
+
+app.UseMiddleware<GlobalMiddleware>();
+
 app.MapSitemap();
 
 app.MapFast();

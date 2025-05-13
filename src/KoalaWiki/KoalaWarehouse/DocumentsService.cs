@@ -202,7 +202,7 @@ public partial class DocumentsService
                 })
             {
                 ["catalogue"] = catalogue,
-                ["git_repository"] = warehouse.Address.Replace(".git",""),
+                ["git_repository"] = warehouse.Address.Replace(".git", ""),
                 ["branch"] = warehouse.Branch
             });
 
@@ -319,31 +319,34 @@ public partial class DocumentsService
 
         await HandlePendingDocumentsAsync(documents, fileKernel, catalogue, gitRepository, warehouse, path, dbContext);
 
-        await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
-            .ExecuteDeleteAsync();
-
-        // 开始生成
-        var committer = await GenerateUpdateLogAsync(document.GitPath, readme,
-            warehouse.Address,
-            warehouse.Branch,
-            kernel);
-
-        var record = committer.Select(x => new DocumentCommitRecord()
+        if (warehouse.Type.Equals("git", StringComparison.CurrentCultureIgnoreCase))
         {
-            WarehouseId = warehouse.Id,
-            CreatedAt = DateTime.Now,
-            Author = string.Empty,
-            Id = Guid.NewGuid().ToString("N"),
-            CommitMessage = x.description,
-            Title = x.title,
-            LastUpdate = x.date,
-        });
+            await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
+                .ExecuteDeleteAsync();
 
-        // 如果重新生成则需要清空之前记录
-        await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
-            .ExecuteDeleteAsync();
+            // 开始生成
+            var committer = await GenerateUpdateLogAsync(document.GitPath, readme,
+                warehouse.Address,
+                warehouse.Branch,
+                kernel);
 
-        await dbContext.DocumentCommitRecords.AddRangeAsync(record);
+            var record = committer.Select(x => new DocumentCommitRecord()
+            {
+                WarehouseId = warehouse.Id,
+                CreatedAt = DateTime.Now,
+                Author = string.Empty,
+                Id = Guid.NewGuid().ToString("N"),
+                CommitMessage = x.description,
+                Title = x.title,
+                LastUpdate = x.date,
+            });
+
+            // 如果重新生成则需要清空之前记录
+            await dbContext.DocumentCommitRecords.Where(x => x.WarehouseId == warehouse.Id)
+                .ExecuteDeleteAsync();
+
+            await dbContext.DocumentCommitRecords.AddRangeAsync(record);
+        }
     }
 
     /// <summary>
@@ -433,7 +436,8 @@ public partial class DocumentsService
 
                 // 只需要删除[]里面的(和)，它可能单独处理
                 var codeWithoutBrackets =
-                    Regex.Replace(code, @"\[[^\]]*\]", m => m.Value.Replace("(", "").Replace(")", "").Replace("（", "").Replace("）", ""));
+                    Regex.Replace(code, @"\[[^\]]*\]",
+                        m => m.Value.Replace("(", "").Replace(")", "").Replace("（", "").Replace("）", ""));
                 // 然后替换原有内容
                 fileItem.Content = fileItem.Content.Replace(match.Value, $"```mermaid\n{codeWithoutBrackets}```");
             }
@@ -504,7 +508,7 @@ public partial class DocumentsService
         history.AddUserMessage(Prompt.GenerateDocs
             .Replace("{{catalogue}}", catalogue)
             .Replace("{{prompt}}", catalog.Prompt)
-            .Replace("{{git_repository}}", gitRepository.Replace(".git",""))
+            .Replace("{{git_repository}}", gitRepository.Replace(".git", ""))
             .Replace("{{branch}}", branch)
             .Replace("{{title}}", catalog.Name));
 

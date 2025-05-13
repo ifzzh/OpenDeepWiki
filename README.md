@@ -75,6 +75,7 @@ services:
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
       - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
+      - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
 ```
 
 AzureOpenAI:
@@ -94,6 +95,7 @@ services:
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
       - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
+      - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
 ```
 
 Anthropic:
@@ -113,6 +115,7 @@ services:
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
       - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
+      - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
 ```
 
 > 💡 **How to get an API Key:**
@@ -217,6 +220,7 @@ graph TD
   - DB_CONNECTION_STRING  Database connection string
   - EnableSmartFilter Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
   - UPDATE_INTERVAL Warehouse increment update interval, unit: days
+  - PARALLEL_COUNT The warehouse processes the quantity in parallel
 
 ### Build for Different Architectures
 The Makefile provides commands to build for different CPU architectures:

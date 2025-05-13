@@ -68,6 +68,7 @@ export async function documentCatalog(organizationName: string, name: string): P
  * 此函数可在服务器组件中使用
  */
 export async function documentById(owner: string, name: string, path: string): Promise<any> {
+  console.log(owner, name, path);
   // @ts-ignore
   return fetchApi<any>(API_URL + '/api/DocumentCatalog/DocumentById?owner=' + owner + '&name=' + name + '&path=' + path, {
     method: 'GET',
@@ -128,3 +129,20 @@ export async function getFileContent(warehouseId: string, path: string) {
     cache: 'no-cache'
   })
 }
+
+
+/**
+ * 获取仓库的文件列表
+ * 此函数可在服务器组件中使用
+ * organization
+ * repositoryName
+ * file
+ */
+export async function UploadAndSubmitWarehouse(formData: FormData) {
+  // 不要手动设置 Content-Type，让浏览器自动设置正确的 boundary
+  return fetchApi<any>(API_URL + '/api/Warehouse/UploadAndSubmitWarehouse', {
+    method: 'POST',
+    body: formData,
+  })
+}
+

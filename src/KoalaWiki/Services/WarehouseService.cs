@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO.Compression;
+using System.Text;
 using FastService;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains;
@@ -85,6 +86,149 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
     }
 
     /// <summary>
+    /// 上传并且提交仓库
+    /// </summary>
+    public async Task UploadAndSubmitWarehouseAsync(HttpContext context)
+    {
+        // 获取文件
+        var file = context.Request.Form.Files["file"];
+        if (file == null)
+        {
+            context.Response.StatusCode = 400;
+            throw new Exception("没有文件上传");
+        }
+
+        // 只支持压缩包.zip 或gzip 
+        if (!file.FileName.EndsWith(".zip") && !file.FileName.EndsWith(".gz") && !file.FileName.EndsWith(".tar") &&
+            !file.FileName.EndsWith(".br"))
+        {
+            context.Response.StatusCode = 400;
+            throw new Exception("只支持zip，gz，tar，br格式的文件");
+        }
+
+        var organization = context.Request.Form["organization"].ToString();
+        var repositoryName = context.Request.Form["repositoryName"].ToString();
+
+        // 后缀名
+        var suffix = file.FileName.Split('.').Last();
+
+        var fileInfo = new FileInfo(Path.Combine(Constant.GitPath, organization, repositoryName + "." + suffix));
+
+        if (fileInfo.Directory?.Exists == false)
+        {
+            fileInfo.Directory.Create();
+        }
+
+        await using (var stream = new FileStream(fileInfo.FullName, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var name = fileInfo.FullName.Replace(".zip", "")
+            .Replace(".gz", "")
+            .Replace(".tar", "")
+            .Replace(".br", "");
+        // 解压文件，根据后缀名判断解压方式
+        if (file.FileName.EndsWith(".zip"))
+        {
+            // 解压
+            var zipPath = fileInfo.FullName.Replace(".zip", "");
+            ZipFile.ExtractToDirectory(fileInfo.FullName, zipPath, true);
+            
+        }
+        else if (file.FileName.EndsWith(".gz"))
+        {
+            using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
+            await using (var outputStream = new FileStream(name, FileMode.Create))
+            await using (var decompressionStream = new GZipStream(inputStream, CompressionMode.Decompress))
+            {
+                await decompressionStream.CopyToAsync(outputStream);
+            }
+        }
+        else if (file.FileName.EndsWith(".tar"))
+        {
+            using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
+            await using (var outputStream = new FileStream(name, FileMode.Create))
+            await using (var decompressionStream = new GZipStream(inputStream, CompressionMode.Decompress))
+            {
+                await decompressionStream.CopyToAsync(outputStream);
+            }
+        }
+        else if (file.FileName.EndsWith(".br"))
+        {
+            await using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
+            await using var outputStream = new FileStream(name, FileMode.Create);
+            await using var decompressionStream = new BrotliStream(inputStream, CompressionMode.Decompress);
+            await decompressionStream.CopyToAsync(outputStream);
+        }
+        
+        
+        // 如果解压以后目录下只有一个文件夹，那么就将这个文件夹的内容移动到上级目录
+        var directory = new DirectoryInfo(name);
+        if (directory.Exists)
+        {
+            var directories = directory.GetDirectories();
+            if (directories.Length == 1)
+            {
+                var subDirectory = directories[0];
+                foreach (var fileInfo1 in subDirectory.GetFiles())
+                {
+                    fileInfo1.MoveTo(Path.Combine(directory.FullName, fileInfo1.Name));
+                }
+
+                foreach (var directoryInfo in subDirectory.GetDirectories())
+                {
+                    directoryInfo.MoveTo(Path.Combine(directory.FullName, directoryInfo.Name));
+                }
+
+                subDirectory.Delete(true);
+            }
+        }
+
+        var value = await access.Warehouses.FirstOrDefaultAsync(x =>
+            x.OrganizationName == organization && x.Name == repositoryName);
+        // 判断这个仓库是否已经添加
+        if (value?.Status is WarehouseStatus.Completed or WarehouseStatus.Pending or WarehouseStatus.Processing)
+
+        {
+            throw new Exception("存在相同名称的渠道");
+        }
+
+        // 删除旧的仓库
+        var oldWarehouse = await access.Warehouses
+            .Where(x => x.OrganizationName == organization && x.Name == repositoryName)
+            .ExecuteDeleteAsync();
+
+        var entity = new Warehouse
+        {
+            OrganizationName = organization,
+            Name = repositoryName,
+            Address = name,
+            Description = string.Empty,
+            Version = string.Empty,
+            Error = string.Empty,
+            Prompt = string.Empty,
+            Branch = string.Empty,
+            Type = "file",
+            CreatedAt = DateTime.UtcNow,
+            OptimizedDirectoryStructure = string.Empty,
+            Id = Guid.NewGuid().ToString()
+        };
+
+        await access.Warehouses.AddAsync(entity);
+
+        await access.SaveChangesAsync();
+
+        await warehouseStore.WriteAsync(entity);
+
+        await context.Response.WriteAsJsonAsync(new
+        {
+            code = 200,
+            message = "提交成功"
+        });
+    }
+
+    /// <summary>
     /// 提交仓库
     /// </summary>
     public async Task SubmitWarehouseAsync(WarehouseInput input, HttpContext context)
@@ -96,7 +240,8 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
                 input.Address += ".git";
             }
 
-            var value = await access.Warehouses.FirstOrDefaultAsync(x =>  x.Address.ToLower() == input.Address.ToLower());
+            var value = await access.Warehouses.FirstOrDefaultAsync(x =>
+                x.Address.ToLower() == input.Address.ToLower());
             // 判断这个仓库是否已经添加
             if (value?.Status is WarehouseStatus.Completed or WarehouseStatus.Pending or WarehouseStatus.Processing)
 

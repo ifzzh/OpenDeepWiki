@@ -21,6 +21,7 @@ export interface Repository {
   createdAt: string;
   updatedAt?: string;
   error?:string;
+  organizationName: string;
 }
 
 export interface RepositoryFormValues {
