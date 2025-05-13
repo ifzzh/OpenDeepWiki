@@ -1,5 +1,6 @@
 using KoalaWiki.Provider.PostgreSQL;
 using KoalaWiki.Provider.Sqlite;
+using KoalaWiki.Provider.SqlServer;
 
 namespace KoalaWiki.Extensions;
 
@@ -8,17 +9,23 @@ public static class DbContextExtensions
     public static IServiceCollection AddDbContext(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var dbType = Environment.GetEnvironmentVariable("DB_TYPE").GetTrimmedValueOrEmpty();
-        var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING").GetTrimmedValueOrEmpty();
+        //var dbType = Environment.GetEnvironmentVariable("DB_TYPE").GetTrimmedValueOrEmpty();
+        //var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING").GetTrimmedValueOrEmpty();
+        var dbType = configuration.GetValue<string>("DB_TYPE").GetTrimmedValueOrEmpty();
+        var dbConnectionString = configuration.GetValue<string>("DB_CONNECTION_STRING").GetTrimmedValueOrEmpty();
 
         if (string.IsNullOrEmpty(dbType) || string.IsNullOrEmpty(dbConnectionString))
         {
-            if (configuration.GetConnectionString("type")?.Equals("postgres", StringComparison.OrdinalIgnoreCase) ==
-                true)
+            var dbTypeFromConfig = configuration.GetConnectionString("type")?.ToLower();
+            if (dbTypeFromConfig == "postgres")
             {
                 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
                 AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
                 services.AddPostgreSQLDbContext(configuration);
+            }
+            else if (dbTypeFromConfig == "sqlserver")
+            {
+                services.AddSqlServerDbContext(configuration);
             }
             else
             {
@@ -33,6 +40,10 @@ public static class DbContextExtensions
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
             AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
             services.AddPostgreSQLDbContext(dbConnectionString);
+        }
+        else if (dbType.Equals("sqlserver", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddSqlServerDbContext(dbConnectionString);
         }
         else
         {
