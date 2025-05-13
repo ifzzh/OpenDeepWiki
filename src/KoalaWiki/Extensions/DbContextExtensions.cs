@@ -9,10 +9,8 @@ public static class DbContextExtensions
     public static IServiceCollection AddDbContext(this IServiceCollection services,
         IConfiguration configuration)
     {
-        //var dbType = Environment.GetEnvironmentVariable("DB_TYPE").GetTrimmedValueOrEmpty();
-        //var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING").GetTrimmedValueOrEmpty();
-        var dbType = configuration.GetValue<string>("DB_TYPE").GetTrimmedValueOrEmpty();
-        var dbConnectionString = configuration.GetValue<string>("DB_CONNECTION_STRING").GetTrimmedValueOrEmpty();
+        var dbType = Environment.GetEnvironmentVariable("DB_TYPE").GetTrimmedValueOrEmpty();
+        var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING").GetTrimmedValueOrEmpty();
 
         if (string.IsNullOrEmpty(dbType) || string.IsNullOrEmpty(dbConnectionString))
         {
