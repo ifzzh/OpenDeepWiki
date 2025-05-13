@@ -135,13 +135,11 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
       
       return (
         <Card 
-          bordered={false}
           style={{ 
             marginTop: token.marginLG,
             boxShadow: token.boxShadowTertiary,
             borderRadius: token.borderRadiusLG
           }}
-          bodyStyle={{ padding: 0 }}
         >
           <div style={{ 
             padding: `${token.paddingMD}px ${token.paddingLG}px`,
@@ -238,7 +236,6 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
       width={{ xs: '95%', sm: 600, md: 700 }}
       centered
       destroyOnClose
-      bodyStyle={{ padding: token.paddingLG }}
       style={{ top: 20 }}
     >
       <Form 

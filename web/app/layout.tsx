@@ -87,18 +87,6 @@ export default function RootLayout({
         </Script>
       </head>
       <body >
-        <Script id="api-url"
-          type="text/javascript"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              console.log('API_URL', '${apiUrl}');
-              window.API_URL = '${apiUrl}';
-              `
-          }}
-        />
-
-
         <AntdRegistry>
           <ConfigProvider
             locale={zhCN}
