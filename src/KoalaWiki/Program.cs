@@ -61,6 +61,9 @@ using (var scope = app.Services.CreateScope())
     await dbContext.RunMigrateAsync();
 }
 
+// 添加中间件
+app.UseSerilogRequestLogging();
+
 app.UseCors("AllowAll");
 if (app.Environment.IsDevelopment())
 {
