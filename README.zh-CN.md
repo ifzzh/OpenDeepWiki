@@ -72,7 +72,7 @@ services:
       - ANALYSIS_MODEL=DeepSeek-V3 # 分析模型，用于生成仓库目录结构
       - CHAT_API_KEY= # 您GiteeAI的APIkey
       - LANGUAGE= # 设置生成语言默认为"中文"
-      - ENDPOINT=https://api.token-ai.cn/v1
+      - ENDPOINT=https://ai.gitee.com/v1
       - DB_TYPE=sqlite
       - MODEL_PROVIDER=OpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
