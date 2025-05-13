@@ -91,7 +91,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
     public async Task UploadAndSubmitWarehouseAsync(HttpContext context)
     {
         // 获取文件
-        var file = context.Request.Form.Files.FirstOrDefault();
+        var file = context.Request.Form.Files["file"];
         if (file == null)
         {
             context.Response.StatusCode = 400;
@@ -106,10 +106,13 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             throw new Exception("只支持zip，gz，tar，br格式的文件");
         }
 
-        var organization = context.Request.Form["organization"];
-        var repositoryName = context.Request.Form["repositoryName"];
+        var organization = context.Request.Form["organization"].ToString();
+        var repositoryName = context.Request.Form["repositoryName"].ToString();
 
-        var fileInfo = new FileInfo(Path.Combine(Constant.GitPath, organization, repositoryName));
+        // 后缀名
+        var suffix = file.FileName.Split('.').Last();
+
+        var fileInfo = new FileInfo(Path.Combine(Constant.GitPath, organization, repositoryName + "." + suffix));
 
         if (fileInfo.Directory?.Exists == false)
         {
@@ -126,13 +129,14 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             .Replace(".tar", "")
             .Replace(".br", "");
         // 解压文件，根据后缀名判断解压方式
-        if (fileInfo.FullName.EndsWith(".zip"))
+        if (file.FileName.EndsWith(".zip"))
         {
             // 解压
             var zipPath = fileInfo.FullName.Replace(".zip", "");
             ZipFile.ExtractToDirectory(fileInfo.FullName, zipPath, true);
+            
         }
-        else if (fileInfo.FullName.EndsWith(".gz"))
+        else if (file.FileName.EndsWith(".gz"))
         {
             using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
             await using (var outputStream = new FileStream(name, FileMode.Create))
@@ -141,7 +145,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
                 await decompressionStream.CopyToAsync(outputStream);
             }
         }
-        else if (fileInfo.FullName.EndsWith(".tar"))
+        else if (file.FileName.EndsWith(".tar"))
         {
             using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
             await using (var outputStream = new FileStream(name, FileMode.Create))
@@ -150,14 +154,36 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
                 await decompressionStream.CopyToAsync(outputStream);
             }
         }
-        else if (fileInfo.FullName.EndsWith(".br"))
+        else if (file.FileName.EndsWith(".br"))
         {
             await using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
             await using var outputStream = new FileStream(name, FileMode.Create);
             await using var decompressionStream = new BrotliStream(inputStream, CompressionMode.Decompress);
             await decompressionStream.CopyToAsync(outputStream);
         }
+        
+        
+        // 如果解压以后目录下只有一个文件夹，那么就将这个文件夹的内容移动到上级目录
+        var directory = new DirectoryInfo(name);
+        if (directory.Exists)
+        {
+            var directories = directory.GetDirectories();
+            if (directories.Length == 1)
+            {
+                var subDirectory = directories[0];
+                foreach (var fileInfo1 in subDirectory.GetFiles())
+                {
+                    fileInfo1.MoveTo(Path.Combine(directory.FullName, fileInfo1.Name));
+                }
 
+                foreach (var directoryInfo in subDirectory.GetDirectories())
+                {
+                    directoryInfo.MoveTo(Path.Combine(directory.FullName, directoryInfo.Name));
+                }
+
+                subDirectory.Delete(true);
+            }
+        }
 
         var value = await access.Warehouses.FirstOrDefaultAsync(x =>
             x.OrganizationName == organization && x.Name == repositoryName);
@@ -167,7 +193,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         {
             throw new Exception("存在相同名称的渠道");
         }
-        
+
         // 删除旧的仓库
         var oldWarehouse = await access.Warehouses
             .Where(x => x.OrganizationName == organization && x.Name == repositoryName)
@@ -188,7 +214,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             OptimizedDirectoryStructure = string.Empty,
             Id = Guid.NewGuid().ToString()
         };
-        
+
         await access.Warehouses.AddAsync(entity);
 
         await access.SaveChangesAsync();

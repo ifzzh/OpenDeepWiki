@@ -68,25 +68,6 @@ const AIInputBar: React.FC<AIInputBarProps> = ({ owner, name, style }) => {
     // 深入推理开关的标签
     const researchLabel = screens.sm ? '深入推理' : '';
 
-    // 悬浮球样式
-    const floatingBallStyle = {
-        width: '45px',
-        height: '45px',
-        borderRadius: '50%',
-        bottom: 24,
-        backgroundColor: token.colorPrimary,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: `0px 2px 8px rgba(0, 0, 0, 0.15)`,
-        cursor: 'pointer',
-        color: token.colorTextLightSolid,
-        transition: `all ${token.motionDurationMid}`,
-        position: 'absolute' as const,
-        right: '0',
-        transform: collapsed ? 'translateX(70%)' : 'translateX(0)',
-    };
-
     // 展开状态的容器样式
     const expandedContainerStyle = {
         padding: token.paddingSM,
@@ -106,99 +87,81 @@ const AIInputBar: React.FC<AIInputBarProps> = ({ owner, name, style }) => {
             zIndex: 1000,
             ...style
         }}>
-            {collapsed ? (
-                <Tooltip title="打开AI助手" placement="left">
-                    <div
-                        style={floatingBallStyle}
-                        onClick={toggleCollapse}
-                    >
-                        <OpenAILogo style={{ color: 'white' }} />
-                    </div>
-                </Tooltip>
-            ) : (
-                <div style={expandedContainerStyle}>
-                    <Flex
-                        align="center"
-                        justify="space-between"
-                        style={{ marginBottom: token.marginXS }}
-                    >
-                        <span style={{ fontSize: token.fontSizeSM, fontWeight: 'bold' }}></span>
-                        <Button
-                            type="text"
-                            icon={<UpOutlined />}
+        <div style={expandedContainerStyle}>
+            <Flex
+                align="center"
+                justify="space-between"
+                style={{ marginBottom: token.marginXS }}
+            >
+                <span style={{ fontSize: token.fontSizeSM, fontWeight: 'bold' }}></span>
+            </Flex>
+            <Flex
+                align="center"
+                justify="center"
+                style={{
+                    margin: '0 auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Input.TextArea
+                    ref={inputRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="输入问题..."
+                    autoSize={{ minRows: 1, maxRows: 4 }}
+                    disabled={isLoading}
+                    style={{
+                        marginBottom: '10px',
+                        resize: 'none',
+                        outline: 'none',
+                        border: 'none',
+                        boxShadow: 'none',
+                        width: '100%'
+                    }}
+                />
+
+                <Space
+                    style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                    }}
+                >
+                    <Flex>
+                        <Switch
                             size="small"
-                            onClick={toggleCollapse}
-                            title="收起"
-                        />
-                    </Flex>
-                    <Flex
-                        align="center"
-                        justify="center"
-                        style={{
-                            margin: '0 auto',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <Input.TextArea
-                            ref={inputRef}
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="输入问题..."
-                            autoSize={{ minRows: 1, maxRows: 4 }}
+                            checked={deepResearch}
+                            onChange={setDeepResearch}
                             disabled={isLoading}
-                            style={{
-                                marginBottom: '10px',
-                                resize: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                boxShadow: 'none',
-                                width: '100%'
-                            }}
+                            style={{ marginRight: researchLabel ? token.marginXS : 0 }}
                         />
-
-                        <Space
-                            style={{
-                                width: '100%',
-                                display: 'flex',
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                            }}
-                        >
-                            <Flex>
-                                <Switch
-                                    size="small"
-                                    checked={deepResearch}
-                                    onChange={setDeepResearch}
-                                    disabled={isLoading}
-                                    style={{ marginRight: researchLabel ? token.marginXS : 0 }}
-                                />
-                                {researchLabel && (
-                                    <span style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap' }}>
-                                        {researchLabel}
-                                    </span>
-                                )}
-                            </Flex>
-
-                            <Button
-                                type="primary"
-                                icon={isLoading ? <LoadingOutlined /> : <SendOutlined />}
-                                onClick={handleSend}
-                                shape="circle"
-                                size="large"
-                                disabled={isLoading || !inputValue.trim()}
-                                style={{
-                                    transition: `all ${token.motionDurationMid}`,
-                                }}
-                            />
-                        </Space>
+                        {researchLabel && (
+                            <span style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap' }}>
+                                {researchLabel}
+                            </span>
+                        )}
                     </Flex>
-                </div>
-            )}
+
+                    <Button
+                        type="primary"
+                        icon={isLoading ? <LoadingOutlined /> : <SendOutlined />}
+                        onClick={handleSend}
+                        shape="circle"
+                        size="large"
+                        disabled={isLoading || !inputValue.trim()}
+                        style={{
+                            transition: `all ${token.motionDurationMid}`,
+                        }}
+                    />
+                </Space>
+            </Flex>
+        </div>
         </div>
     );
 };

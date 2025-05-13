@@ -317,10 +317,6 @@ a {
   transition: all 0.3s;
 }
 
-.markdown-content pre:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 .markdown-content pre code {
   background-color: transparent;
   padding: 0;

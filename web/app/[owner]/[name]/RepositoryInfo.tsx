@@ -122,7 +122,9 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
         ) : error ? (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <ExclamationCircleOutlined style={{ fontSize: '48px', color: token.colorError, marginBottom: '16px' }} />
-            <Title level={4} style={{ marginBottom: '16px' }}>仓库未索引</Title>
+            <Title level={4} style={{ marginBottom: '16px' }}>
+              仓库未索引 如果已经添加成功可能需要等待一段时间。
+            </Title>
             <Paragraph type="secondary">
               {`${owner}/${name} ${error}`}
             </Paragraph>

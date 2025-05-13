@@ -39,15 +39,14 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
     } catch (e) {
       // 如果解析失败，返回默认值
     }
-    return { owner: '', name: repository.name };
+    return { owner: repository.organizationName, name: repository.name };
   };
 
-  const repoInfo = getRepoInfo(repository.address);
 
   // 根据地址获取头像
   const getAvatarUrl = () => {
     if (repository.address.includes('github.com')) {
-      const owner = repoInfo.owner;
+      const owner = repository.organizationName;
       if (owner) {
         return `https://github.com/${owner}.png`;
       }
@@ -88,7 +87,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
   };
 
   return (
-    <Link href={`/${repoInfo.owner}/${repoInfo.name}`} className="repo-card-link">
+    <Link href={`/${repository.organizationName}/${repository.name}`} className="repo-card-link">
       <Badge.Ribbon
         style={{
           display: repository.isRecommended ? 'block' : 'none',
@@ -105,7 +104,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
                 <img
                   src={avatarUrl}
                   loading="lazy"
-                  alt={repoInfo.owner}
+                  alt={repository.organizationName}
                   className="repo-avatar"
                 />
               ) : (

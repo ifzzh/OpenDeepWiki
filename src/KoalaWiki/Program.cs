@@ -34,6 +34,7 @@ builder.Services.WithFast();
 builder.Services.AddSingleton<WarehouseStore>();
 builder.Services.AddSingleton<GitService>();
 builder.Services.AddSingleton<DocumentsService>();
+builder.Services.AddSingleton<GlobalMiddleware>();
 
 builder.Services
     .AddCors(options =>
@@ -72,6 +73,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapMcp("/api");
+
+app.UseMiddleware<GlobalMiddleware>();
+
 app.MapSitemap();
 
 app.MapFast();

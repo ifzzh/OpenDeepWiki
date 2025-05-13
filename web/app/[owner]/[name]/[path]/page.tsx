@@ -31,7 +31,6 @@ export default function DocumentPage() {
   const [headings, setHeadings] = useState<{key: string, title: string, level: number, id: string}[]>([]);
   const { token } = useToken();
 
-  
   // 生成目录锚点项
   const anchorItems = useMemo(() => {
     return createAnchorItems(headings);
@@ -48,8 +47,8 @@ export default function DocumentPage() {
     const fetchDocument = async () => {
       try {
         setLoading(true);
-
         const response = await documentById(owner as string, name as string, path as string);
+        console.log(response, owner, name, path);
         if (response.isSuccess && response.data) {
           setDocument(response.data);
           // 提取标题作为目录

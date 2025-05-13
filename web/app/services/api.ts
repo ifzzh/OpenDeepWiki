@@ -53,13 +53,23 @@ async function clientFetchApi<T>(
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
   try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-    });
+    let response;
+    if (options?.body instanceof FormData) {
+      response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options?.headers,
+        },
+      });
+    } else {
+      response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'Content-Type': 'application/json',
+        },
+      });
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -122,7 +132,7 @@ async function* fetchSSE(url: string, data: any): AsyncIterableIterator<any> {
       const json = JSON.parse(errorText);
       if (!json.success) {
         console.log(json);
-        
+
       }
       throw new Error(json.message || 'API请求失败');
     } catch {
@@ -160,5 +170,5 @@ async function* fetchSSE(url: string, data: any): AsyncIterableIterator<any> {
 }
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '';
 
-export { fetchApi, serverFetchApi, clientFetchApi, API_URL ,fetchSSE};
+export { fetchApi, serverFetchApi, clientFetchApi, API_URL, fetchSSE };
 export type { ApiResponse }; 
