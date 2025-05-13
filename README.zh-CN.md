@@ -69,8 +69,8 @@ services:
       - KOALAWIKI_REPOSITORIES=/repositories
       - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
       - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
-      - ANALYSIS_MODEL= # 分析模型，用于生成仓库目录结构
-      - CHAT_API_KEY= # 您的APIkey
+      - ANALYSIS_MODEL=DeepSeek-V3 # 分析模型，用于生成仓库目录结构
+      - CHAT_API_KEY= # 您GiteeAI的APIkey
       - LANGUAGE= # 设置生成语言默认为"中文"
       - ENDPOINT=https://api.token-ai.cn/v1
       - DB_TYPE=sqlite
