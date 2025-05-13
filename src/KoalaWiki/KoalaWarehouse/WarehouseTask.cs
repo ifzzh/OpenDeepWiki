@@ -87,23 +87,24 @@ public class WarehouseTask(
 
                 logger.LogInformation("数据库更改保存完成，开始处理文档。");
 
-                await documentsService.HandleAsync(document, value, dbContext, value.Address);
+                await documentsService.HandleAsync(document, value, dbContext,
+                    value.Address.Replace(".git", string.Empty));
 
-                logger.LogInformation("文档处理完成，文档ID：{Id}", document.Id);
+                logger.LogInformation("文档处理完成，仓库地址：{address}", value.Address);
 
                 // 更新仓库状态
                 await dbContext.Warehouses.Where(x => x.Id == value.Id)
                     .ExecuteUpdateAsync(x => x.SetProperty(a => a.Status, WarehouseStatus.Completed)
                         .SetProperty(x => x.Error, string.Empty), stoppingToken);
 
-                logger.LogInformation("更新仓库状态为完成，仓库ID：{Id}", value.Id);
+                logger.LogInformation("更新仓库状态为完成，仓库地址：{address}", value.Address);
 
                 // 提交更改
                 await dbContext.Documents.Where(x => x.Id == document.Id)
                     .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.UtcNow)
                         .SetProperty(a => a.Status, WarehouseStatus.Completed), stoppingToken);
 
-                logger.LogInformation("文档状态更新为完成，文档ID：{Id}", document.Id);
+                logger.LogInformation("文档状态更新为完成，仓库地址：{address}", value.Address);
             }
             catch (Exception e)
             {

@@ -462,7 +462,7 @@ public partial class DocumentsService
         var history = new ChatHistory();
 
         history.AddUserMessage(Prompt.Overview.Replace("{{catalogue}}", catalog)
-            .Replace("{{git_repository}}", gitRepository)
+            .Replace("{{git_repository}}", gitRepository.Replace(".git", ""))
             .Replace("{{readme}}", readme)
             .Replace("{{branch}}", branch));
 
