@@ -581,6 +581,8 @@ Wrap the analysis in the <think> tag Brief but containing the core points.    Co
         - Entity Relationship diagrams
         - State diagrams
 
+        mermaid syntax cannot provide () in []
+        
         Example Mermaid diagram (customize as needed):
 
         ```mermaid
@@ -750,7 +752,8 @@ Wrap the analysis in the <think> tag Brief but containing the core points.    Co
         ## Documentation Requirements
 
         Create a comprehensive project overview in Markdown format with the following structure:
-
+        mermaid syntax cannot provide () in []
+        
         1. **Project Introduction**
            - Purpose statement
            - Core goals and objectives

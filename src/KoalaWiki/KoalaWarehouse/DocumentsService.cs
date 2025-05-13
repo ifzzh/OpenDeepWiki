@@ -433,7 +433,7 @@ public partial class DocumentsService
 
                 // 只需要删除[]里面的(和)，它可能单独处理
                 var codeWithoutBrackets =
-                    Regex.Replace(code, @"\[[^\]]*\]", m => m.Value.Replace("(", "").Replace(")", ""));
+                    Regex.Replace(code, @"\[[^\]]*\]", m => m.Value.Replace("(", "").Replace(")", "").Replace("（", "").Replace("）", ""));
                 // 然后替换原有内容
                 fileItem.Content = fileItem.Content.Replace(match.Value, $"```mermaid\n{codeWithoutBrackets}```");
             }
@@ -504,7 +504,7 @@ public partial class DocumentsService
         history.AddUserMessage(Prompt.GenerateDocs
             .Replace("{{catalogue}}", catalogue)
             .Replace("{{prompt}}", catalog.Prompt)
-            .Replace("{{git_repository}}", gitRepository)
+            .Replace("{{git_repository}}", gitRepository.Replace(".git",""))
             .Replace("{{branch}}", branch)
             .Replace("{{title}}", catalog.Name));
 
