@@ -43,7 +43,7 @@ public static class MCPExtensions
                     [
                         new Tool()
                         {
-                            Name = "CodeRepositoryAnalyzer",
+                            Name = $"{owner}-{name}-CodeRepositoryAnalyzer",
                             Description =
                                 $"Generate detailed technical documentation for the {owner}/{name} GitHub repository based on user inquiries. Analyzes repository structure, code components, APIs, dependencies, and implementation patterns to create comprehensive developer documentation with troubleshooting guides, architecture explanations, customization options, and implementation insights.",
                             InputSchema =
@@ -54,7 +54,7 @@ public static class MCPExtensions
             }))
             .WithCallToolHandler((async (context, token) =>
             {
-                if (context.Params?.Name == "CodeRepositoryAnalyzer")
+                if (context.Params?.Name.EndsWith("CodeRepositoryAnalyzer") == true)
                 {
                     var warehouse = context.Services!.GetService<WarehouseTool>();
 
