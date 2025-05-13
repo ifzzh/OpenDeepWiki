@@ -96,10 +96,6 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
         </Button>,
       ]}
       width={500}
-      bodyStyle={{ 
-        padding: token.paddingLG,
-        backgroundColor: token.colorBgContainer 
-      }}
     >
       <Form
         form={form}

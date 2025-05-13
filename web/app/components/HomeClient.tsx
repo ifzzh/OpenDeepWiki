@@ -1,10 +1,12 @@
 'use client'
-import { useState } from 'react';
-import { Button, Typography, Layout, Space, Input, Empty, Card, Row, Col, Statistic, Tooltip, Pagination, message, ConfigProvider } from 'antd';
+import { useState, useEffect } from 'react';
+import { Button, Typography, Layout, Space, Input, Empty, Card, Row, Col, Statistic, Tooltip, Pagination, message, ConfigProvider, Badge, Divider, Avatar, Tag } from 'antd';
 import {
   PlusOutlined,
-  DatabaseOutlined,
   GithubOutlined,
+  FireOutlined,
+  SearchOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import RepositoryForm from './RepositoryForm';
 import RepositoryList from './RepositoryList';
@@ -16,55 +18,87 @@ import { createRoot } from 'react-dom/client';
 import { homepage } from '../const/urlconst';
 
 const { Content, Header, Footer } = Layout;
-const { Title, Paragraph, Text } = Typography;
+const { Title, Paragraph } = Typography;
 const { Search } = Input;
 
-// 自定义主题配置
+// 增强的主题配置
 const customTheme = {
   token: {
-    colorPrimary: '#3f51b5',
-    colorSuccess: '#4caf50',
-    colorError: '#f44336',
-    colorWarning: '#ff9800',
+    colorPrimary: '#6366f1', // 更紫色调的主色
+    colorSuccess: '#22c55e',
+    colorError: '#ef4444',
+    colorWarning: '#f59e0b',
     colorBgContainer: '#ffffff',
-    colorBgLayout: '#f7f9fc',
-    colorText: '#333333',
-    colorTextSecondary: '#666666',
-    borderRadius: 4,
-    fontSizeHeading2: 26,
-    fontSizeHeading3: 20,
+    colorBgLayout: '#f8fafc', // 浅蓝背景
+    colorText: '#1e293b', // 更暗的文本色
+    colorTextSecondary: '#64748b',
+    borderRadius: 8, // 增加圆角
+    fontSizeHeading2: 30, // 增大标题
+    fontSizeHeading3: 22,
     fontSizeBase: 14,
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+    lineHeight: 1.6, // 增加行高
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+    fontFamily: '"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
   components: {
     Button: {
-      colorPrimary: '#3f51b5',
+      colorPrimary: '#6366f1',
       algorithm: true,
-      borderRadius: 4,
+      borderRadius: 6,
       controlHeight: 40,
+      paddingInline: 18, // 增加内边距
     },
     Card: {
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-      borderRadius: 8,
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+      borderRadius: 12,
+      colorBgContainer: '#ffffff',
     },
     Input: {
-      borderRadius: 4,
+      borderRadius: 6,
+      controlHeight: 40,
     },
     Message: {
       duration: 0.1,
     },
     Modal: {
+      borderRadius: 12,
     },
     Dropdown: {
       motion: false,
     },
     Pagination: {
       motion: false,
+      colorPrimary: '#6366f1',
     },
     Tooltip: {
       motion: false,
+      colorBgSpotlight: 'rgba(0, 0, 0, 0.85)',
+    },
+    Statistic: {
+      fontSizeTitle: 14,
+      fontSizeValue: 26,
+      colorText: '#1e293b',
     },
   },
+};
+
+// 添加页脚链接配置
+const footerLinks = {
+  product: [
+    { title: '功能介绍', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { title: '使用指南', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { title: '更新日志', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+  ],
+  resources: [
+    { title: '开发文档', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { title: 'API参考', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { title: '常见问题', link: 'https://github.com/AIDotNet/OpenDeepWiki/issues' },
+  ],
+  company: [
+    { title: '关于我们', link: 'https://github.com/OpenDeepWiki' },
+    { title: '联系方式', link: 'mailto:239573049@qq.com' },
+    { title: '加入我们', link: 'https://github.com/AIDotNet/OpenDeepWiki/issues' },
+  ],
 };
 
 unstableSetRender((node, container) => {
@@ -94,8 +128,24 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
   const [searchValue, setSearchValue] = useState<string>(initialSearchValue);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
-  const [logoRotate, setLogoRotate] = useState<'none' | 'cw' | 'ccw'>('none');
-  const [underlineWidth, setUnderlineWidth] = useState(0);
+  const [isHovering, setIsHovering] = useState('');
+
+  // 响应式状态
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测窗口大小变化
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const handleAddRepository = async (values: RepositoryFormValues) => {
     try {
@@ -149,78 +199,130 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
     ).toLocaleDateString('zh-CN') : '-'
   };
 
+  // 生成波浪背景的SVG
+  const waveSvg = `
+  <svg width="100%" height="100%" id="svg" viewBox="0 0 1440 400" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 0,400 C 0,400 0,200 0,200 C 114.35714285714289,165.85714285714283 228.71428571428578,131.71428571428572 351,133 C 473.2857142857142,134.28571428571428 603.4999999999998,171 713,192 C 822.5000000000002,213 911.2857142857144,218.28571428571428 1029,214 C 1146.7142857142856,209.71428571428572 1293.3571428571427,195.85714285714286 1440,182 C 1440,182 1440,400 1440,400 Z" 
+    fill="#6366f1" fill-opacity="0.06"></path>
+    <path d="M 0,400 C 0,400 0,266 0,266 C 93.53571428571428,293.67857142857144 187.07142857142856,321.35714285714283 311,325 C 434.92857142857144,328.64285714285717 589.25,308.25 724,288 C 858.75,267.75 973.9285714285713,247.64285714285714 1087,242 C 1200.0714285714287,236.35714285714286 1311.0357142857142,245.17857142857142 1422,254 C 1422,254 1422,400 1422,400 Z" 
+    fill="#6366f1" fill-opacity="0.1"></path>
+  </svg>
+  `;
+
+  // 动态波浪背景样式
+  const waveBgStyle = {
+    backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(waveSvg)}")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'bottom',
+    backgroundSize: 'cover',
+  };
+
   const contentStyle = {
-    padding: '24px',
-    background: customTheme.token.colorBgLayout
+    padding: '40px 16px',
+    background: '#f8fafc',
+    minHeight: 'calc(100vh - 70px - 64px)', // 减去头部和底部高度
+    position: 'relative' as const,
+    zIndex: 1,
+    ...waveBgStyle
   };
 
   const pageContainerStyle = {
-    maxWidth: 1200,
+    maxWidth: 1280,
     margin: '0 auto'
   };
 
   const cardStyle = {
-    borderRadius: 8,
-    marginBottom: 24,
-    boxShadow: customTheme.token.boxShadow,
-    border: 'none'
+    borderRadius: 16,
+    marginBottom: 32,
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
+    border: 'none',
+    overflow: 'hidden',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(4px)',
+    background: 'rgba(255, 255, 255, 0.9)'
   };
 
   const welcomeTitleStyle = {
-    fontSize: '2rem',
-    fontWeight: 600,
-    marginBottom: 8,
-    color: customTheme.token.colorText
+    fontSize: '2.5rem',
+    fontWeight: 700,
+    marginBottom: 16,
+    color: customTheme.token.colorText,
+    background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    display: 'inline-block'
   };
 
   const paragraphStyle = {
-    fontSize: 15,
-    marginBottom: 24,
-    color: customTheme.token.colorTextSecondary
+    fontSize: 16,
+    marginBottom: 32,
+    color: customTheme.token.colorTextSecondary,
+    lineHeight: 1.8,
+    maxWidth: '90%'
   };
 
   const buttonStyle = {
-    height: 40,
+    height: 44,
     fontWeight: 500,
-    boxShadow: 'none'
+    boxShadow: 'none',
+    transition: 'all 0.3s ease',
+    borderRadius: 8,
+    fontSize: 15
   };
 
   const primaryButtonStyle = {
     ...buttonStyle,
-    background: customTheme.token.colorPrimary
+    background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+    border: 'none'
   };
 
   const searchStyle = {
-    width: 300,
-    borderRadius: 4
+    width: isMobile ? '100%' : 340,
+    borderRadius: 8,
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
   };
 
   const pageHeaderStyle = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    margin: '24px 0 16px',
+    margin: '32px 0 24px',
     flexWrap: 'wrap' as const,
     gap: '16px'
   };
 
   const statisticStyle = {
-    padding: '8px 12px',
-    background: 'rgba(63, 81, 181, 0.05)',
-    borderRadius: 6
+    padding: '20px',
+    background: 'rgba(99, 102, 241, 0.03)',
+    borderRadius: 16,
+    height: '100%',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    border: '1px solid transparent',
+    backdropFilter: 'blur(8px)',
   };
+
+  const getHoverStatisticStyle = (key: string) => ({
+    ...statisticStyle,
+    transform: isHovering === key ? 'translateY(-5px)' : 'none',
+    boxShadow: isHovering === key ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' : 'none',
+    borderColor: isHovering === key ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+    background: isHovering === key ? 'rgba(99, 102, 241, 0.08)' : 'rgba(99, 102, 241, 0.03)'
+  });
 
   return (
     <ConfigProvider theme={customTheme as any}>
       <Layout style={{ minHeight: '100vh' }}>
         <Header
           style={{
-            background: customTheme.token.colorPrimary,
+            background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
             padding: '0 24px',
             position: 'sticky',
             top: 0,
             zIndex: 1000,
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+            height: 70,
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
           <div
@@ -228,135 +330,114 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              maxWidth: 1200,
+              maxWidth: 1280,
               margin: '0 auto',
               width: '100%',
-              height: '100%'
+              height: '100%',
+              position: 'relative'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Typography.Title level={3} style={{
-                color: 'white',
-                margin: 0,
-                fontSize: 22,
-                letterSpacing: '0.5px',
-                fontWeight: 600
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px 16px',
+            }}>
+              <Avatar
+                src="/logo.png"
+                size={42}
+                style={{
+                  marginRight: 16,
+                  padding: 4,
+                }}
+              />
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%',
               }}>
-                OpenDeepWiki
-              </Typography.Title>
-              <span style={{
-                color: 'white',
-                fontSize: 13,
-                fontWeight: 400,
-                marginLeft: 10,
-                opacity: 0.8
-              }}>
-                开源的DeepWiki，让您眼前一亮！
-              </span>
+                <span style={{
+                  color: 'white',
+                  margin: 0,
+                  fontSize: 18,
+                  letterSpacing: '0.5px',
+                  fontWeight: 700,
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}>
+                  OpenDeepWiki
+                </span>
+              </div>
             </div>
 
             <Space size={16} align="center">
-              <div
+              <Button
+                type="text"
+                icon={<GithubOutlined style={{ fontSize: 20 }} />}
                 style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={() => {
-                  setLogoRotate('cw');
-                  setUnderlineWidth(100);
-                }}
-                onMouseLeave={() => {
-                  setLogoRotate('ccw');
-                  setUnderlineWidth(0);
-                }}
-                onTransitionEnd={() => setLogoRotate('none')}
-              >
-                <span style={{
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  fontSize: 14,
-                  fontWeight: 400,
-                  opacity: 0.8,
+                  color: 'white',
+                  height: 44,
+                  width: 44,
+                  borderRadius: 10,
                   display: 'flex',
-                  position: 'relative',
-                  userSelect: 'none',
                   alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  powered by
-                  <span style={{
-                    position: 'relative',
-                    color: 'white',
-                    userSelect: 'none',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    display: 'flex',
-                    fontWeight: 600,
-                    gap: '4px'
-                  }}>
-                    OpenDeepWiki
-                  </span>
-                  <img
-                    src="/logo.png"
-                    alt="OpenDeepWiki"
-                    style={{
-                      width: 20,
-                      height: 20,
-                      transition: 'transform 0.6s cubic-bezier(0.4,0,0.2,1)',
-                      transform:
-                        logoRotate === 'cw'
-                          ? 'rotate(360deg)'
-                          : logoRotate === 'ccw'
-                            ? 'rotate(-180deg)'
-                            : 'rotate(0deg)'
-                    }}
-                  />
-                </span>
-              </div>
-              <Tooltip title="源码地址" placement="bottom">
-                <Button
-                  type="text"
-                  icon={<GithubOutlined style={{ fontSize: 18 }} />}
-                  style={{
-                    color: 'white',
-                    height: 40,
-                    width: 40,
-                    borderRadius: 8,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    transition: 'all 0.3s'
-                  }}
-                  href={homepage}
-                  target="_blank"
-                />
-              </Tooltip>
+                  justifyContent: 'center',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  transition: 'all 0.3s',
+                  backdropFilter: 'blur(4px)',
+                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}
+                href={homepage}
+                target="_blank"
+                onMouseEnter={(e) => {
+                  const target = e.currentTarget;
+                  target.style.background = 'rgba(255, 255, 255, 0.3)';
+                  target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.currentTarget;
+                  target.style.background = 'rgba(255, 255, 255, 0.2)';
+                  target.style.transform = 'translateY(0)';
+                }}
+              />
             </Space>
           </div>
         </Header>
 
         <Content style={contentStyle}>
           <div style={pageContainerStyle}>
-            <Row gutter={[24, 24]}>
+            <Row gutter={[32, 32]}>
               <Col span={24}>
-                <Card style={cardStyle}>
-                  <Row gutter={24} align="middle">
-                    <Col xs={24} md={16}>
-                      <div style={{ paddingRight: 24 }}>
-                        <Title level={2} style={welcomeTitleStyle}>
-                          AI驱动的代码知识库
-                        </Title>
+                <Card
+                  style={{
+                    ...cardStyle,
+                    background: 'rgba(255, 255, 255, 0.9)',
+                  }}
+                  bodyStyle={{
+                    padding: isMobile ? 24 : 40,
+                  }}
+                >
+                  <Row gutter={[40, 40]} align="middle">
+                    <Col xs={24} md={15}>
+                      <div>
+                        <Badge.Ribbon text="开源" style={{ fontSize: 14, fontWeight: 600, borderRadius: 4 }}>
+                          <Title level={2} style={welcomeTitleStyle}>
+                            AI驱动的代码知识库
+                          </Title>
+                        </Badge.Ribbon>
                         <Paragraph style={paragraphStyle}>
                           OpenDeepWiki 是参考DeepWiki作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成等功能。
                         </Paragraph>
-                        <Space size={16}>
+                        <Space size={16} wrap style={{ marginTop: 8 }}>
                           <Button
                             type="primary"
                             size="large"
                             icon={<PlusOutlined />}
                             onClick={() => setFormVisible(true)}
-                            style={primaryButtonStyle}
+                            style={{
+                              ...primaryButtonStyle,
+                              fontSize: 15
+                            }}
                           >
                             添加新仓库
                           </Button>
@@ -364,32 +445,60 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                             type="default"
                             size="large"
                             onClick={handleLastRepoQuery}
-                            style={buttonStyle}
+                            style={{
+                              ...buttonStyle,
+                              borderColor: 'rgba(99, 102, 241, 0.3)',
+                              color: '#6366f1'
+                            }}
                           >
                             查询上次提交仓库
                           </Button>
                         </Space>
                       </div>
                     </Col>
-                    <Col xs={24} md={8}>
-                      <Row gutter={[16, 16]}>
-                        <Col span={12}>
-                          <div style={statisticStyle}>
+                    <Col xs={24} md={9}>
+                      <Row gutter={[24, 24]}>
+                        <Col xs={12} md={24}>
+                          <div
+                            style={getHoverStatisticStyle('repos')}
+                            onMouseEnter={() => setIsHovering('repos')}
+                            onMouseLeave={() => setIsHovering('')}
+                          >
                             <Statistic
-                              title={<Typography.Text style={{ color: customTheme.token.colorTextSecondary }}>仓库总数</Typography.Text>}
+                              title={
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                                  <BookOutlined style={{ color: '#6366f1', fontSize: 18 }} />
+                                  <Typography.Text style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>仓库总数</Typography.Text>
+                                </div>
+                              }
                               value={stats.totalRepositories}
-                              valueStyle={{ color: customTheme.token.colorText, fontWeight: 600 }}
-                              prefix={<DatabaseOutlined style={{ color: customTheme.token.colorPrimary }} />}
+                              valueStyle={{
+                                color: customTheme.token.colorText,
+                                fontWeight: 700,
+                                fontSize: 32
+                              }}
                             />
                           </div>
                         </Col>
-                        <Col span={12}>
-                          <div style={statisticStyle}>
+                        <Col xs={12} md={24}>
+                          <div
+                            style={getHoverStatisticStyle('git')}
+                            onMouseEnter={() => setIsHovering('git')}
+                            onMouseLeave={() => setIsHovering('')}
+                          >
                             <Statistic
-                              title={<Typography.Text style={{ color: customTheme.token.colorTextSecondary }}>Git仓库</Typography.Text>}
+                              title={
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                                  <GithubOutlined style={{ color: '#6366f1', fontSize: 18 }} />
+                                  <Typography.Text style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>Git仓库</Typography.Text>
+                                </div>
+                              }
                               value={stats.gitRepos}
-                              valueStyle={{ color: customTheme.token.colorText, fontWeight: 600 }}
-                              prefix={<GithubOutlined style={{ color: customTheme.token.colorPrimary }} />}
+                              valueStyle={{
+                                color: customTheme.token.colorText,
+                                fontWeight: 700,
+                                fontSize: 32
+                              }}
                             />
                           </div>
                         </Col>
@@ -401,8 +510,29 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
             </Row>
 
             <div style={pageHeaderStyle}>
-              <Title level={3} style={{ margin: 0, fontSize: customTheme.token.fontSizeHeading3 }}>仓库列表</Title>
-              <Space wrap>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Tag color="#6366f1" style={{
+                  fontSize: 16,
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                  fontWeight: 600,
+                  boxShadow: '0 2px 5px rgba(99, 102, 241, 0.2)',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  <FireOutlined /> 仓库列表
+                </Tag>
+                <Tag color="#e0e7ff" style={{
+                  color: '#4f46e5',
+                  marginLeft: 4,
+                  fontWeight: 500,
+                  padding: '4px 12px',
+                  borderRadius: 20
+                }}>共 {stats.totalRepositories} 个</Tag>
+              </div>
+              <Space wrap style={{ marginTop: isMobile ? 12 : 0 }} size={12}>
                 <Search
                   placeholder="搜索仓库名称或地址"
                   allowClear
@@ -410,6 +540,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   onSearch={value => handleSearch(value)}
                   onChange={e => setSearchValue(e.target.value)}
                   style={searchStyle}
+                  enterButton={<SearchOutlined />}
                 />
                 <Button
                   type="primary"
@@ -423,16 +554,30 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
             </div>
 
             {repositories.length === 0 ? (
-              <Card style={{ ...cardStyle, padding: 32, textAlign: 'center' }}>
+              <Card
+                style={{
+                  ...cardStyle,
+                  textAlign: 'center',
+                  background: 'rgba(255, 255, 255, 0.9)'
+                }}
+                bodyStyle={{ padding: 48 }}
+              >
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  imageStyle={{ height: 100, opacity: 0.8 }}
                   description={
-                    <Typography.Text style={{ color: customTheme.token.colorTextSecondary, fontSize: 15 }}>
+                    <Typography.Text style={{ color: customTheme.token.colorTextSecondary, fontSize: 16 }}>
                       {searchValue ? `没有找到与"${searchValue}"相关的仓库` : "暂无仓库数据"}
                     </Typography.Text>
                   }
                 >
-                  <Button type="primary" style={primaryButtonStyle} onClick={() => setFormVisible(true)}>
+                  <Button
+                    type="primary"
+                    style={primaryButtonStyle}
+                    onClick={() => setFormVisible(true)}
+                    size="large"
+                    icon={<PlusOutlined />}
+                  >
                     立即添加
                   </Button>
                 </Empty>
@@ -441,7 +586,14 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               <>
                 <RepositoryList repositories={repositories} />
                 {!searchValue && initialTotal > pageSize && (
-                  <div style={{ textAlign: 'center', marginTop: 24 }}>
+                  <div style={{
+                    textAlign: 'center',
+                    marginTop: 40,
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    padding: '20px 24px',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)'
+                  }}>
                     <Pagination
                       current={currentPage}
                       pageSize={pageSize}
@@ -450,6 +602,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       showSizeChanger
                       showQuickJumper
                       showTotal={(total) => `共 ${total} 个仓库`}
+                      style={{ fontWeight: 500 }}
                     />
                   </div>
                 )}
@@ -468,22 +621,126 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
             />
           </div>
         </Content>
-        
+
         <Footer style={{
-          textAlign: 'center',
-          background: customTheme.token.colorBgContainer,
-          padding: '12px 24px',
+          background: '#fff',
+          padding: '48px 24px 24px',
           marginTop: 'auto',
-          borderTop: `1px solid #f0f0f0`
+          borderTop: `1px solid #e0e7ff`
         }}>
-          <Space direction="vertical" size={4}>
-            <Text type="secondary" style={{ fontSize: customTheme.token.fontSizeBase - 2 }}>
-              Powered by OpenDeepWiki
-            </Text>
-            <Text type="secondary" style={{ fontSize: customTheme.token.fontSizeBase - 2 }}>
-              Powered by .NET 9.0
-            </Text>
-          </Space>
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+            <Row gutter={[48, 32]}>
+              <Col xs={24} sm={8} md={6}>
+                <div style={{ marginBottom: 24 }}>
+                  <Space align="center" style={{ marginBottom: 16 }}>
+                    <Avatar
+                      src="/logo.png"
+                      size={32}
+                      style={{
+                        marginRight: 8,
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                        background: 'white',
+                        padding: 3,
+                      }}
+                    />
+                    <Typography.Title level={4} style={{ margin: 0, color: '#1e293b' }}>
+                      OpenDeepWiki
+                    </Typography.Title>
+                  </Space>
+                  <Typography.Paragraph style={{
+                    color: '#64748b',
+                    marginBottom: 16
+                  }}>
+                    基于 .NET 9 和 Semantic Kernel 开发的开源知识库系统
+                  </Typography.Paragraph>
+                  <Space size={16}>
+                    <Button
+                      type="text"
+                      icon={<GithubOutlined />}
+                      href={homepage}
+                      target="_blank"
+                      style={{ color: '#64748b' }}
+                    />
+                  </Space>
+                </div>
+              </Col>
+              <Col xs={24} sm={16} md={18}>
+                <Row gutter={[48, 24]}>
+                  <Col xs={24} sm={8}>
+                    <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
+                      产品
+                    </Typography.Title>
+                    <Space direction="vertical" size={12}>
+                      {footerLinks.product.map(link => (
+                        <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
+                          {link.title}
+                        </Typography.Link>
+                      ))}
+                    </Space>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
+                      资源
+                    </Typography.Title>
+                    <Space direction="vertical" size={12}>
+                      {footerLinks.resources.map(link => (
+                        <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
+                          {link.title}
+                        </Typography.Link>
+                      ))}
+                    </Space>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
+                      关于
+                    </Typography.Title>
+                    <Space direction="vertical" size={12}>
+                      {footerLinks.company.map(link => (
+                        <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
+                          {link.title}
+                        </Typography.Link>
+                      ))}
+                    </Space>
+                  </Col>
+                </Row>
+              </Col>
+            </Row>
+            <Divider style={{ borderColor: '#e2e8f0', margin: '32px 0 24px' }} />
+            <Row justify="space-between" align="middle" gutter={[16, 16]}>
+              <Col xs={24} sm={12}>
+                <Space direction="vertical" size={8}>
+                  <Typography.Text style={{ color: '#64748b', fontSize: 14 }}>
+                    © {new Date().getFullYear()} OpenDeepWiki. All rights reserved.
+                  </Typography.Text>
+                  <Typography.Text style={{
+                    color: '#64748b',
+                    fontSize: 14,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}>
+                    Powered by <span style={{
+                      background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      fontWeight: 600,
+                      padding: '0 4px'
+                    }}>.NET 9.0</span>
+                  </Typography.Text>
+                </Space>
+              </Col>
+              <Col xs={24} sm={12} style={{ textAlign: 'right' }}>
+                <Space split={<Divider type="vertical" style={{ borderColor: '#e2e8f0' }} />}>
+                  <Typography.Link href="/privacy" style={{ color: '#64748b', fontSize: 14 }}>    
+                    隐私政策                  
+                  </Typography.Link>                 
+                  <Typography.Link href="/terms" style={{ color: '#64748b', fontSize: 14 }}>
+                    服务条款
+                  </Typography.Link>
+                </Space>
+              </Col>
+            </Row>
+          </div>
         </Footer>
       </Layout>
     </ConfigProvider>
