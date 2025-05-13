@@ -74,6 +74,7 @@
       <ProjectReference Include="..\..\KoalaWiki.Domains\KoalaWiki.Domains.csproj" />
       <ProjectReference Include="..\..\Provider\KoalaWiki.Provider.PostgreSQL\KoalaWiki.Provider.PostgreSQL.csproj" />
       <ProjectReference Include="..\..\Provider\KoalaWiki.Provider.Sqlite\KoalaWiki.Provider.Sqlite.csproj" />
+      <ProjectReference Include="..\..\Provider\KoalaWiki.Provider.SqlServer\KoalaWiki.Provider.SqlServer.csproj" />
     </ItemGroup>
 
     <ItemGroup>
