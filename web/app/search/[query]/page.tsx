@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { Layout, Row, Col, Button, Typography, theme, Spin, Empty, List, message as messageApi, Tooltip, ConfigProvider, Skeleton, Card, Divider } from 'antd';
 import { FileTextOutlined, GithubFilled, CopyOutlined, FileOutlined, FileMarkdownOutlined, FileImageOutlined, FileExcelOutlined, FileWordOutlined, FilePdfOutlined, FileUnknownOutlined, CodeOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { getChatShareMessageList } from '../../services/chatShareMessageServce';
@@ -9,7 +9,6 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { homepage } from '../../const/urlconst';
 import { API_URL, fetchSSE, getFileContent } from '../../services';
 import { DocumentContent } from '../../components/document';
-import { createStyles } from 'antd-style';
 
 const { Text, Title } = Typography;
 const { useToken } = theme;
@@ -21,119 +20,8 @@ interface ChatMessage {
   loading?: boolean;
 }
 
-// 使用createStyles创建样式
-const useStyles = createStyles(({ css, token }) => ({
-  layoutContainer: css`
-    min-height: 100vh;
-    background-color: ${token.colorBgLayout};
-  `,
-  pageRow: css`
-    height: 100vh;
-    padding: 16px;
-  `,
-  mainCard: css`
-    height: 100%;
-    border-radius: 12px;
-    box-shadow: ${token.boxShadowTertiary};
-    border: none;
-  `,
-  cardBody: css`
-    padding: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  `,
-  headerSection: css`
-    padding: 16px 24px;
-    border-bottom: 1px solid ${token.colorBorderSecondary};
-    background-color: ${token.colorBgContainer};
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-  `,
-  siteTitle: css`
-    display: flex;
-    align-items: center;
-    font-size: ${token.fontSizeLG}px;
-    font-weight: 600;
-    color: ${token.colorPrimary};
-    text-decoration: none;
-  `,
-  siteTitleText: css`
-    margin: 0;
-    color: ${token.colorPrimary};
-  `,
-  messageContainer: css`
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
-    background-color: ${token.colorBgContainer};
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-  `,
-  emptyState: css`
-    margin-top: 20%;
-  `,
-  fileViewContainer: css`
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  `,
-  fileHeader: css`
-    padding: 16px;
-    border-bottom: 1px solid ${token.colorBorderSecondary};
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  `,
-  fileBackButton: css`
-    display: flex;
-    align-items: center;
-  `,
-  fileContentArea: css`
-    flex: 1;
-    overflow: auto;
-    position: relative;
-  `,
-  fileListHeader: css`
-    padding: 16px 24px;
-    border-bottom: 1px solid ${token.colorBorderSecondary};
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-  `,
-  fileList: css`
-    flex: 1;
-    overflow-y: auto;
-    background-color: ${token.colorBgContainer};
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-  `,
-  fileItem: css`
-    padding: 12px 16px;
-    cursor: pointer;
-    border-bottom: 1px solid ${token.colorBorderSecondary};
-    transition: all 0.2s;
-    
-    &:hover {
-      background-color: ${token.colorBgTextHover};
-    }
-  `,
-  codeHighlighter: css`
-    margin: 0;
-    padding: 16px;
-    font-size: ${token.fontSizeSM}px;
-    background-color: transparent;
-    border: none;
-    height: 100%;
-    overflow: auto;
-  `,
-}));
-
 export default function SearchPage({ }: any) {
   const { token } = useToken();
-  const { styles } = useStyles();
   const params = useParams();
   const chatShareMessageId = params.query as string;
   // 添加消息容器引用
@@ -480,29 +368,55 @@ export default function SearchPage({ }: any) {
         }
       }}
     >
-      <Layout className={styles.layoutContainer}>
-        <Row gutter={16} className={styles.pageRow}>
+      <Layout style={{ minHeight: '100vh', backgroundColor: token.colorBgLayout }}>
+        <Row gutter={16} style={{ height: '100vh', padding: '16px' }}>
           {/* 聊天区域 */}
           <Col xs={24} sm={24} md={14} lg={16} xl={16} style={{ height: '100%' }}>
             <Card 
-              className={styles.mainCard}
-              bodyStyle={styles.cardBody}
+              bodyStyle={{ 
+                padding: 0, 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column' 
+              }}
+              style={{ height: '100%', borderRadius: '12px' }}
+              bordered={false}
             >
-              <div className={styles.headerSection}>
-                <a href="/" className={styles.siteTitle}>
-                  <Title level={4} className={styles.siteTitleText}>OpenDeepWiki</Title>
+              <div style={{
+                padding: '16px 24px',
+                borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                backgroundColor: token.colorBgContainer,
+                borderTopLeftRadius: '12px',
+                borderTopRightRadius: '12px',
+              }}>
+                <a href="/" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: token.fontSizeLG,
+                  fontWeight: 600,
+                  color: token.colorPrimary,
+                  textDecoration: 'none',
+                }}>
+                  <Title level={4} style={{ margin: 0, color: token.colorPrimary }}>OpenDeepWiki</Title>
                 </a>
               </div>
 
               <div
                 ref={messagesContainerRef}
-                className={styles.messageContainer}
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '24px',
+                  backgroundColor: token.colorBgContainer,
+                  borderBottomLeftRadius: '12px',
+                  borderBottomRightRadius: '12px',
+                }}
               >
                 {messages.length === 0 ? (
                   <Empty
                     description={<Text type="secondary">开始一个新的对话</Text>}
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    className={styles.emptyState}
+                    style={{ marginTop: '20%' }}
                   />
                 ) : (
                   messages.map((msg, index) => renderMessage(msg, index))
@@ -514,19 +428,30 @@ export default function SearchPage({ }: any) {
           {/* 文件资源区域 */}
           <Col xs={24} sm={24} md={10} lg={8} xl={8} style={{ height: '100%' }}>
             <Card 
-              className={styles.mainCard}
-              bodyStyle={{
-                padding: 0,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column'
+              bodyStyle={{ 
+                padding: 0, 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column' 
               }}
+              style={{ height: '100%', borderRadius: '12px' }}
+              bordered={false}
             >
               {showFileContent && selectedFile ? (
                 // 文件内容视图
-                <div className={styles.fileViewContainer}>
-                  <div className={styles.fileHeader}>
-                    <div className={styles.fileBackButton}>
+                <div style={{ 
+                  height: '100%', 
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  <div style={{
+                    padding: '16px',
+                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
                       <Button 
                         type="text" 
                         icon={<ArrowLeftOutlined />} 
@@ -547,7 +472,7 @@ export default function SearchPage({ }: any) {
                     </Tooltip>
                   </div>
 
-                  <div className={styles.fileContentArea}>
+                  <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
                     {fileContentLoading ? (
                       <div style={{ padding: '16px' }}>
                         <Skeleton active paragraph={{ rows: 10 }} />
@@ -563,7 +488,7 @@ export default function SearchPage({ }: any) {
                           backgroundColor: 'transparent',
                           border: 'none',
                           height: '100%',
-                          overflow: 'auto'
+                          overflow: 'auto',
                         }}
                       >
                         {fileContent}
@@ -574,7 +499,15 @@ export default function SearchPage({ }: any) {
               ) : (
                 // 文件列表视图
                 <>
-                  <div className={styles.fileListHeader}>
+                  <div style={{
+                    padding: '16px 24px',
+                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTopLeftRadius: '12px',
+                    borderTopRightRadius: '12px',
+                  }}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <FileTextOutlined style={{ marginRight: '8px', color: token.colorPrimary }} />
                       <Text strong>引用文件</Text>
@@ -582,7 +515,13 @@ export default function SearchPage({ }: any) {
                     {fileListLoading && <Spin size="small" />}
                   </div>
 
-                  <div className={styles.fileList}>
+                  <div style={{ 
+                    flex: 1, 
+                    overflowY: 'auto',
+                    backgroundColor: token.colorBgContainer,
+                    borderBottomLeftRadius: '12px',
+                    borderBottomRightRadius: '12px',
+                  }}>
                     {fileListLoading ? (
                       // 骨架屏加载
                       renderFileSkeleton()
@@ -592,8 +531,14 @@ export default function SearchPage({ }: any) {
                         dataSource={referenceFiles}
                         renderItem={(item) => (
                           <List.Item
-                            className={styles.fileItem}
+                            style={{
+                              padding: '12px 16px',
+                              cursor: 'pointer',
+                              borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                              transition: 'all 0.2s',
+                            }}
                             onClick={() => handleFileClick(item.path)}
+                            className="file-item-hover"
                           >
                             <List.Item.Meta
                               avatar={
@@ -658,3 +603,10 @@ export default function SearchPage({ }: any) {
       </Layout>
 
       <style jsx global>{`
+        .file-item-hover:hover {
+          background-color: ${token.colorPrimaryBg};
+        }
+      `}</style>
+    </ConfigProvider>
+  );
+} 
