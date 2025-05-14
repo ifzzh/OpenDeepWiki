@@ -351,6 +351,9 @@ public partial class DocumentsService
 
     /// <summary>
     /// 处理单个文档的异步方法
+    /// <returns>
+    /// 返回列表
+    /// </returns>
     /// </summary>
     private static async Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)>
         ProcessDocumentAsync(

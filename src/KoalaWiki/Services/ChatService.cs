@@ -170,7 +170,6 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
                     files.AddRange(DocumentContext.DocumentStore.Files.Distinct());
                     await context.Response.Body.FlushAsync();
                     DocumentContext.DocumentStore.Files = [];
-                    continue;
                 }
 
                 if (string.IsNullOrEmpty(chatItem.Content))
