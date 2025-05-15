@@ -43,7 +43,7 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
         }
 
         var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
-            OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.ChatModel, false);
+            OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.DeepResearchModel, false);
 
         var chat = kernel.GetRequiredService<IChatCompletionService>();
 

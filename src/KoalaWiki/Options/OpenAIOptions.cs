@@ -16,6 +16,9 @@ public class OpenAIOptions
     public static string ModelProvider { get; set; } = string.Empty;
 
     public static int MaxFileLimit { get; set; } = 10;
+    
+    public static string DeepResearchModel { get; set; } = string.Empty;
+
 
     public static void InitConfig(IConfiguration configuration)
     {
@@ -29,6 +32,9 @@ public class OpenAIOptions
                     configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
         ModelProvider = (configuration.GetValue<string>("MODEL_PROVIDER") ??
                          configuration.GetValue<string>("ModelProvider")).GetTrimmedValueOrEmpty();
+        
+        DeepResearchModel = (configuration.GetValue<string>("DEEP_RESEARCH_MODEL") ??
+                         configuration.GetValue<string>("DeepResearchModel")).GetTrimmedValueOrEmpty();
 
         MaxFileLimit = configuration.GetValue<int>("MAX_FILE_LIMIT") > 0
             ? configuration.GetValue<int>("MAX_FILE_LIMIT")
@@ -53,6 +59,11 @@ public class OpenAIOptions
         if (string.IsNullOrEmpty(Endpoint))
         {
             throw new Exception("Endpoint is empty");
+        }
+
+        if (string.IsNullOrEmpty(DeepResearchModel))
+        {
+            DeepResearchModel = ChatModel;
         }
 
         // 如果没设置分析模型则使用默认的

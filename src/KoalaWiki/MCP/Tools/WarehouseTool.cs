@@ -38,7 +38,7 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
         }
 
         var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
-            OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.ChatModel, false);
+            OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.DeepResearchModel, false);
 
         var chat = kernel.GetRequiredService<IChatCompletionService>();
 
@@ -46,7 +46,7 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
         var path = document.GitPath;
 
         var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
-            OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
+            OpenAIOptions.ChatApiKey, path, OpenAIOptions.DeepResearchModel, false);
 
         var history = new ChatHistory();
 
