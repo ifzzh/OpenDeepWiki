@@ -79,6 +79,8 @@ services:
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
       - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
       - PARALLEL_COUNT=1 # 仓库并行处理数量 
+      - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
+
 ```
 
 AzureOpenAI
@@ -99,6 +101,7 @@ services:
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
       - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
       - PARALLEL_COUNT=1 # 仓库并行处理数量 
+      - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
 ```
 
 Anthropic
@@ -119,6 +122,7 @@ services:
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
       - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
       - PARALLEL_COUNT=1 # 仓库并行处理数量 
+      - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
 ```
 
 
@@ -225,6 +229,7 @@ graph TD
   - EnableSmartFilter 是否启用智能过滤，这可能影响AI得到仓库的文件目录
   - UPDATE_INTERVAL 仓库增量更新间隔，单位天
   - PARALLEL_COUNT 仓库并行处理数量
+  - MAX_FILE_LIMIT 上传文件的最大限制，单位MB
 
 ### 针对不同架构的构建
 Makefile提供了针对不同CPU架构构建的命令：

@@ -146,3 +146,13 @@ export async function UploadAndSubmitWarehouse(formData: FormData) {
   })
 }
 
+/**
+ * 导出仓库的Markdown文件为ZIP
+ * 此函数可在服务器组件中使用
+ * @param warehouseId 仓库ID
+ */
+export async function ExportMarkdownZip(warehouseId: string) {
+  return fetchApi<any>(API_URL + `/api/Warehouse/ExportMarkdownZip?warehouseId=${warehouseId}`, {
+    method: 'POST'
+  })
+}

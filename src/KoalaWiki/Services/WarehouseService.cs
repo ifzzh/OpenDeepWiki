@@ -5,6 +5,7 @@ using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains;
 using KoalaWiki.Dto;
 using KoalaWiki.Entities;
+using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Functions;
 using KoalaWiki.KoalaWarehouse;
 using LibGit2Sharp;
@@ -134,7 +135,6 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             // 解压
             var zipPath = fileInfo.FullName.Replace(".zip", "");
             ZipFile.ExtractToDirectory(fileInfo.FullName, zipPath, true);
-            
         }
         else if (file.FileName.EndsWith(".gz"))
         {
@@ -161,8 +161,8 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             await using var decompressionStream = new BrotliStream(inputStream, CompressionMode.Decompress);
             await decompressionStream.CopyToAsync(outputStream);
         }
-        
-        
+
+
         // 如果解压以后目录下只有一个文件夹，那么就将这个文件夹的内容移动到上级目录
         var directory = new DirectoryInfo(name);
         if (directory.Exists)
@@ -387,5 +387,110 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         var result = await fileFunction.ReadFileAsync(path);
 
         return ResultDto<string>.Success(result);
+    }
+
+    /// <summary>
+    /// 导出Markdown压缩包
+    /// </summary>
+    public async Task ExportMarkdownZip(string warehouseId, HttpContext context)
+    {
+        var query = await access.Warehouses
+            .AsNoTracking()
+            .Where(x => x.Id == warehouseId)
+            .FirstOrDefaultAsync();
+
+        if (query == null)
+        {
+            throw new NotFoundException("文件不存在");
+        }
+
+        var fileName = $"{query.Name}.zip";
+
+        // 先获取当前仓库所有目录
+        var documents = await access.Documents
+            .AsNoTracking()
+            .Where(x => x.WarehouseId == warehouseId)
+            .FirstOrDefaultAsync();
+
+        var documentCatalogs = await access.DocumentCatalogs
+            .AsNoTracking()
+            .Where(x => x.WarehouseId == warehouseId && x.IsDeleted == false)
+            .ToListAsync();
+
+        var catalogsIds = documentCatalogs.Select(x => x.Id).ToList();
+
+        // 获取所有文档条目
+        var fileItems = await access.DocumentFileItems
+            .AsNoTracking()
+            .Where(x => catalogsIds.Contains(x.DocumentCatalogId))
+            .ToListAsync();
+
+        using var memoryStream = new MemoryStream();
+        using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+        {
+            // 添加仓库概述文件
+            var overview = await access.DocumentOverviews
+                .FirstOrDefaultAsync(x => x.DocumentId == documents.Id);
+
+            if (overview != null)
+            {
+                var readmeEntry = archive.CreateEntry("README.md");
+                await using var writer = new StreamWriter(readmeEntry.Open());
+                await writer.WriteAsync($"# 概述\n\n{overview.Content}");
+            }
+
+            // 构建目录树结构
+            var catalogDict = documentCatalogs.ToDictionary(x => x.Id);
+            var rootCatalogs = documentCatalogs.Where(x => string.IsNullOrEmpty(x.ParentId)).ToList();
+
+            // 递归处理目录及其子目录
+            await ProcessCatalogs(archive, rootCatalogs, catalogDict, fileItems, "");
+
+            // 递归函数，处理目录及其子目录
+            async Task ProcessCatalogs(ZipArchive archive, List<DocumentCatalog> catalogs,
+                Dictionary<string, DocumentCatalog> catalogDict,
+                List<DocumentFileItem> allFileItems, string currentPath)
+            {
+                foreach (var catalog in catalogs)
+                {
+                    var item = allFileItems.FirstOrDefault(x => x.DocumentCatalogId == catalog.Id);
+
+                    // 跳过空文档
+                    if (string.IsNullOrEmpty(item?.Content))
+                        continue;
+
+                    // 创建当前目录的路径
+                    string dirPath = string.IsNullOrEmpty(currentPath)
+                        ? catalog.Url.Replace(" ", "_")
+                        : Path.Combine(currentPath, catalog.Url.Replace(" ", "_"));
+
+                    // 文档路径
+                    string entryPath = Path.Combine(dirPath, item.Title.Replace(" ", "_") + ".md");
+
+                    // 创建并写入文档内容
+                    var entry = archive.CreateEntry(entryPath.Replace('\\', '/'));
+                    using var writer = new StreamWriter(entry.Open());
+                    writer.Write($"# {catalog.Name}\n\n{item.Content}");
+
+                    await writer.DisposeAsync();
+
+                    // 获取并处理子目录
+                    var children = documentCatalogs.Where(x => x.ParentId == catalog.Id).ToList();
+                    if (children.Any())
+                    {
+                        await ProcessCatalogs(archive, children, catalogDict, allFileItems, catalog.Url);
+                    }
+                }
+            }
+        }
+
+        // 将内存流的位置重置到开始
+        memoryStream.Position = 0;
+
+        context.Response.ContentType = "application/zip";
+        context.Response.Headers.Add("Content-Disposition", $"attachment; filename={fileName}");
+
+        // 将zip文件流写入响应
+        await memoryStream.CopyToAsync(context.Response.Body);
     }
 }

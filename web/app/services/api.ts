@@ -83,7 +83,13 @@ async function clientFetchApi<T>(
       const data = await response.text();
       // @ts-ignore
       return { data, success: true, isSuccess: true };
-    } else {
+    }
+    // 导出Markdown文件为ZIP
+    else if (response.headers.get("content-type") === "application/zip") {
+      const data = await response.blob();
+      return { data, success: true, isSuccess: true };
+    }
+    else {
       const data = await response.json();
       return { data, success: true, isSuccess: true };
     }

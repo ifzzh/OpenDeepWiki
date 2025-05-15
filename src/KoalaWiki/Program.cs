@@ -6,6 +6,7 @@ using KoalaWiki.MCP;
 using KoalaWiki.Options;
 using KoalaWiki.WarehouseProcessing;
 using Mapster;
+using Microsoft.AspNetCore.Http.Features;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -24,6 +25,16 @@ builder.Configuration.GetSection(DocumentOptions.Name)
 
 #endregion
 
+// 设置文件上传大小
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 1024 * 1024 * OpenAIOptions.MaxFileLimit; // 10MB
+});
+
+builder.WebHost.UseKestrel((options =>
+{
+    options.Limits.MaxRequestBodySize = 1024 * 1024 * OpenAIOptions.MaxFileLimit; // 10MB
+}));
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddKoalaMcp();

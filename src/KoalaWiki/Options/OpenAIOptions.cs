@@ -15,6 +15,8 @@ public class OpenAIOptions
 
     public static string ModelProvider { get; set; } = string.Empty;
 
+    public static int MaxFileLimit { get; set; } = 10;
+
     public static void InitConfig(IConfiguration configuration)
     {
         ChatModel = (configuration.GetValue<string>("CHAT_MODEL") ??
@@ -27,6 +29,10 @@ public class OpenAIOptions
                     configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
         ModelProvider = (configuration.GetValue<string>("MODEL_PROVIDER") ??
                          configuration.GetValue<string>("ModelProvider")).GetTrimmedValueOrEmpty();
+
+        MaxFileLimit = configuration.GetValue<int>("MAX_FILE_LIMIT") > 0
+            ? configuration.GetValue<int>("MAX_FILE_LIMIT")
+            : 10;
 
         if (string.IsNullOrEmpty(ModelProvider))
         {
@@ -54,6 +60,5 @@ public class OpenAIOptions
         {
             AnalysisModel = ChatModel;
         }
-        
     }
 }

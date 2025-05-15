@@ -76,6 +76,7 @@ services:
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
       - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
       - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
+      - MAX_FILE_LIMIT=100 # The maximum limit for uploading files, in MB
 ```
 
 AzureOpenAI:
@@ -96,6 +97,7 @@ services:
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
       - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
       - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
+      - MAX_FILE_LIMIT=100 # The maximum limit for uploading files, in MB
 ```
 
 Anthropic:
@@ -116,6 +118,7 @@ services:
       - EnableSmartFilter=true # Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
       - UPDATE_INTERVAL # Warehouse increment update interval, unit: days
       - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
+      - MAX_FILE_LIMIT=100 # The maximum limit for uploading files, in MB
 ```
 
 > 💡 **How to get an API Key:**
@@ -221,6 +224,7 @@ graph TD
   - EnableSmartFilter Whether intelligent filtering is enabled or not may affect how the AI can obtain the file directory of the repository
   - UPDATE_INTERVAL Warehouse increment update interval, unit: days
   - PARALLEL_COUNT The warehouse processes the quantity in parallel
+  - MAX_FILE_LIMIT The maximum limit for uploading files, in MB
 
 ### Build for Different Architectures
 The Makefile provides commands to build for different CPU architectures:
