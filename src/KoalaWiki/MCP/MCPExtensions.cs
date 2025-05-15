@@ -39,7 +39,7 @@ public static class MCPExtensions
                     .Replace("{name}", name);
 
                 var mcpName = $"{owner}{name}CodeRepositoryAnalyzer";
-                
+
                 // 删除特殊字符串
                 mcpName = Regex.Replace(mcpName, @"[^a-zA-Z0-9]", "");
                 mcpName = mcpName.Length > 50 ? mcpName.Substring(0, 50) : mcpName;
@@ -62,7 +62,8 @@ public static class MCPExtensions
             }))
             .WithCallToolHandler((async (context, token) =>
             {
-                if (context.Params?.Name.EndsWith("CodeRepositoryAnalyzer") == true)
+                if (context.Params?.Name.EndsWith("CodeRepositoryAnalyzer",
+                        StringComparison.CurrentCultureIgnoreCase) == true)
                 {
                     var warehouse = context.Services!.GetService<WarehouseTool>();
 
