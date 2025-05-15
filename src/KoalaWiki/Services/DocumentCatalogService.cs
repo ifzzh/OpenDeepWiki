@@ -63,6 +63,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             document?.Description,
             progress = documentCatalogs.Count(x => x.IsCompleted) * 100 / documentCatalogs.Count,
             git = warehouse.Address,
+            document?.WarehouseId,
             document?.LikeCount,
             document?.Status,
             document?.CommentCount,

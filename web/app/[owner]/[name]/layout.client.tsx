@@ -17,6 +17,8 @@ import {
   Collapse,
   Alert,
   Progress,
+  Input,
+  Dropdown,
 } from 'antd';
 import {
   HomeOutlined,
@@ -28,14 +30,19 @@ import {
   BookOutlined,
   RocketOutlined,
   GlobalOutlined,
-  BulbOutlined
+  BulbOutlined,
+  SearchOutlined,
+  DownloadOutlined,
+  SettingOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
-import { PanelRightClose, PanelLeftClose } from 'lucide-react'
+import { PanelRightClose, PanelLeftClose, SaveAll } from 'lucide-react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import AIInputBar from '../../components/AIInputBar';
 import Image from 'next/image';
+import { ExportMarkdownZip } from '../../services';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -529,30 +536,91 @@ export default function RepositoryLayoutClient({
               }}
             >
               <div className="sidebar-header" style={{
-                padding: `16px 0 8px`,
-                textAlign: 'right',
-                borderBottom: collapsed ? 'none' : '1px solid rgba(24, 144, 255, 0.05)',
-                display: collapsed ? 'none' : 'block',
+                padding: `12px 8px 12px`,
+                display: collapsed ? 'none' : 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(24, 144, 255, 0.08)',
+                background: 'rgba(255, 255, 255, 0.97)',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
               }}>
-                <Button
-                  onClick={() => setCollapsed(true)}
-                  type='text'
-                  className="toggle-button sidebar-toggle"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    marginRight: '12px',
-                    fontSize: '16px',
-                    color: token.colorPrimary,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <PanelLeftClose />
-                </Button>
+                <div style={{
+                  display: 'flex',
+                  width: '100%',
+                  justifyContent: 'space-between', alignItems: 'center'
+                }}>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<SaveAll />}
+                    onClick={() =>
+                      Modal.confirm({
+                        title: '导出Markdown',
+                        content: '是否将当前文档导出为Markdown格式？',
+                        okText: '导出',
+                        cancelText: '取消',
+                        onOk: () => {
+                          ExportMarkdownZip(initialCatalogData.warehouseId)
+                            .then(response => {
+                              // 返回了blod
+                              if (response.success && response.data) {
+                                const blob = new Blob([response.data], { type: 'application/zip' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `${owner}-${name}-docs.zip`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                              } else {
+                                message.error('导出失败，请稍后再试。');
+                              }
+                            })
+                        },
+                      })
+
+                    }
+                    style={{
+                      marginRight: '8px',
+                      background: 'linear-gradient(135deg, #1677ff 0%, #36acff 100%)',
+                      border: 'none',
+                      boxShadow: '0 2px 6px rgba(24, 144, 255, 0.25)',
+                      transition: 'all 0.3s ease',
+                      height: '32px',
+                      fontSize: '13px',
+                    }}
+                  >
+                    导出Markdown
+                  </Button>
+                  <Button
+                    onClick={() => setCollapsed(true)}
+                    type='text'
+                    className="toggle-button sidebar-toggle"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: 'rgba(24, 144, 255, 0.05)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      color: token.colorPrimary,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background 0.2s ease',
+                      // @ts-ignore
+                      '&:hover': {
+                        background: 'rgba(24, 144, 255, 0.1)',
+                      }
+                    }}
+                  >
+                    <PanelLeftClose size={16} />
+                  </Button>
+                </div>
               </div>
 
               <div className={`menu-wrapper ${collapsed ? 'hidden' : ''}`}>
@@ -759,25 +827,27 @@ export default function RepositoryLayoutClient({
         }
       `}</style>
 
-      {initialCatalogData?.items?.length > 0 && (
-        <AIInputBar
-          owner={owner}
-          name={name}
-          style={{
-            position: 'fixed',
-            bottom: token.marginLG,
-            left: 0,
-            right: 0,
-            margin: '0 auto',
-            maxWidth: isMobile ? '80%' : '70%',
-            width: isMobile ? 'calc(100% - 32px)' : 'auto',
-            zIndex: 1001,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-            borderRadius: 12,
-            backdropFilter: 'blur(16px)',
-          }}
-        />
-      )}
-    </ConfigProvider>
+      {
+        initialCatalogData?.items?.length > 0 && (
+          <AIInputBar
+            owner={owner}
+            name={name}
+            style={{
+              position: 'fixed',
+              bottom: token.marginLG,
+              left: 0,
+              right: 0,
+              margin: '0 auto',
+              maxWidth: isMobile ? '80%' : '70%',
+              width: isMobile ? 'calc(100% - 32px)' : 'auto',
+              zIndex: 1001,
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+              borderRadius: 12,
+              backdropFilter: 'blur(16px)',
+            }}
+          />
+        )
+      }
+    </ConfigProvider >
   );
-} 
+}
