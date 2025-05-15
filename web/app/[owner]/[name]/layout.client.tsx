@@ -19,6 +19,7 @@ import {
   Progress,
   Input,
   Dropdown,
+  Select,
 } from 'antd';
 import {
   HomeOutlined,
@@ -29,6 +30,7 @@ import {
   CheckOutlined,
   BookOutlined,
   RocketOutlined,
+  BranchesOutlined,
   GlobalOutlined,
   BulbOutlined,
   SearchOutlined,
@@ -83,7 +85,8 @@ export default function RepositoryLayoutClient({
   const [isMobile, setIsMobile] = useState(false);
   const [isMCPModalVisible, setIsMCPModalVisible] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-
+  const [selectedBranch, setSelectedBranch] = useState<string>(initialCatalogData?.branchs?.[0] || '');
+  
   const selectedKey = pathname.includes('/') ? 'docs' : 'overview';
 
   // Check if the screen size is mobile
@@ -350,6 +353,22 @@ export default function RepositoryLayoutClient({
             </Flex>
 
             <Flex align="center" gap={token.marginSM}>
+              
+              {initialCatalogData?.branchs && initialCatalogData.branchs.length > 0 && selectedBranch && (
+                <Select
+                  value={selectedBranch}
+                  onChange={(value) => setSelectedBranch(value)}
+                  style={{ width: isMobile ? 120 : 180 }}
+                  size={isMobile ? "small" : "middle"}
+                  options={initialCatalogData.branchs.map((branch: string) => ({ 
+                    label: branch, 
+                    value: branch 
+                  }))}
+                  placeholder="选择分支"
+                  suffixIcon={<BranchesOutlined />}
+                />
+              )}
+
               <Button
                 type="primary"
                 icon={<ApiOutlined />}

@@ -56,6 +56,11 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             lastUpdate = "刚刚";
         }
 
+        var branchs =
+            (await dbAccess.Warehouses.Where(x => x.Name == name && x.OrganizationName == organizationName && x.Type == "git")
+                .Select(x => x.Branch)
+                .ToArrayAsync());
+
         return new
         {
             items = BuildDocumentTree(documentCatalogs),
@@ -63,6 +68,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             document?.Description,
             progress = documentCatalogs.Count(x => x.IsCompleted) * 100 / documentCatalogs.Count,
             git = warehouse.Address,
+            branchs = branchs,
             document?.WarehouseId,
             document?.LikeCount,
             document?.Status,
