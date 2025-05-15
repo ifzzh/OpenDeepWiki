@@ -419,6 +419,7 @@ a {
 /* 极简风格仓库卡片 */
 .minimal-repo-card {
   background: #ffffff;
+  height: 230px !important;
   transition: all 0.3s ease;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -432,11 +433,20 @@ a {
   flex-direction: column;
   padding: 24px;
 }
-
 .minimal-repo-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   border-color: #1677ff;
+  animation: glowing-border 1.5s infinite alternate;
+}
+
+@keyframes glowing-border {
+  0% {
+    box-shadow: 0 0 5px rgba(22, 119, 255, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(22, 119, 255, 0.7), 0 0 20px rgba(22, 119, 255, 0.4);
+  }
 }
 
 .repo-header {

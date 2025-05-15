@@ -134,9 +134,10 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
               </div>
             </div>
           </div>
-          <div className="repo-description">
+          <div>
             <MaskShadow width={'100%'}
               position='bottom'
+              height={68}
               size={12}
             >
               {repository.description}
