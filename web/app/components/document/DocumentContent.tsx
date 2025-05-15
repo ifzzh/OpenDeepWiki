@@ -207,8 +207,6 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
         
         .markdown-content pre {
           background: rgba(0,0,0,0.03);
-          padding: 16px;
-          margin: 16px 0;
           border-radius: 0px;
           overflow-x: auto;
         }

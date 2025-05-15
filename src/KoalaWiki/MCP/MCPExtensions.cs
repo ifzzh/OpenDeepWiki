@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using KoalaWiki.MCP.Tools;
 using ModelContextProtocol.Protocol.Types;
 using Serilog;
@@ -37,13 +38,20 @@ public static class MCPExtensions
                     """.Replace("{owner}", owner)
                     .Replace("{name}", name);
 
+                var mcpName = $"{owner}{name}CodeRepositoryAnalyzer";
+                
+                // 删除特殊字符串
+                mcpName = Regex.Replace(mcpName, @"[^a-zA-Z0-9]", "");
+                mcpName = mcpName.Length > 50 ? mcpName.Substring(0, 50) : mcpName;
+                mcpName = mcpName.ToLower();
+
                 return await Task.FromResult(new ListToolsResult()
                 {
                     Tools =
                     [
                         new Tool()
                         {
-                            Name = $"{owner}-{name}-CodeRepositoryAnalyzer",
+                            Name = mcpName,
                             Description =
                                 $"Generate detailed technical documentation for the {owner}/{name} GitHub repository based on user inquiries. Analyzes repository structure, code components, APIs, dependencies, and implementation patterns to create comprehensive developer documentation with troubleshooting guides, architecture explanations, customization options, and implementation insights.",
                             InputSchema =

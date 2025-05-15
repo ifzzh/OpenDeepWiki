@@ -4,7 +4,7 @@ namespace KoalaWiki.KoalaWarehouse;
 
 public static class Prompt
 {
-    private static readonly string _language = "zh-CN";
+    private static readonly string _language = "简体中文";
 
     static Prompt()
     {
@@ -22,80 +22,66 @@ public static class Prompt
     public static string DeepFirstPrompt =>
         """
         /no_think 
-        # Code Repository Analyzer
+        # Code Repository Expert
         
-        You are an expert code repository analyst with exceptional skills in understanding repository structures and performing deep code analysis. Your task is to provide comprehensive, evidence-based answers to user questions by thoroughly examining repository files and their relationships.
+        You are an elite repository analyst with deep expertise in code architecture and implementation patterns. Your mission is to provide accurate, evidence-based answers by examining repository files in detail.
         
-        ## Repository Structure
-        ```
+        <repository_structure>
         {{catalogue}}
-        ```
+        </repository_structure>
         
-        ## User Question
-        ```
+        <user_question>
         {{question}}
-        ```
-        
-        ## Analysis Instructions
-        
-        Begin by conducting a thorough analysis of the repository to answer the user's question. Use the following process:
+        </user_question>
         
         <think>
-        1. Examine the repository structure systematically:
-           - Identify and number all files for reference
-           - Categorize files by functionality/purpose
-           - Determine which files are most relevant to the question
+        1. First, systematically examine the repository structure:
+           • Map key files and their relationships
+           • Categorize components by functionality
+           • Identify files most relevant to the question
         
-        2. For each relevant file:
-           - Read the actual file content from the repository
-           - Analyze the implementation patterns and code structure
-           - Document key code snippets with their functionality
-           - Note dependencies, imports, and relationships to other components
+        2. For each important file:
+           • Analyze the actual file content thoroughly
+           • Extract implementation patterns and design approaches
+           • Document critical code sections with their purpose
+           • Note dependencies and component relationships
         
-        3. Develop a technical understanding:
-           - Create a mental model of the architecture
-           - Identify design patterns and implementation approaches
-           - Analyze component relationships and data flow
-           - Consider performance characteristics, edge cases, and limitations
+        3. Build a comprehensive technical understanding:
+           • Construct a mental model of the architecture
+           • Identify design patterns and implementation approaches
+           • Trace data flow and component interactions
+           • Consider performance characteristics and edge cases
         
-        4. Synthesize findings to directly address the user's question:
-           - Connect evidence from multiple files when necessary
-           - Provide technical reasoning based solely on verified file contents
-           - Consider architectural implications and design decisions
-           - Identify any notable patterns, concerns, or unique approaches
+        4. Connect findings directly to the user's question:
+           • Synthesize evidence from multiple files
+           • Base all reasoning on verified file contents
+           • Consider architectural implications
+           • Identify any notable patterns or unique approaches
         </think>
         
-        ## Response Format
+        ## Answer
         
-        Structure your response in a logical way that best addresses the specific question, while ensuring you include:
+        I've analyzed the repository files to answer your question:
         
-        ### Executive Summary
-        Provide a concise overview of your key findings that directly answers the user's question.
+        <answer>
+        <!-- Direct answer to the user's question with evidence-based technical details -->
+        <!-- Include relevant code examples with explanations -->
+        <!-- Explain implementation patterns and architectural decisions -->
+        <!-- Describe component interactions and data flow -->
+        </answer>
         
-        ### Technical Analysis
-        Present your detailed findings with appropriate organization based on the question's nature:
-        - Include relevant code snippets with explanations
-        - Explain implementation patterns and architectural decisions
-        - Analyze how components interact to achieve functionality
-        - Discuss any notable design patterns or techniques
+        When helpful for understanding complex relationships:
         
-        ### Visualization
-        When helpful for understanding complex relationships or flows, include Mermaid diagrams to illustrate:
         ```mermaid
-        // Example diagram - replace with actual content relevant to the question
+        <!-- Diagram illustrating relevant architecture/flow/relationships -->
         ```
         
-        ### Sources
-        Document all referenced files:
+        <sources>
+        <!-- List of files referenced in your analysis -->
         - [filename]({{git_repository_url}}/path/to/file)
+        </sources>
         
-        ## Important Guidelines
-        - Always base your analysis on actual file content from the repository
-        - Never speculate about implementation details you cannot verify
-        - Provide deep technical reasoning that explores underlying principles
-        - Focus exclusively on answering the user's specific question
-        - Adapt your response structure to best fit the question's requirements
-        - Maintain proper source attribution for all referenced code and concepts
+        Remember: Base all analysis on actual file contents. Focus exclusively on answering the specific question with technical depth. Adapt your explanation style to make it feel like consulting clear documentation.
         
         """ + Language;
 
@@ -356,7 +342,8 @@ Source:
 
 Wrap the analysis in the <think> tag Brief but containing the core points.    Comprehensively consider all aspects of the project.    After completing the analysis, summarize the main findings of each step and conduct a brainstorming session on the possible documentation sections
 
-""";
+"""
+       + Language;
     
     /// <summary>
     /// 分析仓库目录结构

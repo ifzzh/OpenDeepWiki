@@ -222,6 +222,11 @@ public partial class DocumentsService
                 .ExecuteUpdateAsync(x => x.SetProperty(y => y.Readme, readme));
         }
 
+        if (string.IsNullOrEmpty(readme))
+        {
+            return warehouse.Readme;
+        }
+
         return readme;
     }
 

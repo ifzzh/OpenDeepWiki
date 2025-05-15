@@ -22,17 +22,7 @@ const useStyles = createStyles(({ css, token, isDarkMode }) => ({
     backdrop-filter: blur(8px);
     max-width: 800px;
     width: 100%;
-    
-    &:hover {
-      box-shadow: 0 6px 16px ${isDarkMode ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.08)'};
-      transform: translateY(-2px);
-      border-color: ${token.colorPrimary}40;
-      
-      &::after {
-        opacity: 0.4;
-      }
-    }
-    
+        
     &:active {
       transform: translateY(0) scale(0.99);
     }
