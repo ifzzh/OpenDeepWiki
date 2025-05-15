@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.Users;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,8 @@ public interface IKoalaWikiContext
     public DbSet<ChatShareMessage> ChatShareMessages { get; set; }
 
     public DbSet<ChatShareMessageItem> ChatShareMessageItems { get; set; }
+    
+    public DbSet<User> Users { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken());
 

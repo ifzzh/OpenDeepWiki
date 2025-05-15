@@ -1,4 +1,6 @@
-﻿namespace KoalaWiki.Domains;
+﻿using System;
+
+namespace KoalaWiki.Domains;
 
 public class DocumentCommitRecord : Entity<string>
 {

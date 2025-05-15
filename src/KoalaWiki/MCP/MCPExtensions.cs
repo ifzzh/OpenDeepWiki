@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using KoalaWiki.MCP.Tools;
-using ModelContextProtocol.Protocol.Types;
+using ModelContextProtocol.Protocol;
 using Serilog;
 
 namespace KoalaWiki.MCP;

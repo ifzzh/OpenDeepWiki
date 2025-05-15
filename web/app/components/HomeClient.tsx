@@ -389,16 +389,6 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 }}
                 href={homepage}
                 target="_blank"
-                onMouseEnter={(e) => {
-                  const target = e.currentTarget;
-                  target.style.background = 'rgba(255, 255, 255, 0.3)';
-                  target.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                  const target = e.currentTarget;
-                  target.style.background = 'rgba(255, 255, 255, 0.2)';
-                  target.style.transform = 'translateY(0)';
-                }}
               />
             </Space>
           </div>
@@ -564,7 +554,6 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               >
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  imageStyle={{ height: 100, opacity: 0.8 }}
                   description={
                     <Typography.Text style={{ color: customTheme.token.colorTextSecondary, fontSize: 16 }}>
                       {searchValue ? `没有找到与"${searchValue}"相关的仓库` : "暂无仓库数据"}

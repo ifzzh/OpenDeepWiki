@@ -342,6 +342,8 @@ Source:
 
 Wrap the analysis in the <think> tag Brief but containing the core points.    Comprehensively consider all aspects of the project.    After completing the analysis, summarize the main findings of each step and conduct a brainstorming session on the possible documentation sections
 
+After completing the analysis, summarize the main findings of each step and conduct a brainstorming session on the possible documentation sections. Ensure that your proposed documentation structure is tailored specifically to the {{repository_name}} repository.
+
 """
        + Language;
     

@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
@@ -9,12 +8,10 @@ using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Extensions;
 using KoalaWiki.Functions;
 using KoalaWiki.Options;
-using LibGit2Sharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using Newtonsoft.Json;
 using Serilog;
 
 namespace KoalaWiki.KoalaWarehouse;

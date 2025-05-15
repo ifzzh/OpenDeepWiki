@@ -1,4 +1,5 @@
-﻿using KoalaWiki.Entities;
+﻿using System.Collections.Generic;
+using KoalaWiki.Entities;
 
 namespace KoalaWiki.Domains;
 

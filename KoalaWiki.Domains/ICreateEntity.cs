@@ -1,3 +1,5 @@
+using System;
+
 namespace KoalaWiki.Entities;
 
 public interface ICreateEntity

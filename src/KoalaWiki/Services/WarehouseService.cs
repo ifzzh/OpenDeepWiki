@@ -17,6 +17,23 @@ namespace KoalaWiki.Services;
 public class WarehouseService(IKoalaWikiContext access, IMapper mapper, WarehouseStore warehouseStore) : FastApi
 {
     /// <summary>
+    /// 更新仓库状态，并且重新提交
+    /// </summary>
+    public async Task UpdateWarehouseStatusAsync(string warehouseId)
+    {
+        await access.Warehouses
+            .Where(x => x.Id == warehouseId)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.Status, WarehouseStatus.Pending));
+
+        var warehouse = await access.Warehouses
+            .AsNoTracking()
+            .Where(x => x.Id == warehouseId)
+            .FirstOrDefaultAsync();
+
+        await warehouseStore.WriteAsync(warehouse);
+    }
+
+    /// <summary>
     /// 查询上次提交的仓库
     /// </summary>
     /// <returns></returns>

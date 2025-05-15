@@ -1,4 +1,7 @@
-﻿namespace KoalaWiki.Domains;
+﻿using System;
+using System.Collections.Generic;
+
+namespace KoalaWiki.Domains;
 
 public class DocumentCatalog : Entity<string>
 {

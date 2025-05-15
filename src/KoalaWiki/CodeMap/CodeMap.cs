@@ -1,23 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Text;
 
 namespace CodeDependencyAnalyzer
 {
     public class DependencyAnalyzer
     {
-        private readonly Dictionary<string, HashSet<string>> _fileDependencies = new Dictionary<string, HashSet<string>>();
-        private readonly Dictionary<string, HashSet<string>> _functionDependencies = new Dictionary<string, HashSet<string>>();
-        private readonly Dictionary<string, List<FunctionInfo>> _fileToFunctions = new Dictionary<string, List<FunctionInfo>>();
-        private readonly Dictionary<string, string> _functionToFile = new Dictionary<string, string>();
-        private readonly List<ILanguageParser> _parsers = new List<ILanguageParser>();
+        private readonly Dictionary<string, HashSet<string>> _fileDependencies = new();
+        private readonly Dictionary<string, HashSet<string>> _functionDependencies = new();
+        private readonly Dictionary<string, List<FunctionInfo>> _fileToFunctions = new();
+        private readonly Dictionary<string, string> _functionToFile = new();
+        private readonly List<ILanguageParser> _parsers = new();
         private readonly string _basePath;
         private bool _isInitialized = false;
 

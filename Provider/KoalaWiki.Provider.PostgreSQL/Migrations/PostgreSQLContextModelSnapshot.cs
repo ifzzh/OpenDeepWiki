@@ -257,6 +257,56 @@ namespace KoalaWiki.Provider.PostgreSQL.Migrations
                     b.ToTable("DocumentCommitRecords");
                 });
 
+            modelBuilder.Entity("KoalaWiki.Domains.Users.User", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Avatar")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("LastLoginIp")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("LastLoginAt");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Users");
+                });
+
             modelBuilder.Entity("KoalaWiki.Entities.DocumentFile.DocumentFileItem", b =>
                 {
                     b.Property<string>("Id")

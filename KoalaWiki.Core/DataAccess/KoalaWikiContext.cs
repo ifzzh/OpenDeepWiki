@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.Users;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,8 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
     public DbSet<ChatShareMessage> ChatShareMessages { get; set; }
 
     public DbSet<ChatShareMessageItem> ChatShareMessageItems { get; set; }
+    
+    public DbSet<User> Users { get; set; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
     {
@@ -219,6 +222,25 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.Property(x => x.Files)
                 .HasConversion(x => JsonSerializer.Serialize(x, (JsonSerializerOptions)null),
                     x => JsonSerializer.Deserialize<List<string>>(x, (JsonSerializerOptions)null));
+        });
+
+        modelBuilder.Entity<User>(options =>
+        {
+            options.HasKey(x => x.Id);
+
+            options.Property(x => x.Name).IsRequired();
+
+            options.Property(x => x.Email).IsRequired();
+
+            options.Property(x => x.Password).IsRequired();
+
+            options.HasIndex(x => x.Name);
+
+            options.HasIndex(x => x.Email);
+
+            options.HasIndex(x => x.CreatedAt);
+
+            options.HasIndex(x => x.LastLoginAt);
         });
     }
 }

@@ -18,7 +18,6 @@
         <PackageReference Include="Markdig.SyntaxHighlighting" Version="1.1.7" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.4" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
-        <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.13.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.4" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
@@ -29,11 +28,11 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.SemanticKernel" Version="1.49.0" />
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.49.0" />
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.49.0" />
-        <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview.13" />
-        <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.1.0-preview.13" />
+        <PackageReference Include="Microsoft.SemanticKernel" Version="1.50.0" />
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.50.0" />
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.50.0" />
+        <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview.14" />
+        <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.1.0-preview.14" />
         <PackageReference Include="ModelContextProtocolServer.Sse" Version="0.0.1-preview-05" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Polly" Version="8.5.2" />
@@ -58,6 +57,9 @@
       <Content Update="plugins\CodeAnalysis\CodeDirSimplifier\config.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="plugins\CodeAnalysis\GenerateDescription\config.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -68,6 +70,9 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="plugins\CodeAnalysis\CodeDirSimplifier\skprompt.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="plugins\CodeAnalysis\GenerateDescription\skprompt.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
@@ -95,6 +100,10 @@
       <Compile Update="WarehouseProcessing\WarehouseProcessingTask.Commit.cs">
         <DependentUpon>WarehouseProcessingTask.cs</DependentUpon>
       </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="plugins\CodeAnalysis\GenerateDescription\" />
     </ItemGroup>
 
 </Project>

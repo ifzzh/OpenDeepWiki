@@ -1,8 +1,11 @@
 ﻿using System.ComponentModel;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using CodeDependencyAnalyzer;
 using KoalaWiki.KoalaWarehouse;
 using Microsoft.SemanticKernel;
+using Serilog;
 
 namespace KoalaWiki.Functions;
 
@@ -36,9 +39,10 @@ public class FileFunction(string gitPath)
                 var info = new FileInfo(item);
 
                 // 判断文件大小
-                if (info.Length > 1024 * 1024 * 1)
+                if (info.Length > 1024 * 100)
                 {
-                    throw new Exception($"File too large: {filePath} ({info.Length / 1024 / 1024}MB)");
+                    return
+                        "If the file exceeds 100KB, you should use ReadFileFromLineAsync to read the file content line by line";
                 }
 
                 await using var stream = new FileStream(item, FileMode.Open, FileAccess.Read);
@@ -46,9 +50,9 @@ public class FileFunction(string gitPath)
                 dic[filePath] = await reader.ReadToEndAsync();
             }
 
-            return JsonSerializer.Serialize(dic,new JsonSerializerOptions()
+            return JsonSerializer.Serialize(dic, new JsonSerializerOptions()
             {
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 WriteIndented = true,
             });
         }
@@ -57,6 +61,68 @@ public class FileFunction(string gitPath)
             // 处理异常
             Console.WriteLine($"Error reading file: {ex.Message}");
             throw new Exception($"Error reading file: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Analyzes the dependency tree of a specified function within a file.
+    /// </summary>
+    /// <param name="filePath">The path to the file containing the function to analyze.</param>
+    /// <param name="functionName">The name of the function to analyze for dependency relationships.</param>
+    /// <returns>A JSON string representing the dependency tree of the specified function.</returns>
+    [KernelFunction, Description("Analyze the dependency relationship of the specified method")]
+    [return: Description("Return the dependency tree of the specified function")]
+    public async Task<string> AnalyzeFunctionDependencyTree(
+        [Description("File Path")] string filePath,
+        [Description("Analyze the dependency relationship of the specified method")]
+        string functionName)
+    {
+        try
+        {
+            Log.Logger.Information($"ReadCodeFileAsync: {filePath} {functionName}");
+
+            var newPath = Path.Combine(gitPath, filePath.TrimStart('/'));
+
+            var code = new DependencyAnalyzer(gitPath);
+
+            var result = await code.AnalyzeFunctionDependencyTree(newPath, functionName);
+
+            return JsonSerializer.Serialize(result, JsonSerializerOptions.Web);
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+            Console.WriteLine($"Error reading file: {ex.Message}");
+            return $"Error reading file: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// 分析指定文件的依赖关系
+    /// </summary>
+    /// <returns></returns>
+    [KernelFunction, Description("Analyze the dependency relationship of the specified file")]
+    [return: Description("Return the dependency tree of the specified file")]
+    public async Task<string> AnalyzeFileDependencyTree(
+        [Description("File Path")] string filePath)
+    {
+        try
+        {
+            Log.Logger.Information($"ReadCodeFileAsync: {filePath}");
+
+            var newPath = Path.Combine(gitPath, filePath.TrimStart('/'));
+
+            var code = new DependencyAnalyzer(gitPath);
+
+            var result = await code.AnalyzeFileDependencyTree(newPath);
+
+            return JsonSerializer.Serialize(result, JsonSerializerOptions.Web);
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+            Console.WriteLine($"Error reading file: {ex.Message}");
+            return $"Error reading file: {ex.Message}";
         }
     }
 
@@ -82,9 +148,9 @@ public class FileFunction(string gitPath)
             }
 
             // 判断文件大小
-            if (info.Length > 1024 * 1024 * 1)
+            if (info.Length > 1024 * 100)
             {
-                return $"File too large: {filePath} ({info.Length / 1024 / 1024}MB)";
+                return $"File too large: {filePath} ({info.Length / 1024 / 100}KB)";
             }
 
             await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
@@ -107,7 +173,7 @@ public class FileFunction(string gitPath)
     public async Task<string> ReadFileFromLineAsync(
         [Description("File Path")] string filePath,
         [Description("Start Line Number")] int startLine = 0,
-        [Description("End Line Number")] int endLine = 5)
+        [Description("End Line Number")] int endLine = 10)
     {
         try
         {

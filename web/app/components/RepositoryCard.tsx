@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { ChevronsRight, Heart, Sparkles, Star } from 'lucide-react';
 import { Badge } from 'antd';
+import { MaskShadow } from '@lobehub/ui';
 
 interface RepositoryCardProps {
   repository: Repository;
@@ -132,6 +133,14 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
                 </div>
               </div>
             </div>
+          </div>
+          <div className="repo-description">
+            <MaskShadow width={'100%'}
+              position='bottom'
+              size={12}
+            >
+              {repository.description}
+            </MaskShadow>
           </div>
           <div className="repo-footer">
             <div className="repo-details">

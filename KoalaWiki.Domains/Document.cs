@@ -1,4 +1,5 @@
-﻿using KoalaWiki.Entities;
+﻿using System;
+using KoalaWiki.Entities;
 
 namespace KoalaWiki.Domains;
 
