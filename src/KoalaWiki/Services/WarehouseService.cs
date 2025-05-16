@@ -205,10 +205,17 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         var value = await access.Warehouses.FirstOrDefaultAsync(x =>
             x.OrganizationName == organization && x.Name == repositoryName);
         // 判断这个仓库是否已经添加
-        if (value?.Status is WarehouseStatus.Completed or WarehouseStatus.Pending or WarehouseStatus.Processing)
-
+        if (value?.Status is WarehouseStatus.Completed)
         {
-            throw new Exception("存在相同名称的渠道");
+            throw new Exception("该名称渠道已存在且处于完成状态，不可重复创建");
+        }
+        else if (value?.Status is WarehouseStatus.Pending)
+        {
+            throw new Exception("该名称渠道已存在且处于待处理状态，请等待处理完成");
+        }
+        else if (value?.Status is WarehouseStatus.Processing)
+        {
+            throw new Exception("该名称渠道已存在且正在处理中，请稍后再试");
         }
 
         // 删除旧的仓库
@@ -260,10 +267,17 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             var value = await access.Warehouses.FirstOrDefaultAsync(x =>
                 x.Address.ToLower() == input.Address.ToLower());
             // 判断这个仓库是否已经添加
-            if (value?.Status is WarehouseStatus.Completed or WarehouseStatus.Pending or WarehouseStatus.Processing)
-
+            if (value?.Status is WarehouseStatus.Completed)
             {
-                throw new Exception("存在相同名称的渠道");
+                throw new Exception("该名称渠道已存在且处于完成状态，不可重复创建");
+            }
+            else if (value?.Status is WarehouseStatus.Pending)
+            {
+                throw new Exception("该名称渠道已存在且处于待处理状态，请等待处理完成");
+            }
+            else if (value?.Status is WarehouseStatus.Processing)
+            {
+                throw new Exception("该名称渠道已存在且正在处理中，请稍后再试");
             }
 
             // 删除旧的仓库
