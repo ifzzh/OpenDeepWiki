@@ -33,7 +33,7 @@ Before generating the changelog, analyze the provided information and wrap your 
 2. Organize changes by time:
    - Create a timeline of changes, grouping them by date
    - For changes within the last 7 days: Create detailed daily entries
-   - For changes older than 7 days: Create a single consolidated entry labeled "Earlier Updates"
+   - For changes older than 7 days: Summarize into one record, the date is 7 days ago, the title and description are the summary after aggregation
 
 3. Categorize the content:
    - Group related changes by feature area or component based on modified files
