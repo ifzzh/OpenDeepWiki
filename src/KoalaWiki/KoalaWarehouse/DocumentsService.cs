@@ -60,6 +60,18 @@ public partial class DocumentsService
         return [];
     }
 
+    public static List<PathInfo> GetCatalogueFiles(string path)
+    {
+        var ignoreFiles = GetIgnoreFiles(path);
+
+        var pathInfos = new List<PathInfo>();
+        // 递归扫描目录所有文件和目录
+        ScanDirectory(path, pathInfos, ignoreFiles);
+        var catalogue = new List<string>();
+
+        return pathInfos;
+    }
+
     public static string GetCatalogue(string path)
     {
         var ignoreFiles = GetIgnoreFiles(path);

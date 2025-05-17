@@ -1,3 +1,4 @@
+using KoalaWiki.CodeMap;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.DataMigration;
 using KoalaWiki.Extensions;
@@ -62,6 +63,7 @@ builder.Services.AddHostedService<WarehouseTask>();
 builder.Services.AddHostedService<WarehouseProcessingTask>();
 builder.Services.AddHostedService<DataMigrationTask>();
 builder.Services.AddHostedService<WarehouseDescriptionTask>();
+builder.Services.AddHostedService<BuildCodeIndex>();
 
 builder.Services.AddDbContext(builder.Configuration);
 

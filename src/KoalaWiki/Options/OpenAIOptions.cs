@@ -5,20 +5,45 @@ namespace KoalaWiki.Options;
 
 public class OpenAIOptions
 {
+    /// <summary>
+    /// ChatGPT模型
+    /// </summary>
     public static string ChatModel { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 分析模型
+    /// </summary>
     public static string AnalysisModel { get; set; } = string.Empty;
 
+    /// <summary>
+    /// ChatGPT API密钥
+    /// </summary>
     public static string ChatApiKey { get; set; } = string.Empty;
 
+    /// <summary>
+    /// API地址
+    /// </summary>
     public static string Endpoint { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 模型提供商
+    /// </summary>
     public static string ModelProvider { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 最大文件限制
+    /// </summary>
     public static int MaxFileLimit { get; set; } = 10;
-    
+
+    /// <summary>
+    /// 深度研究模型
+    /// </summary>
     public static string DeepResearchModel { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 嵌入模型
+    /// </summary>
+    public static string EmbeddingsModel { get; set; } = string.Empty;
 
     public static void InitConfig(IConfiguration configuration)
     {
@@ -32,17 +57,25 @@ public class OpenAIOptions
                     configuration.GetValue<string>("Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
         ModelProvider = (configuration.GetValue<string>("MODEL_PROVIDER") ??
                          configuration.GetValue<string>("ModelProvider")).GetTrimmedValueOrEmpty();
-        
+
         DeepResearchModel = (configuration.GetValue<string>("DEEP_RESEARCH_MODEL") ??
-                         configuration.GetValue<string>("DeepResearchModel")).GetTrimmedValueOrEmpty();
+                             configuration.GetValue<string>("DeepResearchModel")).GetTrimmedValueOrEmpty();
 
         MaxFileLimit = configuration.GetValue<int>("MAX_FILE_LIMIT") > 0
             ? configuration.GetValue<int>("MAX_FILE_LIMIT")
             : 10;
 
+        EmbeddingsModel = (configuration.GetValue<string>("EMBEDDINGS_MODEL") ??
+                           configuration.GetValue<string>("EmbeddingsModel")).GetTrimmedValueOrEmpty();
+
         if (string.IsNullOrEmpty(ModelProvider))
         {
             ModelProvider = "OpenAI";
+        }
+
+        if (string.IsNullOrEmpty(EmbeddingsModel))
+        {
+            throw new Exception("EmbeddingsModel is empty");
         }
 
         // 检查参数
