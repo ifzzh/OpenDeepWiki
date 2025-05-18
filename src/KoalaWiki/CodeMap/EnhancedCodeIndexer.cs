@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using CodeDependencyAnalyzer;
 using KoalaWiki.CodeMap.Language;
 using KoalaWiki.Options;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -7,6 +8,7 @@ using Microsoft.KernelMemory.Configuration;
 using Microsoft.KernelMemory.DocumentStorage.DevTools;
 using Microsoft.KernelMemory.FileSystem.DevTools;
 using Microsoft.KernelMemory.MemoryStorage.DevTools;
+using Newtonsoft.Json;
 
 #pragma warning disable SKEXP0010
 
@@ -71,7 +73,7 @@ public class EnhancedCodeIndexer
     /// <summary>
     /// 索引代码文件
     /// </summary>
-    public async Task IndexCodeFileAsync(string filePath, string warehouseId)
+    public async Task IndexCodeFileAsync(string filePath, string warehouseId, DependencyAnalyzer dependency)
     {
         if (!File.Exists(filePath))
         {
@@ -85,6 +87,7 @@ public class EnhancedCodeIndexer
 
         _logger.LogInformation($"正在索引文件: {fileName}, 语言: {language}");
 
+        var tree = await dependency.AnalyzeFileDependencyTree(filePath);
 
         await _kernelMemory.ImportTextAsync(code, Guid.NewGuid().ToString("N"), new TagCollection()
         {
@@ -93,35 +96,22 @@ public class EnhancedCodeIndexer
             { "FilePath", filePath },
             { "CodeLanguage", language },
             { "Language", language },
+            { "References", JsonConvert.SerializeObject(tree) },
         }, warehouseId);
-
-
-        // 根据语言解析代码并切片
-        // var codeSegments = await ParseAndSegmentCodeAsync(code, language, filePath);
-
-        // 为每个代码段创建嵌入并存储
-        // foreach (var segment in codeSegments)
-        // {
-        //     string id = $"{fileName}:{segment.StartLine}-{segment.EndLine}";
-        //
-        //     // 创建丰富的描述，包含代码结构和上下文信息
-        //     string description = BuildSegmentDescription(segment, fileName);
-        //     _logger.LogDebug("已索引代码段: {Id} - {SegmentType}", id, segment.Type);
-        // }
     }
 
     /// <summary>
     /// 搜索相似代码
     /// </summary>
-    public async Task<List<(string Id, string Code, string Description, double Relevance)>> SearchSimilarCodeAsync(
-        string query, string warehouseId, int limit = 5)
+    public async Task<List<(string Id, string Code, string Description, double Relevance, DependencyTree? references)>>
+        SearchSimilarCodeAsync(
+            string query, string warehouseId, int limit = 5, double minRelevance = 0.3)
     {
         var result = await _kernelMemory.SearchAsync(query, filter: new MemoryFilter()
         {
-            // { "WarehouseId", warehouseId }
-        }, index: warehouseId, limit: limit);
+        }, index: warehouseId, limit: limit, minRelevance: minRelevance);
 
-        var results = new List<(string Id, string Code, string Description, double Relevance)>();
+        var results = new List<(string Id, string Code, string Description, double Relevance, DependencyTree?)>();
 
         foreach (var citation in result.Results)
         {
@@ -130,10 +120,16 @@ public class EnhancedCodeIndexer
                 var id = partition.Tags["Id"].FirstOrDefault();
                 var code = partition.Tags["Code"].FirstOrDefault();
                 var description = partition.Tags["Description"].FirstOrDefault();
+                var references = partition.Tags["References"].FirstOrDefault();
                 var relevance = partition.Relevance;
-                if (id != null && code != null && description != null)
+                if (id != null && code != null && description != null && references != null)
                 {
-                    results.Add((id, code, description, relevance));
+                    var dependencyTree = JsonConvert.DeserializeObject<DependencyTree>(references);
+                    results.Add((id, code, description, relevance, dependencyTree));
+                }
+                else
+                {
+                    results.Add((id, code, description, relevance, null));
                 }
             }
         }

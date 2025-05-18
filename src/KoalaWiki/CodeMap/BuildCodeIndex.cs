@@ -1,6 +1,8 @@
-﻿using KoalaWiki.Core.DataAccess;
+﻿using CodeDependencyAnalyzer;
+using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
 using KoalaWiki.KoalaWarehouse;
+using KoalaWiki.Options;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -12,6 +14,12 @@ public class BuildCodeIndex(IServiceProvider service) : BackgroundService
     {
         await Task.Delay(100, stoppingToken);
 
+        if (string.IsNullOrWhiteSpace(OpenAIOptions.EmbeddingsModel))
+        {
+            Log.Logger.Error("没有设置OpenAI的EmbeddingsModel");
+            return;
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             // 读取现有的仓库
@@ -19,14 +27,12 @@ public class BuildCodeIndex(IServiceProvider service) : BackgroundService
             var dbContext = scope.ServiceProvider.GetService<IKoalaWikiContext>();
 
             var warehouses = await dbContext!.Warehouses
-                .Where(x => x.Status == WarehouseStatus.Completed && x.IsEmbedded == true)
+                .Where(x => x.Status == WarehouseStatus.Completed && x.IsEmbedded == false)
                 .ToListAsync(stoppingToken);
 
             foreach (var warehouse in warehouses)
             {
                 var enhancedCodeIndexer = new EnhancedCodeIndexer();
-
-                var value = await enhancedCodeIndexer.SearchSimilarCodeAsync("添加自动迁移代码", warehouse.Id);
 
                 try
                 {
@@ -36,11 +42,15 @@ public class BuildCodeIndex(IServiceProvider service) : BackgroundService
 
                     var files = DocumentsService.GetCatalogueFiles(documents.GitPath);
 
+                    var dependencyAnalyzer = new DependencyAnalyzer(documents.GitPath);
+
+                    await dependencyAnalyzer.Initialize();
+
                     foreach (var file in files)
                     {
                         Log.Logger.Information($"Processing file: {file.Path}");
 
-                        await enhancedCodeIndexer.IndexCodeFileAsync(file.Path, warehouse.Id);
+                        await enhancedCodeIndexer.IndexCodeFileAsync(file.Path, warehouse.Id, dependencyAnalyzer);
 
                         Log.Information($"Indexed file {file.Path} for warehouse {warehouse.Id} successfully.");
                     }

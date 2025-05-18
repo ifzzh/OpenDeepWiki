@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Functions;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.Options;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using OpenAI.Chat;
@@ -48,6 +50,11 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
         var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
             OpenAIOptions.ChatApiKey, path, OpenAIOptions.DeepResearchModel, false);
 
+        if (!string.IsNullOrWhiteSpace(OpenAIOptions.EmbeddingsModel))
+        {
+            fileKernel.Plugins.AddFromObject(new RagFunction(warehouse.Id));
+        }
+
         var history = new ChatHistory();
 
         var readme = await DocumentsService.GenerateReadMe(warehouse, document.GitPath, koala);
@@ -65,7 +72,7 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
 
         history.AddUserMessage(Prompt.DeepFirstPrompt
             .Replace("{{question}}", question)
-            .Replace("{{git_repository_url}}", warehouse.Address.Replace(".git",""))
+            .Replace("{{git_repository_url}}", warehouse.Address.Replace(".git", ""))
             .Replace("{{catalogue}}", string.Join('\n', catalogue)));
 
         var first = true;

@@ -5,9 +5,11 @@ using FastService;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains;
 using KoalaWiki.Dto;
+using KoalaWiki.Functions;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.Options;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using OpenAI.Chat;
@@ -53,6 +55,11 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
         var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
             OpenAIOptions.ChatApiKey, path, OpenAIOptions.ChatModel, false);
 
+        if (!string.IsNullOrWhiteSpace(OpenAIOptions.EmbeddingsModel))
+        {
+            fileKernel.Plugins.AddFromObject(new RagFunction(warehouse!.Id));
+        }
+
         var history = new ChatHistory();
 
         if (isFirst)
@@ -79,14 +86,14 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             {
                 history.AddUserMessage(Prompt.DeepFirstPrompt
                     .Replace("{{question}}", chatShareMessage!.Question)
-                    .Replace("{{git_repository_url}}", warehouse.Address.Replace(".git",""))
+                    .Replace("{{git_repository_url}}", warehouse.Address.Replace(".git", ""))
                     .Replace("{{catalogue}}", string.Join('\n', catalogue)));
             }
             else
             {
                 history.AddUserMessage(Prompt.HistoryPrompt
                     .Replace("{{$question}}", input.Question)
-                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git",""))
+                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git", ""))
                     .Replace("{{$conversation_history}}", conversationHistory.ToString())
                     .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
@@ -97,14 +104,14 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             {
                 history.AddUserMessage(Prompt.FirstPrompt
                     .Replace("{{$question}}", chatShareMessage!.Question)
-                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git",""))
+                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git", ""))
                     .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
             else
             {
                 history.AddUserMessage(Prompt.HistoryPrompt
                     .Replace("{{$question}}", input.Question)
-                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git",""))
+                    .Replace("{{$git_repository_url}}", warehouse.Address.Replace(".git", ""))
                     .Replace("{{$conversation_history}}", conversationHistory.ToString())
                     .Replace("{{$catalogue}}", string.Join('\n', catalogue)));
             }
@@ -140,7 +147,7 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
             // sse
             context.Response.Headers.ContentType = "text/event-stream";
             context.Response.Headers.CacheControl = "no-cache";
-            
+
             await foreach (var chatItem in chat.GetStreamingChatMessageContentsAsync(history,
                                new OpenAIPromptExecutionSettings()
                                {
@@ -149,10 +156,9 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
                                    Temperature = 0.5,
                                }, fileKernel))
             {
-
                 // 发送数据
                 if (chatItem.InnerContent is not StreamingChatCompletionUpdate message) continue;
-                
+
                 if (message.Usage is { InputTokenCount: > 0 })
                 {
                     requestToken += message.Usage.InputTokenCount;
@@ -166,7 +172,7 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
                         type = "tool",
                         content = DocumentContext.DocumentStore.Files.Distinct(),
                     }, JsonSerializerOptions.Web)}\n\n");
-                    
+
                     files.AddRange(DocumentContext.DocumentStore.Files.Distinct());
                     await context.Response.Body.FlushAsync();
                     DocumentContext.DocumentStore.Files = [];

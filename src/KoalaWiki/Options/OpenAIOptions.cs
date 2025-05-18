@@ -73,11 +73,6 @@ public class OpenAIOptions
             ModelProvider = "OpenAI";
         }
 
-        if (string.IsNullOrEmpty(EmbeddingsModel))
-        {
-            throw new Exception("EmbeddingsModel is empty");
-        }
-
         // 检查参数
         if (string.IsNullOrEmpty(ChatModel))
         {

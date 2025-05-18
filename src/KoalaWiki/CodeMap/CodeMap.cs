@@ -345,7 +345,7 @@ namespace CodeDependencyAnalyzer
             }
             
             // 显示子节点
-            if (!node.IsCyclic && node.Children != null)
+            if (node is { IsCyclic: false, Children: not null })
             {
                 for (int i = 0; i < node.Children.Count; i++)
                 {
