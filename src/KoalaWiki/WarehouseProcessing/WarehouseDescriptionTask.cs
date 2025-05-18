@@ -81,11 +81,6 @@ public partial class WarehouseDescriptionTask(ILogger<WarehouseDescriptionTask> 
                 logger.LogError(e, "Error in WarehouseDescriptionTask");
                 await Task.Delay(1000, stoppingToken);
             }
-            finally
-            {
-                // 等待一段时间再继续处理
-                await Task.Delay(1000 * 5, stoppingToken);
-            }
         }
     }
 
