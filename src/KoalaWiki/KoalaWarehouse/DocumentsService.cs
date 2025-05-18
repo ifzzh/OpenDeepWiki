@@ -20,14 +20,6 @@ public partial class DocumentsService
 {
     private static readonly int TaskMaxSizePerUser = 5;
 
-    /// <summary>
-    /// 内置的不包含包含后缀名
-    /// </summary>
-    /// <returns></returns>
-    private static readonly string[] BuiltInExcludedFiles =
-    [
-    ];
-
     static DocumentsService()
     {
         // 读取环境变量

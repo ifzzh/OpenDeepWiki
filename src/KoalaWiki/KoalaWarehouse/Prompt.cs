@@ -807,11 +807,7 @@ After completing the analysis, summarize the main findings of each step and cond
         - Basic file reference: [filename]({{git_repository}}/path/to/file)
         - Line-specific reference: [filename]({{git_repository}}/path/to/file#L1-L10)
 
-        Use the <blog></blog> tag to include the content:
-
-        <blog>
-        Format your final comprehensive project overview here using proper Markdown hierarchy and formatting.
-        </blog>
+        Please output the main text to <blog></blog> :
         """ +
         Language;
     
