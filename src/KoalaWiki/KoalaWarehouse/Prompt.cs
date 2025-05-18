@@ -807,7 +807,7 @@ After completing the analysis, summarize the main findings of each step and cond
         - Basic file reference: [filename]({{git_repository}}/path/to/file)
         - Line-specific reference: [filename]({{git_repository}}/path/to/file#L1-L10)
 
-        Please output the main text to <blog></blog> :
+        Please output the main text to <blog></blog>. Do not explain or reply to me. Please start outputting the main text:
         """ +
         Language;
     
