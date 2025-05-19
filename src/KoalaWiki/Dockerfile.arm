@@ -8,6 +8,7 @@ FROM crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/sdk:9.0
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/KoalaWiki/KoalaWiki.csproj", "src/KoalaWiki/"]
+COPY ["NuGet.Config", "."]
 RUN dotnet restore "src/KoalaWiki/KoalaWiki.csproj"
 COPY . .
 WORKDIR "/src/src/KoalaWiki"
