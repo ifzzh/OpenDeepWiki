@@ -31,6 +31,7 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
   const [branches, setBranches] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [manualBranchInput, setManualBranchInput] = useState(false);
+  const [lastAddress, setLastAddress] = useState<string>('');
   const { token } = useToken();
   const { t } = useTranslation();
 
@@ -91,55 +92,37 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
     }
   };
 
-  // 重置表单
-  useEffect(() => {
-    if (!open) {
-      setEnableGitAuth(false);
-      setSubmitType('git');
-      setFileList([]);
-      setBranches([]);
-      setManualBranchInput(false);
-      form.resetFields();
-    } else if (initialValues) {
-      form.setFieldsValue(initialValues);
-    }
-  }, [open, form, initialValues]);
-
-  const handleGitAuthChange = (checked: boolean) => {
-    setEnableGitAuth(checked);
-    if (!checked) {
-      form.setFieldsValue({
-        gitUserName: undefined,
-        gitPassword: undefined
-      });
+  // 监听表单地址变化，自动获取分支
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const currentAddress = e.target.value;
+    
+    // 当地址输入完成且不为空，且与上次不同时，自动获取分支
+    if (currentAddress && currentAddress !== lastAddress && currentAddress.includes('/')) {
+      // 如果地址看起来是一个完整的仓库地址（包含域名和路径），则尝试获取分支
+      if (
+        (currentAddress.includes('github.com/') || 
+         currentAddress.includes('gitee.com/')) &&
+        currentAddress.split('/').filter(Boolean).length >= 2
+      ) {
+        setLastAddress(currentAddress);
+        fetchBranches(currentAddress);
+      }
     }
   };
 
-  const handleTypeChange = (e: any) => {
-    setSubmitType(e.target.value);
-    // 切换时清空不相关的字段
-    if (e.target.value === 'git') {
-      form.setFieldsValue({
-        organization: undefined,
-        repositoryName: undefined
-      });
-      setFileList([]);
+  // 修改fetchBranches函数，允许传入地址参数，同时兼容点击事件
+  const fetchBranches = async (addressOrEvent?: string | React.MouseEvent<HTMLElement>) => {
+    // 判断参数类型
+    let address: string;
+    
+    // 如果是事件对象，忽略它并使用表单值
+    if (!addressOrEvent || typeof addressOrEvent !== 'string') {
+      address = form.getFieldValue('address');
     } else {
-      form.setFieldsValue({
-        address: undefined,
-        branch: 'main',
-        enableGitAuth: false,
-        gitUserName: undefined,
-        gitPassword: undefined
-      });
-      setEnableGitAuth(false);
-      setBranches([]);
-      setManualBranchInput(false);
+      // 如果是字符串，直接使用
+      address = addressOrEvent;
     }
-  };
-
-  const fetchBranches = async () => {
-    const address = form.getFieldValue('address');
+    
     if (!address) {
       message.warning(t('repository.form.address_required', '请先输入仓库地址'));
       return;
@@ -185,6 +168,39 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
       message.error(t('repository.form.branch_load_error', '获取分支列表出错，请检查仓库地址和认证信息'));
     } finally {
       setLoadingBranches(false);
+    }
+  };
+
+  const handleGitAuthChange = (checked: boolean) => {
+    setEnableGitAuth(checked);
+    if (!checked) {
+      form.setFieldsValue({
+        gitUserName: undefined,
+        gitPassword: undefined
+      });
+    }
+  };
+
+  const handleTypeChange = (e: any) => {
+    setSubmitType(e.target.value);
+    // 切换时清空不相关的字段
+    if (e.target.value === 'git') {
+      form.setFieldsValue({
+        organization: undefined,
+        repositoryName: undefined
+      });
+      setFileList([]);
+    } else {
+      form.setFieldsValue({
+        address: undefined,
+        branch: 'main',
+        enableGitAuth: false,
+        gitUserName: undefined,
+        gitPassword: undefined
+      });
+      setEnableGitAuth(false);
+      setBranches([]);
+      setManualBranchInput(false);
     }
   };
 
@@ -234,6 +250,27 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
       }
     },
   };
+
+  // 重置表单
+  useEffect(() => {
+    if (!open) {
+      setEnableGitAuth(false);
+      setSubmitType('git');
+      setFileList([]);
+      setBranches([]);
+      setManualBranchInput(false);
+      setLastAddress('');
+      form.resetFields();
+    } else if (initialValues) {
+      form.setFieldsValue(initialValues);
+      
+      // 如果初始值包含地址，尝试获取分支
+      if (initialValues.address && !disabledFields.includes('address')) {
+        setLastAddress(initialValues.address);
+        fetchBranches(initialValues.address);
+      }
+    }
+  }, [open, form, initialValues, disabledFields]);
 
   return (
     <Modal
@@ -301,6 +338,14 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
                 prefix={<LinkOutlined style={{ color: token.colorTextSecondary }} />}
                 allowClear
                 disabled={disabledFields.includes('address')}
+                onChange={handleAddressChange}
+                onBlur={e => {
+                  // 当失去焦点且地址完整时，尝试获取分支
+                  if (e.target.value && e.target.value !== lastAddress) {
+                    setLastAddress(e.target.value);
+                    fetchBranches(e.target.value);
+                  }
+                }}
               />
             </Form.Item>
 
