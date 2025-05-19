@@ -19,7 +19,7 @@ namespace KoalaWiki.WarehouseProcessing;
 
 public partial class WarehouseProcessingTask
 {
-    public async Task HandleAnalyseAsync(Warehouse warehouse, IKoalaWikiContext dbContext)
+    public async Task<string> HandleAnalyseAsync(Warehouse warehouse, IKoalaWikiContext dbContext)
     {
         try
         {
@@ -33,12 +33,12 @@ public partial class WarehouseProcessingTask
             if (document == null)
             {
                 logger.LogError("未找到仓库相关文档: {WarehouseId}", warehouse.Id);
-                return;
+                return string.Empty;
             }
 
             logger.LogInformation("步骤1: 开始更新仓库 {GitPath}", document.GitPath);
             // 1. 更新仓库
-            var commits = GitService.PullRepository(warehouse.Address, warehouse.Version,
+            var (commits, commitId) = GitService.PullRepository(warehouse.Address, warehouse.Version,
                 warehouse.GitUserName, warehouse.GitPassword);
             logger.LogInformation("仓库更新完成，获取到 {CommitCount} 个提交记录", commits?.Count ?? 0);
             // 得到更新内容和更新文件
@@ -68,9 +68,9 @@ public partial class WarehouseProcessingTask
             else
             {
                 logger.LogInformation("没有更新的提交记录");
-                
+
                 // 如果没有更新的提交记录，直接返回
-                return;
+                return string.Empty;
             }
 
 
@@ -82,7 +82,7 @@ public partial class WarehouseProcessingTask
             logger.LogInformation("获取到 {CatalogCount} 个目录项", catalogues.Count);
 
             logger.LogInformation("步骤3: 创建内核并准备分析");
-            
+
             // 先得到树形结构
             var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
                 OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.ChatModel, false);
@@ -92,7 +92,7 @@ public partial class WarehouseProcessingTask
             var history = new ChatHistory();
 
             var prompt = Prompt.AnalyzeNewCatalogue
-                .Replace("{{git_repository}}", warehouse.Address.Replace(".git",""))
+                .Replace("{{git_repository}}", warehouse.Address.Replace(".git", ""))
                 .Replace("{{document_catalogue}}", JsonSerializer.Serialize(catalogues, JsonSerializerOptions.Web))
                 .Replace("{{git_commit}}", commitPrompt.ToString())
                 .Replace("{{catalogue}}", warehouse.OptimizedDirectoryStructure);
@@ -162,7 +162,7 @@ public partial class WarehouseProcessingTask
                 return result;
             });
 
-             logger.LogInformation("步骤5: 处理分析结果，长度为 {ResultLength} 字符", st.Length);
+            logger.LogInformation("步骤5: 处理分析结果，长度为 {ResultLength} 字符", st.Length);
 
             // 这里可以继续处理分析结果
 
@@ -221,6 +221,9 @@ public partial class WarehouseProcessingTask
             }));
 
             await dbContext.SaveChangesAsync();
+
+
+            return commitId;
         }
         catch (Exception ex)
         {

@@ -5,6 +5,7 @@ interface ChatShareMessageInput {
   owner: string;
   name: string;
   message: string;
+  branch?: string;
 }
 /**
  * Submit a new repository to the warehouse

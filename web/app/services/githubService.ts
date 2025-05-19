@@ -70,7 +70,9 @@ export async function getGitHubRepoInfo(owner: string, name: string): Promise<Gi
  */
 export async function getGitHubReadme(owner: string, name: string, branch: string = 'master'): Promise<string | null> {
   try {
-    const response = await fetch(`https://api.github.com/repos/${owner}/${name}/readme`, {
+    // 如果指定了分支，添加ref参数
+    const branchParam = branch ? `?ref=${branch}` : '';
+    const response = await fetch(`https://api.github.com/repos/${owner}/${name}/readme${branchParam}`, {
       headers: {
         'Accept': 'application/vnd.github.v3.html',
         // 如果有GitHub令牌，可以在这里添加授权头
@@ -101,9 +103,10 @@ export async function getGitHubReadme(owner: string, name: string, branch: strin
  * @param name 仓库名称
  * @returns Promise<boolean>
  */
-export async function checkGitHubRepoExists(owner: string, name: string): Promise<boolean> {
+export async function checkGitHubRepoExists(owner: string, name: string, branch?: string): Promise<boolean> {
   try {
-    const response = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
+    const branchPath = branch ? `/branches/${branch}` : '';
+    const response = await fetch(`https://api.github.com/repos/${owner}/${name}${branchPath}`, {
       method: 'HEAD',
       headers: {
         'Accept': 'application/vnd.github.v3+json',

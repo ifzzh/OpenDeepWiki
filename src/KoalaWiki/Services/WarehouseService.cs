@@ -7,6 +7,7 @@ using KoalaWiki.Dto;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Functions;
+using KoalaWiki.Git;
 using KoalaWiki.KoalaWarehouse;
 using LibGit2Sharp;
 using MapsterMapper;
@@ -264,8 +265,15 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
                 input.Address += ".git";
             }
 
+            var (localPath, organization) = GitService.GetRepositoryPath(input.Address);
+
+            var names = input.Address.Split('/');
+
+            var repositoryName = names[^1].Replace(".git", "");
+
             var value = await access.Warehouses.FirstOrDefaultAsync(x =>
-                x.Address.ToLower() == input.Address.ToLower());
+                x.OrganizationName == organization && x.Name == repositoryName && x.Branch == input.Branch);
+
             // 判断这个仓库是否已经添加
             if (value?.Status is WarehouseStatus.Completed)
             {
@@ -279,19 +287,34 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             {
                 throw new Exception("该名称渠道已存在且正在处理中，请稍后再试");
             }
+            else if (!string.IsNullOrEmpty(input.Branch))
+            {
+                var branch = await access.Warehouses
+                    .AsNoTracking()
+                    .Where(x => x.Branch == input.Branch && x.OrganizationName == organization &&
+                                x.Name == repositoryName)
+                    .FirstOrDefaultAsync();
+
+                if (branch != null)
+                {
+                    throw new Exception("该分支已经存在");
+                }
+            }
 
             // 删除旧的仓库
             var oldWarehouse = await access.Warehouses
-                .Where(x => x.Address.ToLower() == input.Address.ToLower())
+                .Where(x => x.OrganizationName == organization &&
+                            x.Name == repositoryName && x.Branch == input.Branch)
                 .ExecuteDeleteAsync();
 
             var entity = mapper.Map<Warehouse>(input);
-            entity.Name = string.Empty;
+            entity.Name = repositoryName;
+            entity.OrganizationName = organization;
             entity.Description = string.Empty;
             entity.Version = string.Empty;
             entity.Error = string.Empty;
             entity.Prompt = string.Empty;
-            entity.Branch = string.Empty;
+            entity.Branch = input.Branch;
             entity.Type = "git";
             entity.CreatedAt = DateTime.UtcNow;
             entity.OptimizedDirectoryStructure = string.Empty;
@@ -321,23 +344,29 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
     /// <summary>
     /// 获取仓库概述
     /// </summary>
-    public async Task GetWarehouseOverviewAsync(string owner, string name, HttpContext context)
+    public async Task GetWarehouseOverviewAsync(string owner, string name, string? branch, HttpContext context)
     {
-        var query = await access.Warehouses
+        var warehouse = await access.Warehouses
             .AsNoTracking()
-            .Where(x => x.Name == name && x.OrganizationName == owner)
+            .Where(x => x.Name == name && x.OrganizationName == owner &&
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch))
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
-        if (query == null)
+        if (warehouse == null)
         {
-            throw new NotFoundException($"仓库不存在，请检查仓库名称和组织名称:{owner} {name}");
+            throw new NotFoundException($"仓库不存在，请检查仓库名称和组织名称:{owner} {name} {branch}");
         }
 
         var document = await access.Documents
             .AsNoTracking()
-            .Where(x => x.WarehouseId == query.Id)
+            .Where(x => x.WarehouseId == warehouse.Id)
             .FirstOrDefaultAsync();
+        
+        if(document == null)
+        {
+            throw new NotFoundException("没有找到文档, 可能在生成中或者已经出现错误");
+        }
 
         var overview = await access.DocumentOverviews.FirstOrDefaultAsync(x => x.DocumentId == document.Id);
 
@@ -371,28 +400,23 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             query = query.Where(x => x.Name.Contains(keyword) || x.Address.Contains(keyword));
         }
 
-        var total = await query.CountAsync();
-        var list = await query
-            .Select(x => new Warehouse()
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Address = x.Address,
-                Description = x.Description,
-                Version = x.Version,
-                Status = x.Status,
-                Error = x.Error,
-                CreatedAt = x.CreatedAt,
-                IsRecommended = x.IsRecommended,
-                OrganizationName = x.OrganizationName,
-                Prompt = x.Prompt,
-                Branch = x.Branch,
-                Email = x.Email,
-                Type = x.Type,
-            })
+        query = query
             .OrderByDescending(x => x.IsRecommended)
             .ThenByDescending(x => x.Status == WarehouseStatus.Completed)
-            .ThenByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.CreatedAt);
+
+        // 按仓库名称和组织名称分组，保持排序一致性
+        var groupedQuery = query
+            .GroupBy(x => new { x.Name, x.OrganizationName })
+            .Select(g => g.OrderByDescending(x => x.IsRecommended)
+                .ThenByDescending(x => x.Status == WarehouseStatus.Completed)
+                .ThenByDescending(x => x.CreatedAt)
+                .FirstOrDefault());
+
+        var total = await groupedQuery.CountAsync();
+
+        var list = await groupedQuery
+            // 不再需要重复创建新对象，直接使用实体
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

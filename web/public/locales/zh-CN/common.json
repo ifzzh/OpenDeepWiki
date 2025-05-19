@@ -79,12 +79,14 @@
       "branch_placeholder": "选择分支",
       "branch_input_placeholder": "请输入分支名称",
       "load_branches": "加载分支",
-      "branch_loaded": "分支列表加载成功",
+      "branch_loaded": "分支列表加载成功，已选择默认分支",
       "branch_load_failed": "获取分支列表失败，请手动输入分支名",
       "branch_load_error": "获取分支列表出错，请检查仓库地址和认证信息",
       "auth_required": "已启用认证，请先输入用户名和密码/令牌",
       "manual_input": "手动输入",
-      "use_select": "使用选择器"
+      "use_select": "使用选择器",
+      "default_branch_loaded": "已自动选择仓库默认分支: {{branch}}",
+      "no_default_branch": "未找到默认分支，已选择第一个分支"
     },
     "last_repo": {
       "title": "查询仓库",

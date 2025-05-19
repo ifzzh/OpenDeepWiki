@@ -5,7 +5,7 @@ namespace KoalaWiki.Git;
 
 public class GitService
 {
-    private static (string localPath, string organization) GetRepositoryPath(string repositoryUrl)
+    public static (string localPath, string organization) GetRepositoryPath(string repositoryUrl)
     {
         // 解析仓库地址
         var uri = new Uri(repositoryUrl);
@@ -19,7 +19,7 @@ public class GitService
         return (repositoryPath, organization);
     }
 
-    public static List<Commit> PullRepository(
+    public static (List<Commit> commits, string Sha) PullRepository(
         [Description("仓库地址")] string repositoryUrl,
         string commitId,
         string userName = "",
@@ -39,7 +39,7 @@ public class GitService
                     }
             }
         };
-        
+
         // 先克隆
         if (!Directory.Exists(localPath))
         {
@@ -61,10 +61,10 @@ public class GitService
 
         // pull仓库
         using var repo = new Repository(localPath);
-        
+
         var result = Commands.Pull(repo, new Signature("KoalaWiki", "239573049@qq.com", DateTimeOffset.Now),
             pullOptions);
-        
+
         // commitId是上次提交id，根据commitId获取到到现在的所有提交记录
         if (!string.IsNullOrEmpty(commitId))
         {
@@ -79,11 +79,11 @@ public class GitService
                     SortBy = CommitSortStrategies.Time
                 };
                 var commits = repo.Commits.QueryBy(filter).ToList();
-                return commits;
+                return (commits, repo.Head.Tip.Sha);
             }
         }
 
-        return [];
+        return (repo.Commits.ToList(), repo.Head.Tip.Sha);
     }
 
     /// <summary>
@@ -104,13 +104,15 @@ public class GitService
             {
                 CertificateCheck = (_, _, _) => true,
                 Depth = 0,
-            }
+            },
+            BranchName = branch
         };
 
         var names = repositoryUrl.Split('/');
 
         var repositoryName = names[^1].Replace(".git", "");
 
+        localPath = Path.Combine(localPath, branch);
 
         // 判断仓库是否已经存在
         if (Directory.Exists(localPath))

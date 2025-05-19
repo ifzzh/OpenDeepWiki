@@ -5,28 +5,34 @@ import RepositoryInfo from './RepositoryInfo';
 import { checkGitHubRepoExists } from '../../services/githubService';
 
 // 服务器组件，处理数据获取
-export default async function RepositoryPage({ params }: any) {
+export default async function RepositoryPage({ params, searchParams }: {
+  params: { owner: string; name: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   try {
     const owner = params.owner;
     const name = params.name;
+    // 从查询参数中获取分支信息
+    const branch = searchParams.branch as string | undefined;
 
     if (!owner || !name) {
       throw new Error('Missing owner or repository name');
     }
 
     // 在服务器端获取数据
-    const response = await getWarehouseOverview(owner, name);
+    const response = await getWarehouseOverview(owner, name, branch);
 
     // 如果获取数据失败，尝试从GitHub获取仓库信息
     if (!response.success || !response.data) {
       // 检查GitHub仓库是否存在
-      const githubRepoExists = await checkGitHubRepoExists(owner, name);
+      const githubRepoExists = await checkGitHubRepoExists(owner, name, branch);
       
       // 如果GitHub仓库存在，则显示GitHub仓库信息
       if (githubRepoExists) {
         return (
           <RepositoryInfo
             owner={owner}
+            branch={branch}
             name={name}
           />
         );
@@ -35,6 +41,7 @@ export default async function RepositoryPage({ params }: any) {
         return (
           <RepositoryInfo
             owner={owner}
+            branch={branch}
             name={name}
           />
         );
@@ -52,12 +59,14 @@ export default async function RepositoryPage({ params }: any) {
   } catch (error) {
     const owner = params?.owner || "";
     const name = params?.name || "";
+    const branch = searchParams?.branch as string | undefined;
     
     // 出现错误时也展示GitHub仓库信息（如果有）
     return (
       <RepositoryInfo
         owner={owner}
         name={name}
+        branch={branch}
       />
     );
   }

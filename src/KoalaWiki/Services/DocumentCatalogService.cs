@@ -16,11 +16,12 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
     /// <param name="name"></param>
     /// <returns></returns>
     /// <exception cref="NotFoundException"></exception>
-    public async Task<object> GetDocumentCatalogsAsync(string organizationName, string name)
+    public async Task<object> GetDocumentCatalogsAsync(string organizationName, string name, string? branch)
     {
         var warehouse = await dbAccess.Warehouses
             .AsNoTracking()
-            .Where(x => x.Name == name && x.OrganizationName == organizationName)
+            .Where(x => x.Name == name && x.OrganizationName == organizationName &&
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch))
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
@@ -57,7 +58,8 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
         }
 
         var branchs =
-            (await dbAccess.Warehouses.Where(x => x.Name == name && x.OrganizationName == organizationName && x.Type == "git")
+            (await dbAccess.Warehouses
+                .Where(x => x.Name == name && x.OrganizationName == organizationName && x.Type == "git")
                 .Select(x => x.Branch)
                 .ToArrayAsync());
 
@@ -80,12 +82,14 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
     /// 根据目录id获取文件
     /// </summary>
     /// <returns></returns>
-    public async Task GetDocumentByIdAsync(HttpContext httpContext, string owner, string name, string path)
+    public async Task GetDocumentByIdAsync(HttpContext httpContext, string owner, string name, string? branch,
+        string path)
     {
         // 先根据仓库名称和组织名称找到仓库
         var query = await dbAccess.Warehouses
             .AsNoTracking()
-            .Where(x => x.Name == name && x.OrganizationName == owner)
+            .Where(x => x.Name == name && x.OrganizationName == owner &&
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch))
             .FirstOrDefaultAsync();
 
         if (query == null)

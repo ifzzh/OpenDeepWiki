@@ -40,7 +40,7 @@ import {
 } from '@ant-design/icons';
 import { PanelRightClose, PanelLeftClose, SaveAll } from 'lucide-react'
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import AIInputBar from '../../components/AIInputBar';
 import Image from 'next/image';
@@ -76,6 +76,8 @@ export default function RepositoryLayoutClient({
   children,
 }: RepositoryLayoutClientProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { token } = theme.useToken();
 
   const pathParts = pathname.split('/').filter(Boolean);
@@ -85,7 +87,9 @@ export default function RepositoryLayoutClient({
   const [isMobile, setIsMobile] = useState(false);
   const [isMCPModalVisible, setIsMCPModalVisible] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState<string>(initialCatalogData?.branchs?.[0] || '');
+  const [selectedBranch, setSelectedBranch] = useState<string>(
+    searchParams.get('branch') || initialCatalogData?.branchs?.[0] || ''
+  );
   
   const selectedKey = pathname.includes('/') ? 'docs' : 'overview';
 
@@ -131,6 +135,25 @@ export default function RepositoryLayoutClient({
       });
   };
 
+  // 分支改变时更新URL查询参数
+  const handleBranchChange = (value: string) => {
+    // 创建新的查询参数，保留现有参数
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('branch', value);
+
+    // 更新路由但不触发完全刷新
+    router.push(`${pathname}?${params.toString()}`);
+    setSelectedBranch(value);
+  };
+
+  // 当URL参数中的分支变化时更新选中的分支
+  useEffect(() => {
+    const branchParam = searchParams.get('branch');
+    if (branchParam && branchParam !== selectedBranch) {
+      setSelectedBranch(branchParam);
+    }
+  }, [searchParams, selectedBranch]);
+
   // 渲染原生菜单项
   const renderSidebarItem = (item: DocumentCatalogResponse, level = 0) => {
     const isActive = pathname.includes(`/${item.url}`);
@@ -149,6 +172,12 @@ export default function RepositoryLayoutClient({
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     };
 
+    // 添加分支参数到链接
+    const getItemUrl = (url: string) => {
+      const linkUrl = `/${owner}/${name}/${url}`;
+      return selectedBranch ? `${linkUrl}?branch=${selectedBranch}` : linkUrl;
+    };
+
     return (
       <div key={item.key} className="menu-item-container">
         {item.children?.length ? (
@@ -161,7 +190,7 @@ export default function RepositoryLayoutClient({
               </div>
             ) : (
               <Link
-                href={`/${owner}/${name}/${item.url}`}
+                href={getItemUrl(item.url)}
                 className={`menu-item ${isActive ? 'active' : ''}`}
                 style={{
                   paddingLeft: `${16 + level * 16}px`,
@@ -191,7 +220,7 @@ export default function RepositoryLayoutClient({
             </div>
           ) : (
             <Link
-              href={`/${owner}/${name}/${item.url}`}
+              href={getItemUrl(item.url)}
               className={`menu-item ${isActive ? 'active' : ''}`}
               style={{
                 paddingLeft: `${16 + level * 16}px`,
@@ -211,6 +240,7 @@ export default function RepositoryLayoutClient({
     );
   };
 
+  // 更新链接生成方法添加分支参数
   const generateBreadcrumb = () => {
     const items = [
       {
@@ -220,7 +250,7 @@ export default function RepositoryLayoutClient({
         title: <Link href={`/${owner}`}>{owner}</Link>,
       },
       {
-        title: <Link href={`/${owner}/${name}`}>{name}</Link>,
+        title: <Link href={selectedBranch ? `/${owner}/${name}?branch=${selectedBranch}` : `/${owner}/${name}`}>{name}</Link>,
       }
     ];
 
@@ -357,7 +387,7 @@ export default function RepositoryLayoutClient({
               {initialCatalogData?.branchs && initialCatalogData.branchs.length > 0 && selectedBranch && (
                 <Select
                   value={selectedBranch}
-                  onChange={(value) => setSelectedBranch(value)}
+                  onChange={handleBranchChange}
                   style={{ width: isMobile ? 120 : 180 }}
                   size={isMobile ? "small" : "middle"}
                   options={initialCatalogData.branchs.map((branch: string) => ({ 
@@ -644,7 +674,7 @@ export default function RepositoryLayoutClient({
 
               <div className={`menu-wrapper ${collapsed ? 'hidden' : ''}`}>
                 <Link
-                  href={`/${owner}/${name}`}
+                  href={selectedBranch ? `/${owner}/${name}?branch=${selectedBranch}` : `/${owner}/${name}`}
                   className={`menu-item ${pathname === `/${owner}/${name}` ? 'active' : ''}`}
                 >
                   <span>概览</span>
@@ -660,7 +690,7 @@ export default function RepositoryLayoutClient({
                 {initialCatalogData?.items?.map(item => renderSidebarItem(item))}
 
                 <Link
-                  href={`/${owner}/${name}/changelog`}
+                  href={selectedBranch ? `/${owner}/${name}/changelog?branch=${selectedBranch}` : `/${owner}/${name}/changelog`}
                   className={`menu-item ${pathname === `/${owner}/${name}/changelog` ? 'active' : ''}`}
                 >
                   <span>更新日志</span>
@@ -851,6 +881,7 @@ export default function RepositoryLayoutClient({
           <AIInputBar
             owner={owner}
             name={name}
+            branch={selectedBranch}
             style={{
               position: 'fixed',
               bottom: token.marginLG,

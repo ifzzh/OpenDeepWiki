@@ -1,90 +1,52 @@
-'use client'
-
-import { useEffect, useState, use } from 'react';
 import { getChangeLog } from '../../../services/warehouseService';
-import { Empty, theme, Typography } from 'antd';
-import { ServerLoadingErrorState } from '../../../components/document/ServerComponents';
-import { ApiResponse } from '../../../services/api';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import RepositoryInfo from '../RepositoryInfo';
 
-const { useToken } = theme;
-const { Title } = Typography;
+// 服务器组件，处理数据获取
+export default async function ChangelogPage({ params, searchParams }: {
+  params: { owner: string; name: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  try {
+    const owner = params.owner;
+    const name = params.name;
+    // 从查询参数中获取分支信息
+    const branch = searchParams.branch as string | undefined;
 
-interface PageParams {
-  owner: string;
-  name: string;
-}
-
-export default function ChangelogPage({ params }: { params: Promise<PageParams> }) {
-  const { token } = useToken();
-  const unwrappedParams = use(params);
-  const { owner, name } = unwrappedParams;
-  const [changelog, setChangelog] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchChangelog() {
-      try {
-        setLoading(true);
-        const response = await getChangeLog(owner, name);
-        console.log(response);
-        
-        setChangelog(response.data);
-        setLoading(false);
-      } catch (err) {
-        console.error('获取更新日志失败', err);
-        setError('获取更新日志失败');
-        setLoading(false);
-      }
+    if (!owner || !name) {
+      throw new Error('Missing owner or repository name');
     }
 
-    if (owner && name) {
-      fetchChangelog();
+    // 在服务器端获取数据
+    const response = await getChangeLog(owner, name, branch);
+
+    // 如果获取数据失败，尝试从GitHub获取仓库信息
+    if (!response.success || !response.data) {
+      return (
+        <RepositoryInfo
+          owner={owner}
+          name={name}
+        />
+      );
     }
-  }, [owner, name]);
 
-  if (loading) {
-    return <ServerLoadingErrorState loading={true} owner={owner} name={name} />;
-  }
-
-  if (error) {
-    return <ServerLoadingErrorState loading={false} error={error} owner={owner} name={name} />;
-  }
-
-  if (!changelog) {
+    // 直接在服务器端渲染更新日志
     return (
-      <Empty
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description="暂无更新日志"
-        style={{ 
-          marginTop: token.marginXL, 
-          padding: token.paddingLG 
-        }}
+      <div style={{maxWidth: 800, margin: '0 auto', padding: '24px'}}>
+        <h2 style={{marginBottom: '24px'}}>更新日志</h2>
+        <div dangerouslySetInnerHTML={{__html: response.data.html || response.data.commitMessage}} />
+      </div>
+    );
+  } catch (error) {
+    console.error('Failed to load changelog:', error);
+    const owner = params?.owner || "";
+    const name = params?.name || "";
+    
+    // 出现错误时也展示GitHub仓库信息（如果有）
+    return (
+      <RepositoryInfo
+        owner={owner}
+        name={name}
       />
     );
   }
-
-  return (
-    <div style={{ 
-      maxWidth: 800, 
-      margin: '0 auto', 
-      padding: token.paddingLG,
-    }}>
-      <Title level={2} style={{ marginBottom: token.marginLG, color: token.colorTextHeading }}>
-        更新日志
-      </Title>
-      
-      <div className="markdown-content" style={{ 
-        color: token.colorText, 
-        lineHeight: 1.6,
-        fontSize: token.fontSize
-      }}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {changelog.commitMessage}
-        </ReactMarkdown>
-      </div>
-    </div>
-  );
 } 

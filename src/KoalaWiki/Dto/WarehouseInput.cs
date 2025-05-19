@@ -7,6 +7,12 @@ public class WarehouseInput
     /// </summary>
     /// <returns></returns>
     public string Address { get; set; }
+    
+    /// <summary>
+    /// 分支
+    /// </summary>
+    /// <returns></returns>
+    public string Branch { get; set; }
 
     /// <summary>
     /// 私有化git账号

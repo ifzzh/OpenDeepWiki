@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Row, Col,  theme } from 'antd';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import 'katex/dist/katex.min.css';
 
 // 导入封装好的组件
@@ -24,7 +24,9 @@ const { useToken } = theme;
 
 export default function DocumentPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { owner, name, path } = params;
+  const branch = searchParams.get('branch');
   const [document, setDocument] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +49,8 @@ export default function DocumentPage() {
     const fetchDocument = async () => {
       try {
         setLoading(true);
-        const response = await documentById(owner as string, name as string, path as string);
-        console.log(response, owner, name, path);
+        const response = await documentById(owner as string, name as string, path as string, branch || undefined);
+        console.log(response, owner, name, path, branch);
         if (response.isSuccess && response.data) {
           setDocument(response.data);
           // 提取标题作为目录
@@ -67,7 +69,7 @@ export default function DocumentPage() {
     };
 
     fetchDocument();
-  }, [owner, name, path]);
+  }, [owner, name, path, branch]);
 
   // 渲染页面主体
   return (

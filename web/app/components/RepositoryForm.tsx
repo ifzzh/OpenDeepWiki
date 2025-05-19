@@ -150,15 +150,31 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
       if (response.success && response.data && response.data.length > 0) {
         setBranches(response.data);
         setManualBranchInput(false);
-        // 如果有分支列表，并且当前没有选择分支或选的是默认的main分支，则选择列表中的第一个分支
+        
+        // 检查是否有默认分支，如果有则选择默认分支，否则选择第一个分支
         const currentBranch = form.getFieldValue('branch');
-        if (!currentBranch || currentBranch === 'main') {
-          form.setFieldsValue({ branch: response.data[0] });
+        if (!currentBranch || currentBranch === 'main' || currentBranch === 'master') {
+          // 优先使用API返回的默认分支
+          if (response.defaultBranch && response.data.includes(response.defaultBranch)) {
+            form.setFieldsValue({ branch: response.defaultBranch });
+            message.success(t('repository.form.default_branch_loaded', { branch: response.defaultBranch }));
+          } else {
+            // 如果没有默认分支或默认分支不在分支列表中，则使用第一个分支
+            form.setFieldsValue({ branch: response.data[0] });
+            message.info(t('repository.form.no_default_branch', '未找到默认分支，已选择第一个分支'));
+          }
         }
-        message.success(t('repository.form.branch_loaded', '分支列表加载成功'));
+        
+        message.success(t('repository.form.branch_loaded', '分支列表加载成功，已选择默认分支'));
       } else {
         setBranches(response.data || ['main', 'master']);
         setManualBranchInput(true);
+        
+        // 如果有返回默认分支但加载失败，尝试使用默认分支
+        if (response.defaultBranch) {
+          form.setFieldsValue({ branch: response.defaultBranch });
+        }
+        
         message.warning(response.error || t('repository.form.branch_load_failed', '获取分支列表失败，请手动输入分支名'));
       }
     } catch (error) {

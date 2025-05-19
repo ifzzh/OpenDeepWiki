@@ -8,9 +8,10 @@ interface ClientRepositoryPageProps {
   owner: string;
   name: string;
   document: any;
+  branch?: string;
 }
 
-export default function ClientRepositoryPage({ owner, name, document }: ClientRepositoryPageProps) {
+export default function ClientRepositoryPage({ owner, name, document }: ClientRepositoryPageProps) {    
   return (
     <Suspense fallback={<ServerLoadingErrorState loading={true} owner={owner} name={name} />}>
       <RepositoryView

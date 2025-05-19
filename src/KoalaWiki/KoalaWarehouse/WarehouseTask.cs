@@ -68,7 +68,7 @@ public class WarehouseTask(
         {
             Document document;
 
-            if (value.Type.Equals("git", StringComparison.OrdinalIgnoreCase))
+            if (value?.Type?.Equals("git", StringComparison.OrdinalIgnoreCase) == true)
             {
                 // 先拉取仓库
                 logger.LogInformation("开始拉取仓库：{Address}", value.Address);
@@ -115,7 +115,7 @@ public class WarehouseTask(
                 await documentsService.HandleAsync(document, value, dbContext,
                     value.Address.Replace(".git", string.Empty));
             }
-            else if (value.Type.Equals("file", StringComparison.OrdinalIgnoreCase))
+            else if (value?.Type?.Equals("file", StringComparison.OrdinalIgnoreCase) == true)
             {
                 await dbContext!.Warehouses.Where(x => x.Id == value.Id)
                     .ExecuteUpdateAsync(x => x.SetProperty(x => x.Status, WarehouseStatus.Processing),

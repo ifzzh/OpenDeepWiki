@@ -16,7 +16,7 @@ public class GlobalMiddleware(ILogger<GlobalMiddleware> logger) : IMiddleware
             await context.Response.WriteAsJsonAsync(new
             {
                 code = 500,
-                message = "Internal Server Error",
+                message = e.Message
             });
         }
     }

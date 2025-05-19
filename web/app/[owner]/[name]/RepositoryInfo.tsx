@@ -27,7 +27,7 @@ interface GitHubRepoInfo {
 }
 
 import RepositoryForm from '../../components/RepositoryForm';
-import { submitWarehouse } from '../../services';
+import { submitWarehouse, getGitHubReadme } from '../../services';
 import { RepositoryFormValues } from '../../types';
 
 const { Title, Paragraph } = Typography;
@@ -35,16 +35,18 @@ const { useToken } = theme;
 
 interface RepositoryInfoProps {
   owner: string;
-  name: string;
+  name: string; 
+  branch?: string;
 }
 
-export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
+export default function RepositoryInfo({ owner, name, branch }: RepositoryInfoProps) {
   const { token } = useToken();
   const [repoInfo, setRepoInfo] = useState<GitHubRepoInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [readme, setReadme] = useState<string | null>(null);
   const [formVisible, setFormVisible] = useState(false);
+  const [currentBranch, setCurrentBranch] = useState<string | undefined>(branch);
 
   useEffect(() => {
     async function fetchGitHubRepo() {
@@ -59,19 +61,18 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
 
         const data = await response.json();
         setRepoInfo(data);
+        
+        // 如果没有指定分支，使用默认分支
+        if (!currentBranch) {
+          setCurrentBranch(data.default_branch);
+        }
 
         // 获取README内容
         try {
-          const readmeResponse = await fetch(`https://api.github.com/repos/${owner}/${name}/readme`, {
-            headers: {
-              'Accept': 'application/vnd.github.html'
-            }
-          });
-
-          if (readmeResponse.ok) {
-
-            const readmeHtml = await readmeResponse.text();
-            setReadme(readmeHtml);
+          // 使用导入的getGitHubReadme函数，传递当前分支
+          const readmeContent = await getGitHubReadme(owner, name, currentBranch || data.default_branch);
+          if (readmeContent) {
+            setReadme(readmeContent);
           }
         } catch (readmeErr) {
           console.error('获取README失败:', readmeErr);
@@ -90,7 +91,7 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
     if (owner && name) {
       fetchGitHubRepo();
     }
-  }, [owner, name]);
+  }, [owner, name, currentBranch]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -148,7 +149,7 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
                     target="_blank"
                     style={{ color: token.colorText }}
                   >
-                    {owner}/{name}
+                    {owner}/{name}{currentBranch && currentBranch !== repoInfo.default_branch ? ` (${currentBranch})` : ''}
                   </Link>
                 </Title>
                 {repoInfo.description && (
@@ -160,7 +161,7 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
               <div style={{ display: 'flex', marginTop: { xs: '16px', sm: '16px', md: '0' }[token.screenSM], flexWrap: 'wrap' }}>
                 <Button
                   type="primary"
-                  href={`https://github.com/${owner}/${name}`}
+                  href={`https://github.com/${owner}/${name}${currentBranch && currentBranch !== repoInfo.default_branch ? `/tree/${currentBranch}` : ''}`}
                   target="_blank"
                   style={{ marginRight: '12px', marginBottom: '8px' }}
                   icon={<EyeOutlined />}
@@ -301,7 +302,7 @@ export default function RepositoryInfo({ owner, name }: RepositoryInfoProps) {
               initialValues={{
                 address: `https://github.com/${owner}/${name}`,
                 type: 'git',
-                branch: repoInfo?.default_branch || 'main',
+                branch: currentBranch || repoInfo?.default_branch || 'main',
                 prompt: '',
               }}
               disabledFields={['address']}

@@ -79,12 +79,14 @@
       "branch_placeholder": "Select branch",
       "branch_input_placeholder": "Enter branch name",
       "load_branches": "Load Branches",
-      "branch_loaded": "Branch list loaded successfully",
+      "branch_loaded": "Branch list loaded successfully, default branch selected",
       "branch_load_failed": "Failed to get branch list, please enter branch name manually",
       "branch_load_error": "Error getting branch list, please check repository address and authentication information",
       "auth_required": "Authentication is enabled, please enter username and password/token first",
       "manual_input": "Manual Input",
-      "use_select": "Use Selector"
+      "use_select": "Use Selector",
+      "default_branch_loaded": "Repository default branch auto-selected: {{branch}}",
+      "no_default_branch": "No default branch found, selected first branch"
     },
     "last_repo": {
       "title": "Query Repository",

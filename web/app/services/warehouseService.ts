@@ -28,6 +28,7 @@ export interface WarehouseListResponse {
 export interface BranchListResponse {
   success: boolean;
   data: string[];
+  defaultBranch?: string;
   error?: string;
 }
 
@@ -50,7 +51,7 @@ export async function submitWarehouse(
  * @param repoUrl 仓库地址
  * @param username 可选的用户名（私有仓库需要）
  * @param password 可选的密码或访问令牌（私有仓库需要）
- * @returns 分支列表
+ * @returns 分支列表和默认分支
  */
 export async function getBranchList(
   repoUrl: string,
@@ -76,12 +77,12 @@ export async function getBranchList(
     
     // 根据URL确定平台
     let branchesData: string[] = [];
+    let defaultBranch: string | undefined;
     
     // GitHub仓库
     if (url.hostname === 'github.com' || url.hostname === 'www.github.com') {
-      // 构建GitHub API URL
-      let apiUrl = `https://api.github.com/repos/${owner}/${repo}/branches`;
-      
+      // 1. 先获取仓库信息以获取默认分支
+      const repoInfoUrl = `https://api.github.com/repos/${owner}/${repo}`;
       const headers: HeadersInit = {
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28'
@@ -93,13 +94,24 @@ export async function getBranchList(
         headers['Authorization'] = `Basic ${credentials}`;
       }
       
-      const response = await fetch(apiUrl, { headers });
+      const repoInfoResponse = await fetch(repoInfoUrl, { headers });
       
-      if (!response.ok) {
-        throw new Error(`GitHub API请求失败: ${response.status} ${response.statusText}`);
+      if (!repoInfoResponse.ok) {
+        throw new Error(`GitHub API请求失败: ${repoInfoResponse.status} ${repoInfoResponse.statusText}`);
       }
       
-      const data = await response.json();
+      const repoInfo = await repoInfoResponse.json();
+      defaultBranch = repoInfo.default_branch;
+      
+      // 2. 获取分支列表
+      const branchesUrl = `https://api.github.com/repos/${owner}/${repo}/branches`;
+      const branchesResponse = await fetch(branchesUrl, { headers });
+      
+      if (!branchesResponse.ok) {
+        throw new Error(`GitHub API请求失败: ${branchesResponse.status} ${branchesResponse.statusText}`);
+      }
+      
+      const data = await branchesResponse.json();
       
       if (Array.isArray(data)) {
         branchesData = data.map(branch => branch.name);
@@ -107,21 +119,38 @@ export async function getBranchList(
     }
     // Gitee仓库
     else if (url.hostname === 'gitee.com' || url.hostname === 'www.gitee.com') {
-      // 构建Gitee API URL
-      let apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}/branches`;
+      // 1. 先获取仓库信息以获取默认分支
+      let repoInfoUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}`;
       
       // 如果提供了访问令牌
       if (password) {
-        apiUrl += `?access_token=${password}`;
+        repoInfoUrl += `?access_token=${password}`;
       }
       
-      const response = await fetch(apiUrl);
+      const repoInfoResponse = await fetch(repoInfoUrl);
       
-      if (!response.ok) {
-        throw new Error(`Gitee API请求失败: ${response.status} ${response.statusText}`);
+      if (!repoInfoResponse.ok) {
+        throw new Error(`Gitee API请求失败: ${repoInfoResponse.status} ${repoInfoResponse.statusText}`);
       }
       
-      const data = await response.json();
+      const repoInfo = await repoInfoResponse.json();
+      defaultBranch = repoInfo.default_branch;
+      
+      // 2. 获取分支列表
+      let branchesUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}/branches`;
+      
+      // 如果提供了访问令牌
+      if (password) {
+        branchesUrl += `?access_token=${password}`;
+      }
+      
+      const branchesResponse = await fetch(branchesUrl);
+      
+      if (!branchesResponse.ok) {
+        throw new Error(`Gitee API请求失败: ${branchesResponse.status} ${branchesResponse.statusText}`);
+      }
+      
+      const data = await branchesResponse.json();
       
       if (Array.isArray(data)) {
         branchesData = data.map(branch => branch.name);
@@ -129,22 +158,117 @@ export async function getBranchList(
     }
     // 其他Git提供商，尝试使用通用办法处理
     else {
-      return {
-        success: false,
-        data: ['main', 'master'], // 提供默认分支作为备选
-        error: '不支持的Git提供商，请手动输入分支名'
-      };
+      try {
+        // 尝试通用Git API格式获取信息
+        // 1. 首先尝试通用的API格式获取仓库信息
+        const headers: HeadersInit = {};
+        
+        // 如果提供了凭据，尝试添加授权头
+        if (username && password) {
+          // 基本认证
+          const credentials = btoa(`${username}:${password}`);
+          headers['Authorization'] = `Basic ${credentials}`;
+          
+          // 也可能是令牌认证
+          // headers['Authorization'] = `token ${password}`;
+        }
+        
+        // 构建通用的API URL格式
+        // 许多Git服务商都使用相似的API路径结构
+        const apiBaseUrl = `${url.protocol}//${url.hostname}/api/v1`;
+        const repoInfoUrl = `${apiBaseUrl}/repos/${owner}/${repo}`;
+        
+        const repoInfoResponse = await fetch(repoInfoUrl, { headers });
+        
+        if (repoInfoResponse.ok) {
+          const repoInfo = await repoInfoResponse.json();
+          defaultBranch = repoInfo.default_branch;
+          
+          // 尝试获取分支信息
+          const branchesUrl = `${apiBaseUrl}/repos/${owner}/${repo}/branches`;
+          const branchesResponse = await fetch(branchesUrl, { headers });
+          
+          if (branchesResponse.ok) {
+            const data = await branchesResponse.json();
+            
+            if (Array.isArray(data)) {
+              branchesData = data.map(branch => 
+                typeof branch === 'object' && branch !== null && 'name' in branch 
+                  ? branch.name 
+                  : String(branch)
+              );
+              
+              return {
+                success: true,
+                data: branchesData,
+                defaultBranch: defaultBranch
+              };
+            }
+          }
+        }
+        
+        // 尝试通用的Git API v3格式
+        const apiV3BaseUrl = `${url.protocol}//${url.hostname}/api/v3`;
+        const repoInfoV3Url = `${apiV3BaseUrl}/repos/${owner}/${repo}`;
+        
+        const repoInfoV3Response = await fetch(repoInfoV3Url, { headers });
+        
+        if (repoInfoV3Response.ok) {
+          const repoInfo = await repoInfoV3Response.json();
+          defaultBranch = repoInfo.default_branch;
+          
+          // 尝试获取分支信息
+          const branchesV3Url = `${apiV3BaseUrl}/repos/${owner}/${repo}/branches`;
+          const branchesV3Response = await fetch(branchesV3Url, { headers });
+          
+          if (branchesV3Response.ok) {
+            const data = await branchesV3Response.json();
+            
+            if (Array.isArray(data)) {
+              branchesData = data.map(branch => 
+                typeof branch === 'object' && branch !== null && 'name' in branch 
+                  ? branch.name 
+                  : String(branch)
+              );
+              
+              return {
+                success: true,
+                data: branchesData,
+                defaultBranch: defaultBranch
+              };
+            }
+          }
+        }
+        
+        // 如果以上都失败，返回默认分支
+        return {
+          success: false,
+          data: ['main', 'master'], // 提供默认分支作为备选
+          defaultBranch: 'main', // 假设main是默认分支
+          error: '不支持的Git提供商，已尝试通用API但失败，请手动输入分支名'
+        };
+      } catch (error) {
+        console.error('尝试通用API获取分支列表失败:', error);
+        return {
+          success: false,
+          data: ['main', 'master'], // 提供默认分支作为备选
+          defaultBranch: 'main', // 假设main是默认分支
+          error: '不支持的Git提供商，请手动输入分支名'
+        };
+      }
     }
     
     return {
       success: true,
-      data: branchesData
+      data: branchesData,
+      defaultBranch: defaultBranch
     };
   } catch (error) {
     console.error('获取分支列表失败:', error);
     return {
       success: false,
       data: ['main', 'master'], // 提供默认分支作为备选
+      defaultBranch: 'main', // 假设main是默认分支
       error: error instanceof Error ? error.message : '获取分支列表时发生未知错误'
     };
   }
@@ -167,9 +291,15 @@ export async function getWarehouse(page: number, pageSize: number, keyword?: str
  * 获取文档目录
  * 此函数可在服务器组件中使用
  */
-export async function documentCatalog(organizationName: string, name: string): Promise<any> {
+export async function documentCatalog(organizationName: string, name: string, branch?: string): Promise<any> {
+  // 构建URL，如果branch存在则添加到查询参数中
+  let url = API_URL + '/api/DocumentCatalog/DocumentCatalogs?organizationName=' + organizationName + '&name=' + name;
+  if (branch) {
+    url += '&branch=' + branch;
+  }
+  
   // @ts-ignore
-  return fetchApi<any>(API_URL + '/api/DocumentCatalog/DocumentCatalogs?organizationName=' + organizationName + '&name=' + name, {
+  return fetchApi<any>(url, {
     method: 'GET',
     // 添加缓存控制使其适用于服务器组件
     cache: 'no-store'
@@ -180,10 +310,16 @@ export async function documentCatalog(organizationName: string, name: string): P
  * 根据ID获取文档
  * 此函数可在服务器组件中使用
  */
-export async function documentById(owner: string, name: string, path: string): Promise<any> {
+export async function documentById(owner: string, name: string, path: string, branch?: string): Promise<any> {
   console.log(owner, name, path);
+  // 构建URL，如果branch存在则添加到查询参数中
+  let url = API_URL + '/api/DocumentCatalog/DocumentById?owner=' + owner + '&name=' + name + '&path=' + path;
+  if (branch) {
+    url += '&branch=' + branch;
+  }
+  
   // @ts-ignore
-  return fetchApi<any>(API_URL + '/api/DocumentCatalog/DocumentById?owner=' + owner + '&name=' + name + '&path=' + path, {
+  return fetchApi<any>(url, {
     method: 'GET',
     // 添加缓存控制使其适用于服务器组件
     cache: 'no-store'
@@ -194,9 +330,15 @@ export async function documentById(owner: string, name: string, path: string): P
  * 获取仓库概览信息
  * 此函数可在服务器组件中使用
  */
-export async function getWarehouseOverview(owner: string, name: string) {
+export async function getWarehouseOverview(owner: string, name: string, branch?: string) {
+  // 构建URL，如果branch存在则添加到查询参数中
+  let url = API_URL + '/api/Warehouse/WarehouseOverview?owner=' + owner + '&name=' + name;
+  if (branch) {
+    url += '&branch=' + branch;
+  }
+  
   // @ts-ignore
-  return fetchApi<any>(API_URL + '/api/Warehouse/WarehouseOverview?owner=' + owner + '&name=' + name, {
+  return fetchApi<any>(url, {
     method: 'GET',
     // 添加缓存控制使其适用于服务器组件
     cache: 'no-store'
@@ -220,9 +362,15 @@ export async function getLastWarehouse(address: string) {
  * 获取更新日志
  * 此函数可在服务器组件中使用
  */
-export async function getChangeLog(owner: string, name: string) {
+export async function getChangeLog(owner: string, name: string, branch?: string) {
+  // 构建URL，如果branch存在则添加到查询参数中
+  let url = API_URL + '/api/Warehouse/ChangeLog?owner=' + owner + '&name=' + name;
+  if (branch) {
+    url += '&branch=' + branch;
+  }
+  
   // @ts-ignore
-  return fetchApi<any>(API_URL + '/api/Warehouse/ChangeLog?owner=' + owner + '&name=' + name, {
+  return fetchApi<any>(url, {
     method: 'GET',
     // 添加缓存控制使其适用于服务器组件
     cache: 'no-store'

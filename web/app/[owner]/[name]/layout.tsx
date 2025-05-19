@@ -4,6 +4,7 @@ import RepositoryLayoutServer from './layout.server';
 type Props = {
   params: { owner: string; name: string }
   children: React.ReactNode
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
 // 为页面生成动态元数据
@@ -44,11 +45,13 @@ export async function generateMetadata(
 export default function RepositoryLayout({
   params,
   children,
+  searchParams,
 }: Props) {
   return (
     <RepositoryLayoutServer
       owner={params.owner}
       name={params.name}
+      searchParams={searchParams}
     >
       {children}
     </RepositoryLayoutServer>
