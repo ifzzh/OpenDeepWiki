@@ -1,0 +1,26 @@
+{
+  "title": "OpenDeekWiki - AI-gestuurde codeconnaissancebase",
+  "language": {
+    "zh-CN": "Chinees (vereenvoudigd)",
+    "en-US": "Engels (VS)",
+    "zh-TW": "Chinees (traditioneel)",
+    "ja": "Japans",
+    "ko": "Koreaans",
+    "de": "Duits",
+    "fr": "Frans",
+    "es": "Spaans",
+    "it": "Italiaans",
+    "pt": "Portugees",
+    "ru": "Russisch",
+    "ar": "Arabisch",
+    "hi": "Hindi",
+    "nl": "Nederlands",
+    "tr": "Turks",
+    "vi": "Vietnamees",
+    "id": "Indonesisch",
+    "th": "Thais",
+    "asia": "Azië",
+    "europe": "Europa & Amerika",
+    "middle_east": "Midden-Oosten"
+  }
+}

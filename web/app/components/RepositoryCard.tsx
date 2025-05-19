@@ -11,12 +11,16 @@ import {
 import { ChevronsRight, Heart, Sparkles, Star } from 'lucide-react';
 import { Badge } from 'antd';
 import { MaskShadow } from '@lobehub/ui';
+import { useTranslation } from '../i18n/client';
 
 interface RepositoryCardProps {
   repository: Repository;
 }
 
 const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
+  const { t, i18n } = useTranslation();
+  const currentLocale = i18n.language;
+
   // 获取仓库所有者和名称
   const getRepoInfo = (address: string) => {
     try {
@@ -77,14 +81,20 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
   // 获取状态文本
   const getStatusText = (status: number) => {
     switch (status) {
-      case 0: return '待处理';
-      case 1: return '处理中';
-      case 2: return '已完成';
-      case 3: return '已取消';
-      case 4: return '未授权';
-      case 99: return '已失败';
-      default: return '未知状态';
+      case 0: return t('repository.status.pending', '待处理');
+      case 1: return t('repository.status.processing', '处理中');
+      case 2: return t('repository.status.completed', '已完成');
+      case 3: return t('repository.status.cancelled', '已取消');
+      case 4: return t('repository.status.unauthorized', '未授权');
+      case 99: return t('repository.status.failed', '已失败');
+      default: return t('repository.status.unknown', '未知状态');
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const locale = currentLocale === 'zh-CN' ? 'zh-CN' : 'en-US';
+    return date.toLocaleDateString(locale);
   };
 
   return (
@@ -147,7 +157,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
             <div className="repo-details">
               <span className="repo-date">
                 <ClockCircleOutlined />
-                {new Date(repository.createdAt).toLocaleDateString('zh-CN')}
+                {formatDate(repository.createdAt)}
               </span>
             </div>
 

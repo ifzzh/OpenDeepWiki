@@ -11,11 +11,14 @@ import {
 import RepositoryForm from './RepositoryForm';
 import RepositoryList from './RepositoryList';
 import LastRepoModal from './LastRepoModal';
+import LanguageSwitcher from './LanguageSwitcher';
 import { Repository, RepositoryFormValues } from '../types';
 import { submitWarehouse } from '../services/warehouseService';
 import { unstableSetRender } from 'antd';
 import { createRoot } from 'react-dom/client';
 import { homepage } from '../const/urlconst';
+import { useTranslation } from '../i18n/client';
+import { useSearchParams } from 'next/navigation';
 
 const { Content, Header, Footer } = Layout;
 const { Title, Paragraph } = Typography;
@@ -132,6 +135,25 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
 
   // 响应式状态
   const [isMobile, setIsMobile] = useState(false);
+  
+  // 获取URL参数
+  const searchParams = useSearchParams();
+
+  // 使用i18n
+  const { t, i18n } = useTranslation();
+  
+  // 监听URL参数变化，更新i18n语言
+  useEffect(() => {
+    const locale = searchParams.get('locale');
+    if (locale) {
+      i18n.changeLanguage(locale);
+    } else {
+      // 如果URL中没有locale参数，则根据浏览器语言设置
+      const browserLang = navigator.language;
+      const lang = browserLang.includes('zh') ? 'zh-CN' : 'en-US';
+      i18n.changeLanguage(lang);
+    }
+  }, [searchParams, i18n]);
 
   // 检测窗口大小变化
   useEffect(() => {
@@ -370,6 +392,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
             </div>
 
             <Space size={16} align="center">
+              <LanguageSwitcher />
               <Button
                 type="text"
                 icon={<GithubOutlined style={{ fontSize: 20 }} />}
@@ -410,13 +433,13 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   <Row gutter={[40, 40]} align="middle">
                     <Col xs={24} md={15}>
                       <div>
-                        <Badge.Ribbon text="开源" style={{ fontSize: 14, fontWeight: 600, borderRadius: 4 }}>
+                        <Badge.Ribbon text={t('home.title')} style={{ fontSize: 14, fontWeight: 600, borderRadius: 4 }}>
                           <Title level={2} style={welcomeTitleStyle}>
-                            AI驱动的代码知识库
+                            {t('home.title')}
                           </Title>
                         </Badge.Ribbon>
                         <Paragraph style={paragraphStyle}>
-                          OpenDeepWiki 是参考DeepWiki作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成等功能。
+                          {t('home.subtitle')}
                         </Paragraph>
                         <Space size={16} wrap style={{ marginTop: 8 }}>
                           <Button
@@ -429,7 +452,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                               fontSize: 15
                             }}
                           >
-                            添加新仓库
+                            {t('home.add_repo_button')}
                           </Button>
                           <Button
                             type="default"
@@ -441,7 +464,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                               color: '#6366f1'
                             }}
                           >
-                            查询上次提交仓库
+                            {t('home.query_last_repo_button')}
                           </Button>
                         </Space>
                       </div>
@@ -458,7 +481,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                               title={
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                                   <BookOutlined style={{ color: '#6366f1', fontSize: 18 }} />
-                                  <Typography.Text style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>仓库总数</Typography.Text>
+                                  <Typography.Text style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>{t('home.stats.total_repos')}</Typography.Text>
                                 </div>
                               }
                               value={stats.totalRepositories}
@@ -480,7 +503,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                               title={
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                                   <GithubOutlined style={{ color: '#6366f1', fontSize: 18 }} />
-                                  <Typography.Text style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>Git仓库</Typography.Text>
+                                  <Typography.Text style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>{t('home.stats.git_repos')}</Typography.Text>
                                 </div>
                               }
                               value={stats.gitRepos}
@@ -512,7 +535,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   alignItems: 'center',
                   gap: 8
                 }}>
-                  <FireOutlined /> 仓库列表
+                  <FireOutlined /> {t('home.repo_list.title')}
                 </Tag>
                 <Tag color="#e0e7ff" style={{
                   color: '#4f46e5',
@@ -520,11 +543,11 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   fontWeight: 500,
                   padding: '4px 12px',
                   borderRadius: 20
-                }}>共 {stats.totalRepositories} 个</Tag>
+                }}>{t('home.repo_list.total', { count: stats.totalRepositories })}</Tag>
               </div>
               <Space wrap style={{ marginTop: isMobile ? 12 : 0 }} size={12}>
                 <Search
-                  placeholder="搜索仓库名称或地址"
+                  placeholder={t('home.repo_list.search_placeholder')}
                   allowClear
                   value={searchValue}
                   onSearch={value => handleSearch(value)}
@@ -538,7 +561,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   onClick={() => setFormVisible(true)}
                   style={primaryButtonStyle}
                 >
-                  添加仓库
+                  {t('home.repo_list.add_button')}
                 </Button>
               </Space>
             </div>
@@ -556,7 +579,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
                     <Typography.Text style={{ color: customTheme.token.colorTextSecondary, fontSize: 16 }}>
-                      {searchValue ? `没有找到与"${searchValue}"相关的仓库` : "暂无仓库数据"}
+                      {searchValue ? t('home.repo_list.not_found', { keyword: searchValue }) : t('home.repo_list.empty')}
                     </Typography.Text>
                   }
                 >
@@ -567,7 +590,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                     size="large"
                     icon={<PlusOutlined />}
                   >
-                    立即添加
+                    {t('home.repo_list.add_now')}
                   </Button>
                 </Empty>
               </Card>
@@ -590,7 +613,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       onChange={handlePageChange}
                       showSizeChanger
                       showQuickJumper
-                      showTotal={(total) => `共 ${total} 个仓库`}
+                      showTotal={(total) => t('home.pagination.total', { total })}
                       style={{ fontWeight: 500 }}
                     />
                   </div>
@@ -640,7 +663,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                     color: '#64748b',
                     marginBottom: 16
                   }}>
-                    基于 .NET 9 和 Semantic Kernel 开发的开源知识库系统
+                    {t('description')}
                   </Typography.Paragraph>
                   <Space size={16}>
                     <Button
@@ -657,36 +680,36 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 <Row gutter={[48, 24]}>
                   <Col xs={24} sm={8}>
                     <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
-                      产品
+                      {t('footer.product')}
                     </Typography.Title>
                     <Space direction="vertical" size={12}>
                       {footerLinks.product.map(link => (
                         <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
-                          {link.title}
+                          {t(`footer.${link.title === '功能介绍' ? 'features' : link.title === '使用指南' ? 'guide' : 'changelog'}`)}
                         </Typography.Link>
                       ))}
                     </Space>
                   </Col>
                   <Col xs={24} sm={8}>
                     <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
-                      资源
+                      {t('footer.resources')}
                     </Typography.Title>
                     <Space direction="vertical" size={12}>
                       {footerLinks.resources.map(link => (
                         <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
-                          {link.title}
+                          {t(`footer.${link.title === '开发文档' ? 'docs' : link.title === 'API参考' ? 'api' : 'faq'}`)}
                         </Typography.Link>
                       ))}
                     </Space>
                   </Col>
                   <Col xs={24} sm={8}>
                     <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
-                      关于
+                      {t('footer.company')}
                     </Typography.Title>
                     <Space direction="vertical" size={12}>
                       {footerLinks.company.map(link => (
                         <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
-                          {link.title}
+                          {t(`footer.${link.title === '关于我们' ? 'about' : link.title === '联系方式' ? 'contact' : 'join'}`)}
                         </Typography.Link>
                       ))}
                     </Space>
@@ -699,7 +722,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               <Col xs={24} sm={12}>
                 <Space direction="vertical" size={8}>
                   <Typography.Text style={{ color: '#64748b', fontSize: 14 }}>
-                    © {new Date().getFullYear()} OpenDeepWiki. All rights reserved.
+                    {t('footer.copyright', { year: new Date().getFullYear() })}
                   </Typography.Text>
                   <Typography.Text style={{
                     color: '#64748b',
@@ -708,7 +731,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                     alignItems: 'center',
                     gap: 4
                   }}>
-                    Powered by <span style={{
+                    {t('footer.powered_by')} <span style={{
                       background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
@@ -721,10 +744,10 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               <Col xs={24} sm={12} style={{ textAlign: 'right' }}>
                 <Space split={<Divider type="vertical" style={{ borderColor: '#e2e8f0' }} />}>
                   <Typography.Link href="/privacy" style={{ color: '#64748b', fontSize: 14 }}>    
-                    隐私政策                  
+                    {t('footer.privacy')}                  
                   </Typography.Link>                 
                   <Typography.Link href="/terms" style={{ color: '#64748b', fontSize: 14 }}>
-                    服务条款
+                    {t('footer.terms')}
                   </Typography.Link>
                 </Space>
               </Col>
