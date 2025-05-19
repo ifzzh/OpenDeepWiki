@@ -125,7 +125,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
 
               <div className="repo-meta">
                 <span className="repo-url" title={repository.address}>
-                  {repository.address.replace('https://github.com/', '')}
+                  {repository.address.replace('https://github.com/', '').replace('.git', '').replace('https://gitlab.com/', '').replace('.git', '').replace('https://gitee.com/', '').replace('.git', '')}
                 </span>
                 <div className="repo-status">
                   {getStatusDot(repository.status)}
