@@ -47,11 +47,12 @@ export default function RepositoryLayout({
   children,
   searchParams,
 }: Props) {
+  console.log('searchParams', searchParams);
   return (
     <RepositoryLayoutServer
       owner={params.owner}
       name={params.name}
-      searchParams={searchParams}
+      searchParams={searchParams || {}}
     >
       {children}
     </RepositoryLayoutServer>

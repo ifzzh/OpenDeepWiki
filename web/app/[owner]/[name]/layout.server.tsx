@@ -22,7 +22,7 @@ export default async function RepositoryLayoutServer({
   owner,
   name,
   children,
-  searchParams
+  searchParams = {}
 }: {
   owner: string;
   name: string;
@@ -30,9 +30,17 @@ export default async function RepositoryLayoutServer({
   searchParams?: { branch?: string };
 }) {
   // 从URL查询参数中获取branch
-  const branch = searchParams?.branch;
+  const branch = searchParams?.branch || undefined;
   
+  console.log('searchParams in server layout:', searchParams);
+  console.log('branch parameter:', branch);
   const { catalogData, lastUpdated } = await getRepositoryData(owner, name, branch);
+  
+  // 确保initialCatalogData包含当前branch信息
+  if (catalogData && branch) {
+    catalogData.currentBranch = branch;
+  }
+  
   return (
     <RepositoryLayoutClient
       owner={owner}

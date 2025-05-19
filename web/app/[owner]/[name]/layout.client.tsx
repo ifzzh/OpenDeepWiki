@@ -87,10 +87,17 @@ export default function RepositoryLayoutClient({
   const [isMobile, setIsMobile] = useState(false);
   const [isMCPModalVisible, setIsMCPModalVisible] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  
+  // 使用URL参数中的branch，如果没有则使用从服务器传递来的currentBranch，或者使用branchs数组的第一项
   const [selectedBranch, setSelectedBranch] = useState<string>(
-    searchParams.get('branch') || initialCatalogData?.branchs?.[0] || ''
+    searchParams.get('branch') || 
+    initialCatalogData?.currentBranch || 
+    initialCatalogData?.branchs?.[0] || 
+    ''
   );
   
+  console.log('Client initialCatalogData:', initialCatalogData?.branchs, 'selectedBranch:', selectedBranch);
+
   const selectedKey = pathname.includes('/') ? 'docs' : 'overview';
 
   // Check if the screen size is mobile
@@ -137,13 +144,18 @@ export default function RepositoryLayoutClient({
 
   // 分支改变时更新URL查询参数
   const handleBranchChange = (value: string) => {
-    // 创建新的查询参数，保留现有参数
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('branch', value);
+    // 分支切换时需要强制重新加载页面以获取新分支的数据
+    if (value !== selectedBranch) {
+      // 创建新的查询参数，保留现有参数
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('branch', value);
 
-    // 更新路由但不触发完全刷新
-    router.push(`${pathname}?${params.toString()}`);
-    setSelectedBranch(value);
+      // 使用完整页面刷新以确保服务器组件重新渲染并获取新数据
+      window.location.href = `${pathname}?${params.toString()}`;
+      
+      // 不再需要设置状态，因为页面会完全刷新
+      // setSelectedBranch(value);
+    }
   };
 
   // 当URL参数中的分支变化时更新选中的分支
