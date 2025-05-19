@@ -1,0 +1,26 @@
+{
+  "title": "OpenDeekWiki - Base de conhecimento de código com tecnologia de IA",
+  "language": {
+    "zh-CN": "Chinês (simplificado)",
+    "en-US": "Inglês (EUA)",
+    "zh-TW": "Chinês (tradicional)",
+    "ja": "Japonês",
+    "ko": "Coreano",
+    "de": "Alemão",
+    "fr": "Francês",
+    "es": "Espanhol",
+    "it": "Italiano",
+    "pt": "Português",
+    "ru": "Russo",
+    "ar": "Árabe",
+    "hi": "Hindi",
+    "nl": "Holandês",
+    "tr": "Turco",
+    "vi": "Vietnamita",
+    "id": "Indonésio",
+    "th": "Tailandês",
+    "asia": "Ásia",
+    "europe": "Europa e Américas",
+    "middle_east": "Médio Oriente"
+  }
+}

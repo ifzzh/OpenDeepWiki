@@ -1,14 +1,17 @@
 import { Col, Empty, Row } from 'antd';
 import { Repository } from '../types';
 import RepositoryCard from './RepositoryCard';
+import { useTranslation } from '../i18n/client';
 
 interface RepositoryListProps {
   repositories: Repository[];
 }
 
 const RepositoryList: React.FC<RepositoryListProps> = ({ repositories }) => {
+  const { t } = useTranslation();
+  
   if (!repositories.length) {
-    return <Empty description="暂无仓库数据" />;
+    return <Empty description={t('home.repo_list.empty')} />;
   }
 
   return (

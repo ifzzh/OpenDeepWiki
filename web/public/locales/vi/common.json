@@ -1,0 +1,26 @@
+{
+  "title": "OpenDeekWiki - Cơ sở kiến thức mã nguồn được hỗ trợ bởi AI",
+  "language": {
+    "zh-CN": "Tiếng Trung (Giản thể)",
+    "en-US": "Tiếng Anh (Mỹ)",
+    "zh-TW": "Tiếng Trung (Phồn thể)",
+    "ja": "Tiếng Nhật",
+    "ko": "Tiếng Hàn",
+    "de": "Tiếng Đức",
+    "fr": "Tiếng Pháp",
+    "es": "Tiếng Tây Ban Nha",
+    "it": "Tiếng Ý",
+    "pt": "Tiếng Bồ Đào Nha",
+    "ru": "Tiếng Nga",
+    "ar": "Tiếng Ả Rập",
+    "hi": "Tiếng Hindi",
+    "nl": "Tiếng Hà Lan",
+    "tr": "Tiếng Thổ Nhĩ Kỳ",
+    "vi": "Tiếng Việt",
+    "id": "Tiếng Indonesia",
+    "th": "Tiếng Thái",
+    "asia": "Châu Á",
+    "europe": "Châu Âu & Châu Mỹ",
+    "middle_east": "Trung Đông"
+  }
+}
