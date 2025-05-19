@@ -22,6 +22,14 @@ export interface WarehouseListResponse {
   items: Repository[];
 }
 
+/**
+ * 获取仓库分支列表的返回结构
+ */
+export interface BranchListResponse {
+  success: boolean;
+  data: string[];
+  error?: string;
+}
 
 /**
  * Submit a new repository to the warehouse
@@ -35,6 +43,111 @@ export async function submitWarehouse(
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+/**
+ * 获取仓库的分支列表
+ * @param repoUrl 仓库地址
+ * @param username 可选的用户名（私有仓库需要）
+ * @param password 可选的密码或访问令牌（私有仓库需要）
+ * @returns 分支列表
+ */
+export async function getBranchList(
+  repoUrl: string,
+  username?: string,
+  password?: string
+): Promise<BranchListResponse> {
+  try {
+    // 解析仓库地址来确定是GitHub还是Gitee
+    const url = new URL(repoUrl);
+    const pathSegments = url.pathname.split('/').filter(segment => segment);
+    
+    if (pathSegments.length < 2) {
+      return {
+        success: false,
+        data: [],
+        error: '无效的仓库地址格式'
+      };
+    }
+    
+    const owner = pathSegments[0];
+    // 移除.git后缀
+    const repo = pathSegments[1].replace('.git', '');
+    
+    // 根据URL确定平台
+    let branchesData: string[] = [];
+    
+    // GitHub仓库
+    if (url.hostname === 'github.com' || url.hostname === 'www.github.com') {
+      // 构建GitHub API URL
+      let apiUrl = `https://api.github.com/repos/${owner}/${repo}/branches`;
+      
+      const headers: HeadersInit = {
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      };
+      
+      // 如果提供了凭据，添加授权头
+      if (username && password) {
+        const credentials = btoa(`${username}:${password}`);
+        headers['Authorization'] = `Basic ${credentials}`;
+      }
+      
+      const response = await fetch(apiUrl, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`GitHub API请求失败: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
+        branchesData = data.map(branch => branch.name);
+      }
+    }
+    // Gitee仓库
+    else if (url.hostname === 'gitee.com' || url.hostname === 'www.gitee.com') {
+      // 构建Gitee API URL
+      let apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}/branches`;
+      
+      // 如果提供了访问令牌
+      if (password) {
+        apiUrl += `?access_token=${password}`;
+      }
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Gitee API请求失败: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
+        branchesData = data.map(branch => branch.name);
+      }
+    }
+    // 其他Git提供商，尝试使用通用办法处理
+    else {
+      return {
+        success: false,
+        data: ['main', 'master'], // 提供默认分支作为备选
+        error: '不支持的Git提供商，请手动输入分支名'
+      };
+    }
+    
+    return {
+      success: true,
+      data: branchesData
+    };
+  } catch (error) {
+    console.error('获取分支列表失败:', error);
+    return {
+      success: false,
+      data: ['main', 'master'], // 提供默认分支作为备选
+      error: error instanceof Error ? error.message : '获取分支列表时发生未知错误'
+    };
+  }
 }
 
 /**

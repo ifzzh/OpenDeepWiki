@@ -34,6 +34,7 @@ import {
 import { getLastWarehouse } from '../services/warehouseService';
 import { Repository } from '../types';
 import { homepage } from '../const/urlconst';
+import { useTranslation } from '../i18n/client';
 
 const { Text, Title } = Typography;
 const { useToken } = theme;
@@ -49,6 +50,7 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
   const [repository, setRepository] = useState<Repository | null>(null);
   const [searched, setSearched] = useState(false);
   const { token } = useToken();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!open) {
@@ -70,12 +72,12 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
           setRepository(response.data);
           setSearched(true);
         } else {
-          message.error('查询失败: ' + (response.error || '未找到相关仓库'));
+          message.error(t('repository.last_repo.query_failed', '查询失败: ') + (response.error || t('repository.last_repo.not_found', '未找到相关仓库')));
           setRepository(null);
         }
       } catch (error) {
         console.error('查询仓库出错:', error);
-        message.error('查询仓库出错，请稍后重试');
+        message.error(t('repository.last_repo.error', '查询仓库出错，请稍后重试'));
         setRepository(null);
       } finally {
         setLoading(false);
@@ -95,14 +97,14 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
   // 获取仓库状态文本
   const getStatusText = (status: number) => {
     const statusMap: Record<number, { text: string; color: string; icon: React.ReactNode }> = {
-      0: { text: '待处理', color: 'warning', icon: <ClockCircleOutlined /> },
-      1: { text: '处理中', color: 'processing', icon: <SyncOutlined spin /> },
-      2: { text: '已完成', color: 'success', icon: <CheckCircleOutlined /> },
-      3: { text: '已取消', color: 'default', icon: <StopOutlined /> },
-      4: { text: '未授权', color: 'purple', icon: <LockOutlined /> },
-      99: { text: '已失败', color: 'error', icon: <ExclamationCircleOutlined /> },
+      0: { text: t('repository.status.pending', '待处理'), color: 'warning', icon: <ClockCircleOutlined /> },
+      1: { text: t('repository.status.processing', '处理中'), color: 'processing', icon: <SyncOutlined spin /> },
+      2: { text: t('repository.status.completed', '已完成'), color: 'success', icon: <CheckCircleOutlined /> },
+      3: { text: t('repository.status.cancelled', '已取消'), color: 'default', icon: <StopOutlined /> },
+      4: { text: t('repository.status.unauthorized', '未授权'), color: 'purple', icon: <LockOutlined /> },
+      99: { text: t('repository.status.failed', '已失败'), color: 'error', icon: <ExclamationCircleOutlined /> },
     };
-    return statusMap[status] || { text: '未知状态', color: 'default', icon: <QuestionCircleOutlined /> };
+    return statusMap[status] || { text: t('repository.status.unknown', '未知状态'), color: 'default', icon: <QuestionCircleOutlined /> };
   };
 
   // 渲染内容区域
@@ -112,7 +114,7 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
         <div style={{ padding: token.paddingLG, textAlign: 'center' }}>
           <Spin size="large" />
           <Text type="secondary" style={{ display: 'block', marginTop: token.marginMD, fontSize: token.fontSizeLG }}>
-            正在查询仓库信息...
+            {t('repository.last_repo.searching', '正在查询仓库信息...')}
           </Text>
         </div>
       );
@@ -122,8 +124,8 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
       return (
         <Result
           status="warning"
-          title={<span style={{ fontSize: token.fontSizeLG }}>未找到仓库信息</span>}
-          subTitle={<span style={{ fontSize: token.fontSize }}>请检查输入的仓库地址是否正确</span>}
+          title={<span style={{ fontSize: token.fontSizeLG }}>{t('repository.last_repo.not_found_title', '未找到仓库信息')}</span>}
+          subTitle={<span style={{ fontSize: token.fontSize }}>{t('repository.last_repo.check_address', '请检查输入的仓库地址是否正确')}</span>}
           icon={<ExclamationCircleOutlined style={{ color: token.colorWarning, fontSize: 64 }} />}
           style={{ padding: token.paddingLG }}
         />
@@ -148,7 +150,7 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <Title level={5} style={{ margin: 0, color: token.colorTextHeading }}>查询结果</Title>
+            <Title level={5} style={{ margin: 0, color: token.colorTextHeading }}>{t('repository.last_repo.result', '查询结果')}</Title>
             <Tag 
               color={statusInfo.color} 
               icon={statusInfo.icon} 
@@ -176,11 +178,11 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
               fontSize: token.fontSize 
             }}
           >
-            <Descriptions.Item label="仓库名称">
+            <Descriptions.Item label={t('repository.last_repo.repo_name', '仓库名称')}>
               <Text strong>{repository.name}</Text>
             </Descriptions.Item>
             
-            <Descriptions.Item label="仓库地址">
+            <Descriptions.Item label={t('repository.last_repo.repo_address', '仓库地址')}>
               <Text
                 ellipsis={{ 
                   tooltip: repository.address 
@@ -192,7 +194,7 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
               </Text>
             </Descriptions.Item>
             
-            <Descriptions.Item label="仓库信息">
+            <Descriptions.Item label={t('repository.last_repo.repo_info', '仓库信息')}>
               <Space size={token.marginSM}>
                 <Tag 
                   icon={<GithubOutlined />} 
@@ -213,7 +215,7 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
             
             {repository.error && (
               <Descriptions.Item 
-                label={<Text type="danger" strong>错误信息</Text>}
+                label={<Text type="danger" strong>{t('repository.last_repo.error_info', '错误信息')}</Text>}
                 contentStyle={{ backgroundColor: token.colorErrorBg }}
               >
                 <Text type="danger" style={{ fontSize: token.fontSize }}>{repository.error}</Text>
@@ -229,7 +231,7 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
 
   return (
     <Modal
-      title={<Title level={4} style={{ margin: 0 }}>查询仓库</Title>}
+      title={<Title level={4} style={{ margin: 0 }}>{t('repository.last_repo.title', '查询仓库')}</Title>}
       open={open}
       onCancel={handleCancel}
       footer={null}
@@ -246,50 +248,37 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
       >
         <Form.Item
           name="address"
-          label={<Text strong style={{ fontSize: token.fontSizeLG }}>仓库地址</Text>}
-          rules={[{ required: true, message: '请输入仓库地址' }]}
-          tooltip={{ title: '输入您的Git仓库完整URL', icon: <InfoCircleOutlined /> }}
-          style={{ marginBottom: token.marginSM }}
+          label={<Text strong style={{ fontSize: token.fontSizeLG }}>{t('repository.last_repo.address_label', '仓库地址')}</Text>}
+          rules={[{ required: true, message: t('repository.last_repo.address_required', '请输入仓库地址') }]}
         >
-          <Input
-            placeholder="请输入Git仓库地址"
-            prefix={
-              <LinkOutlined 
-                style={{ 
-                  color: token.colorTextSecondary, 
-                  fontSize: token.fontSizeLG,
-                  marginRight: token.marginXS 
-                }} 
-              />
-            }
-            suffix={
-              <Button 
-                type="primary" 
-                icon={<SearchOutlined />} 
-                onClick={handleSearch}
-                loading={loading}
-                style={{ 
-                  marginRight: -7,
-                  height: 40,
-                  fontSize: token.fontSize,
-                  paddingInline: token.paddingMD
-                }}
-              >
-                查询
-              </Button>
-            }
-            onPressEnter={handleSearch}
-            autoFocus
+          <Input 
+            placeholder={t('repository.last_repo.address_placeholder', '请输入您之前提交过的仓库地址')}
+            prefix={<LinkOutlined style={{ color: token.colorTextSecondary }} />}
             allowClear
-            size="large"
-            style={{ height: 48, fontSize: token.fontSize }}
           />
         </Form.Item>
-        <Text type="secondary" style={{ fontSize: token.fontSize, marginLeft: token.marginSM }}>
-          例如: {homepage}
-        </Text>
+        
+        <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+          <Space>
+            <Button 
+              size="large"
+              onClick={handleCancel}
+            >
+              {t('repository.form.cancel', '取消')}
+            </Button>
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              size="large"
+              onClick={handleSearch}
+              loading={loading}
+            >
+              {t('repository.last_repo.search', '查询')}
+            </Button>
+          </Space>
+        </Form.Item>
       </Form>
-
+      
       {renderContent()}
     </Modal>
   );
