@@ -129,7 +129,10 @@ const DocDirectoryTree: React.FC<DirectoryTreeProps> = ({
           }}
           trigger={['contextMenu']}
         >
-          <span>{node.title || node.label}</span>
+          <span>
+            {/* @ts-ignore */}
+            {node.title || node.label}
+          </span>
         </Dropdown>
       );
       
