@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import styles from './styles.module.css';
 import Script from 'next/script';
-// import '../globals.css'; // 不再导入全局CSS
 
 export default function AdminLayout({
   children,
@@ -19,18 +17,6 @@ export default function AdminLayout({
   const [userName, setUserName] = useState('管理员');
   const pathname = usePathname();
   const router = useRouter();
-
-  // 在客户端挂载时添加Tailwind CDN
-  useEffect(() => {
-    // 检查是否已经存在Tailwind CDN链接
-    if (!document.getElementById('tailwind-cdn')) {
-      const link = document.createElement('link');
-      link.id = 'tailwind-cdn';
-      link.rel = 'stylesheet';
-      link.href = 'https://cdn.tailwindcss.com';
-      document.head.appendChild(link);
-    }
-  }, []);
 
   // 获取当前选中的菜单项
   const getSelectedKey = () => {
@@ -90,32 +76,48 @@ export default function AdminLayout({
 
   return (
     <>
-      <Script id="tailwind-cdn" strategy="afterInteractive">
-        {`
-          if (!document.querySelector('link#tailwind-cdn')) {
-            const link = document.createElement('link');
-            link.id = 'tailwind-cdn';
-            link.rel = 'stylesheet';
-            link.href = 'https://cdn.tailwindcss.com';
-            document.head.appendChild(link);
-          }
-        `}
-      </Script>
-      <div className={styles.adminLayout}>
+      {/* 通过CDN方式引入TailwindCSS */}
+      <Script 
+        id="tailwind-cdn"
+        src="https://cdn.tailwindcss.com"
+        strategy="beforeInteractive"
+      />
+      
+      <div style={{ 
+        display: 'flex', 
+        height: '100vh', 
+        backgroundColor: '#f7f9fc' 
+      }}>
         <Sidebar 
           isSidebarOpen={isSidebarOpen} 
           selectedKey={getSelectedKey()} 
         />
         
-        <div className={`${styles.mainContent} ${!isSidebarOpen ? styles.mainContentSidebarClosed : ''}`}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          flex: 1, 
+          marginLeft: isSidebarOpen ? '16rem' : '5rem',
+          transition: 'all 0.3s'
+        }}>
           <Header 
             toggleSidebar={toggleSidebar} 
             userName={userName} 
             onLogout={handleLogout} 
           />
           
-          <main className={styles.contentContainer}>
-            <div className={styles.contentWrapper}>
+          <main style={{
+            flex: 1,
+            overflow: 'auto',
+            padding: '1.5rem'
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+              padding: '1.5rem',
+              minHeight: 'calc(100vh - 8rem)'
+            }}>
               {children}
             </div>
           </main>

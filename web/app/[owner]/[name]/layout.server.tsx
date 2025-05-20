@@ -1,6 +1,5 @@
 import { documentCatalog } from '../../services/warehouseService';
 import RepositoryLayoutClient from './layout.client';
-import { headers } from 'next/headers';
 
 export async function getRepositoryData(owner: string, name: string, branch?: string) {
   try {
@@ -22,25 +21,20 @@ export default async function RepositoryLayoutServer({
   owner,
   name,
   children,
-  searchParams = {}
+  branch
 }: {
   owner: string;
   name: string;
   children: React.ReactNode;
-  searchParams?: { branch?: string };
+  branch: string;
 }) {
-  // 从URL查询参数中获取branch
-  const branch = searchParams?.branch || undefined;
-  
-  console.log('searchParams in server layout:', searchParams);
-  console.log('branch parameter:', branch);
   const { catalogData, lastUpdated } = await getRepositoryData(owner, name, branch);
-  
+
   // 确保initialCatalogData包含当前branch信息
   if (catalogData && branch) {
     catalogData.currentBranch = branch;
   }
-  
+
   return (
     <RepositoryLayoutClient
       owner={owner}

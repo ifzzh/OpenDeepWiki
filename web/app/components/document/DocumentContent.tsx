@@ -9,10 +9,12 @@ import { Flexbox } from 'react-layout-kit';
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { Markdown, Mermaid } from '@lobehub/ui';
 import { markdownElements } from './MarkdownElements';
-import { Alert } from 'antd';
+import { Alert, Typography } from 'antd';
 import RenderThinking from './Component';
 
 import { normalizeThinkTags, remarkCaptureThink } from './thinking/remarkPlugin';
+
+const { Title } = Typography;
 
 interface DocumentContentProps {
   document: any;
@@ -76,12 +78,27 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
       borderRadius: '0px',
       color: token.colorText
     }}>
+      {/* 可见的H1标题用于SEO */}
+      <header>
+        <Title level={1} style={{ marginBottom: '24px', wordBreak: 'break-word' }} itemProp="headline">
+          {document?.title || '文档'}
+        </Title>
+        {document?.updateTime && (
+          <div style={{ marginBottom: '16px', color: token.colorTextSecondary, fontSize: '14px' }}>
+            最后更新时间: <time itemProp="dateModified" dateTime={document?.updateTime}>{document?.updateTime}</time>
+          </div>
+        )}
+      </header>
+
+      {/* 思考内容 */}
       {thinkingContents.map((content, index) => (
         <RenderThinking key={`thinking-${index}`}>
           {content}
         </RenderThinking>
       ))}
-      <div className="markdown-content">
+
+      {/* 文档正文 */}
+      <div className="markdown-content" itemProp="articleBody">
         <Markdown
           variant='chat'
           fullFeaturedCodeBlock={true}
@@ -93,10 +110,17 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
                 </RenderThinking>
               </Flexbox>
             ),
+            // 自定义链接以增加SEO友好属性
+            a: (props: any) => (
+              <a {...props} rel={props.href?.startsWith('http') ? 'noopener noreferrer' : undefined} />
+            ),
+            // 自定义图片以增加alt文本
+            img: (props: any) => (
+              <img {...props} alt={props.alt || `${document?.title || '文档'} 内的图片`} loading="lazy" />
+            ),
           }}
           remarkPlugins={[remarkCaptureThink,remarkGfm, remarkToc, remarkMath]}
           rehypePlugins={[
-            // ...rehypePlugins,
             rehypeRaw,
             rehypeSlug,
             rehypeKatex,

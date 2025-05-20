@@ -201,10 +201,21 @@ export default function RepositoriesPage() {
     {
       title: '仓库',
       key: 'name',
+      width: 250,
       render: (_, record) => (
         <Space>
           <Avatar icon={<FolderOutlined />} style={{ backgroundColor: '#87d068' }} />
-          <Link href={`/${record.organizationName}/${record.name}`}>
+          <Link
+          style={{
+            // 隐藏多行
+            display: '-webkit-box',
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            width: '120px',
+          }}
+          href={`/admin/repositories/${record.id}`}>
             {record.organizationName}/{record.name}
             {record.branch ? `/${record.branch}` : ''}
           </Link>
@@ -255,7 +266,7 @@ export default function RepositoriesPage() {
                 key: 'view',
                 icon: <EyeOutlined />,
                 label: '查看',
-                onClick: () => window.open(`/${record.organizationName}/${record.name}`, '_blank'),
+                onClick: () => window.open(`/admin/repositories/${record.id}`, '_blank'),
               },
               {
                 key: 'edit',

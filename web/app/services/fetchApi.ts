@@ -3,7 +3,7 @@
  */
 export interface ApiResponse<T> {
   code: number;
-  message: string;
+  message?: string;
   data: T;
 }
 

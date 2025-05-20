@@ -129,6 +129,7 @@ export default async function RootLayout({
         <meta name="msvalidate.01" content="61D1D1BFCB7FDB548E411C30FC69B058" />
         <meta name="baidu-site-verification" content="44a79feb3bf1e77660bdbc00e1808896" />
         <link rel="icon" href="/favicon.ico" />
+        <script src="https://cdn.tailwindcss.com"></script>
         <Script >
           {`
             var _hmt = _hmt || [];

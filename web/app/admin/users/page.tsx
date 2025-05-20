@@ -1,13 +1,11 @@
 'use client'
 import { Card, Table, Button, Input, Space, Tag, Dropdown, Modal, Form, Select, Switch, message } from 'antd';
-import { 
-  UserOutlined, 
-  SearchOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
-  LockOutlined,
-  UnlockOutlined,
+import {
+  UserOutlined,
+  SearchOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
   MoreOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -110,7 +108,7 @@ export default function UsersPage() {
             role: values.role,
             password: values.password, // 如果没有输入密码，会是undefined
           };
-          
+
           const response = await updateUser(currentUser.id, updateData);
           if (response.code === 200) {
             message.success('用户更新成功');
@@ -127,14 +125,14 @@ export default function UsersPage() {
             password: values.password,
             role: values.role,
           };
-          
-          const response = await createUser(createData);
-          if (response.code === 200) {
+
+          const { data } = await createUser(createData);
+          if (data.code === 200) {
             message.success('用户创建成功');
             setIsModalOpen(false);
             loadUsers(); // 重新加载用户列表
           } else {
-            message.error(response.message || '创建用户失败');
+            message.error(data.message || '创建用户失败');
           }
         }
       } catch (error) {
@@ -171,7 +169,7 @@ export default function UsersPage() {
       render: (role) => {
         let color = 'blue';
         let text = '用户';
-        
+
         if (role === 'admin') {
           color = 'red';
           text = '管理员';
@@ -179,7 +177,7 @@ export default function UsersPage() {
           color = 'green';
           text = '编辑者';
         }
-        
+
         return <Tag color={color}>{text}</Tag>;
       },
     },
@@ -230,7 +228,7 @@ export default function UsersPage() {
   return (
     <div>
       <h2 style={{ marginBottom: 24 }}>用户管理</h2>
-      
+
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Space>
@@ -245,21 +243,21 @@ export default function UsersPage() {
             />
             <Button type="primary" onClick={handleSearch}>搜索</Button>
           </Space>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddUser}
           >
             添加用户
           </Button>
         </div>
-        
-        <Table 
-          columns={columns} 
+
+        <Table
+          columns={columns}
           dataSource={users}
           rowKey="id"
           loading={loading}
-          pagination={{ 
+          pagination={{
             current: currentPage,
             pageSize: pageSize,
             total: total,
@@ -290,7 +288,7 @@ export default function UsersPage() {
           >
             <Input prefix={<UserOutlined />} placeholder="用户名" />
           </Form.Item>
-          
+
           <Form.Item
             name="email"
             label="邮箱"
@@ -301,7 +299,7 @@ export default function UsersPage() {
           >
             <Input placeholder="邮箱地址" />
           </Form.Item>
-          
+
           {!currentUser && (
             <Form.Item
               name="password"
@@ -311,7 +309,7 @@ export default function UsersPage() {
               <Input.Password placeholder="密码" />
             </Form.Item>
           )}
-          
+
           {currentUser && (
             <Form.Item
               name="password"
@@ -321,7 +319,7 @@ export default function UsersPage() {
               <Input.Password placeholder="新密码（可选）" />
             </Form.Item>
           )}
-          
+
           <Form.Item
             name="role"
             label="角色"

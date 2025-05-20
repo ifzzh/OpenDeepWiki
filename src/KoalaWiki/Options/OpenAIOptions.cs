@@ -68,6 +68,10 @@ public class OpenAIOptions
         EmbeddingsModel = (configuration.GetValue<string>("EMBEDDINGS_MODEL") ??
                            configuration.GetValue<string>("EmbeddingsModel")).GetTrimmedValueOrEmpty();
 
+        // EnableIncrementalUpdate
+        var enableIncrementalUpdate = configuration.GetValue<bool>("ENABLE_INCREMENTAL_UPDATE");
+        DocumentOptions.EnableIncrementalUpdate = enableIncrementalUpdate;
+
         if (string.IsNullOrEmpty(ModelProvider))
         {
             ModelProvider = "OpenAI";

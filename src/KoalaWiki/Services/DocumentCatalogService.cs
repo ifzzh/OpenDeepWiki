@@ -4,6 +4,7 @@ using KoalaWiki.Domains;
 using KoalaWiki.Entities;
 using LibGit2Sharp;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace KoalaWiki.Services;
 
@@ -126,9 +127,64 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
             fileSource,
             address = query?.Address.Replace(".git", string.Empty),
             query?.Branch,
+            documentCatalogId = id
         });
     }
 
+    /// <summary>
+    /// 更新目录信息
+    /// </summary>
+    public async Task<bool> UpdateCatalogAsync([Required] UpdateCatalogRequest request)
+    {
+        try
+        {
+            var catalog = await dbAccess.DocumentCatalogs.FindAsync(request.Id);
+            if (catalog == null)
+            {
+                return false;
+            }
+
+            catalog.Name = request.Name;
+            catalog.Prompt = request.Prompt;
+            
+            await dbAccess.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // 记录异常
+            Console.WriteLine($"更新目录失败: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 更新文档内容
+    /// </summary>
+    public async Task<bool> UpdateDocumentContentAsync([Required] UpdateDocumentContentRequest request)
+    {
+        try
+        {
+            var item = await dbAccess.DocumentFileItems
+                .Where(x => x.DocumentCatalogId == request.Id)
+                .FirstOrDefaultAsync();
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            item.Content = request.Content;
+            await dbAccess.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // 记录异常
+            Console.WriteLine($"更新文档内容失败: {ex.Message}");
+            return false;
+        }
+    }
 
     /// <summary>
     /// 递归构建文档目录树形结构
@@ -224,4 +280,41 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
 
         return children;
     }
+}
+
+/// <summary>
+/// 更新目录请求
+/// </summary>
+public class UpdateCatalogRequest
+{
+    /// <summary>
+    /// 目录ID
+    /// </summary>
+    public string Id { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 目录名称
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 提示词
+    /// </summary>
+    public string Prompt { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 更新文档内容请求
+/// </summary>
+public class UpdateDocumentContentRequest
+{
+    /// <summary>
+    /// 文档目录ID
+    /// </summary>
+    public string Id { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 文档内容
+    /// </summary>
+    public string Content { get; set; } = string.Empty;
 }

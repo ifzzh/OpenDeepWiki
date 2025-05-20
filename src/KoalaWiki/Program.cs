@@ -24,7 +24,6 @@ Log.Logger = new LoggerConfiguration()
 
 #region Options
 
-OpenAIOptions.InitConfig(builder.Configuration);
 builder.Configuration.GetSection(DocumentOptions.Name)
     .Get<DocumentOptions>();
 
@@ -32,6 +31,7 @@ builder.Configuration.GetSection(DocumentOptions.Name)
 var jwtOptions = JwtOptions.InitConfig(builder.Configuration);
 builder.Services.AddSingleton(jwtOptions);
 
+OpenAIOptions.InitConfig(builder.Configuration);
 #endregion
 
 // 设置文件上传大小

@@ -1,5 +1,6 @@
 ﻿using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Entities;
+using KoalaWiki.Options;
 using Microsoft.EntityFrameworkCore;
 
 namespace KoalaWiki.WarehouseProcessing;
@@ -10,6 +11,11 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Delay(1000, stoppingToken);
+
+        if (DocumentOptions.EnableIncrementalUpdate == false)
+        {
+            return;
+        }
 
         // 读取环境变量，获取更新间隔
         var updateInterval = 5;

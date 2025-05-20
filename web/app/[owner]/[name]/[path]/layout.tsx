@@ -1,6 +1,8 @@
 import { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
 import { documentById } from '../../../services/warehouseService';
+import Script from 'next/script';
+
 // 获取文档内容以生成更精确的SEO元数据
 async function getDocument(owner: string, name: string, path: string) {
   try {
@@ -41,22 +43,41 @@ export async function generateMetadata(
       : plainText;
   }
 
+  // 生成关键词（包括标题、作者、仓库名等）
+  const keywords = [
+    title, 
+    owner, 
+    name, 
+    '文档', 
+    '知识库', 
+    'API', 
+    'OpenDeepWiki',
+    ...(document?.tags || [])
+  ].filter(Boolean);
+
   return {
-    title: `${title} - ${owner}/${name} | OpenDeekWiki`,
+    title: `${title} - ${owner}/${name} | OpenDeepWiki`,
     description,
-    keywords: [title, owner, name, '文档', '知识库', 'API', 'OpenDeekWiki'],
+    keywords,
+    authors: [{ name: owner }],
+    creator: owner,
+    publisher: 'OpenDeepWiki',
     openGraph: {
       title: `${title} - ${owner}/${name}`,
       description,
       url: `/${owner}/${name}/${pathString}`,
-      siteName: 'OpenDeekWiki',
+      siteName: 'OpenDeepWiki',
       locale: 'zh_CN',
       type: 'article',
+      authors: [owner],
+      publishedTime: document?.createTime,
+      modifiedTime: document?.updateTime,
     },
     twitter: {
       card: 'summary',
-      title: `${title} - ${owner}/${name} | OpenDeekWiki`,
+      title: `${title} - ${owner}/${name} | OpenDeepWiki`,
       description,
+      creator: owner,
     },
     alternates: {
       canonical: `/${owner}/${name}/${pathString}`,
@@ -68,5 +89,48 @@ export default function DocumentLayout({
   children,
   params
 }: any) {
-  return children;
+  const { owner, name, path } = params;
+  const pathString = Array.isArray(path) ? path.join('/') : path;
+  
+  // 构建结构化数据
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    'headline': `${path} - ${owner}/${name}`,
+    'description': `${owner}/${name} 仓库中 ${pathString} 的文档内容`,
+    'author': {
+      '@type': 'Person',
+      'name': owner
+    },
+    'publisher': {
+      '@type': 'Organization',
+      'name': 'OpenDeepWiki',
+      'logo': {
+        '@type': 'ImageObject',
+        'url': '/logo.png'
+      }
+    },
+    'mainEntityOfPage': {
+      '@type': 'WebPage',
+      '@id': `/${owner}/${name}/${pathString}`
+    }
+  };
+
+  return (
+    <>
+      {/* 添加结构化数据 */}
+      <Script
+        id="structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      
+      {/* 语义化文档结构 */}
+      <article className="wiki-document" itemScope itemType="https://schema.org/TechArticle">
+        <meta itemProp="author" content={owner} />
+        <meta itemProp="name" content={`${path} - ${owner}/${name}`} />
+        {children}
+      </article>
+    </>
+  );
 } 

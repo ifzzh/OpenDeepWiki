@@ -76,7 +76,6 @@ export default function RepositoryLayoutClient({
   children,
 }: RepositoryLayoutClientProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { token } = theme.useToken();
 

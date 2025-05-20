@@ -3,6 +3,12 @@
 public class DocumentOptions
 {
     public const string Name = "Document";
+    
+    /// <summary>
+    /// 是否启用增量更新
+    /// </summary>
+    /// <returns></returns>
+    public static bool EnableIncrementalUpdate { get; set; } = true;
 
     /// <summary>
     /// 排除的文件

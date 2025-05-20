@@ -72,7 +72,7 @@ export async function getUserById(id: string): Promise<ApiResponse<UserInfo>> {
  * @param user 用户信息
  * @returns 创建结果
  */
-export async function createUser(user: CreateUserRequest): Promise<ApiResponse<UserInfo>> {
+export async function createUser(user: CreateUserRequest): Promise<any> {
   return fetchApi<UserInfo>(`${API_URL}/api/User/User`, {
     method: 'POST',
     body: JSON.stringify(user),

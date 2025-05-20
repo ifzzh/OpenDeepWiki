@@ -7,6 +7,7 @@ import {
   FireOutlined,
   SearchOutlined,
   BookOutlined,
+  HeartOutlined,
 } from '@ant-design/icons';
 import RepositoryForm from './RepositoryForm';
 import RepositoryList from './RepositoryList';
@@ -104,6 +105,22 @@ const footerLinks = {
   ],
 };
 
+// 添加赞助商配置
+const sponsors = [
+  {
+    name: 'AntSK',
+    logo: '/sponsors/antsk-logo.png', // 占位图片路径，实际使用时需要替换为真实图片路径
+    url: 'https://antsk.cn/',
+    description: '大模型企业AI解决方案'
+  },
+  {
+    name: '302.AI',
+    logo: '/sponsors/302ai-logo.png', // 占位图片路径，实际使用时需要替换为真实图片路径
+    url: 'https://302.ai/',
+    description: 'AI应用开发平台'
+  }
+];
+
 unstableSetRender((node, container) => {
   // @ts-ignore
   container._reactRoot ||= createRoot(container);
@@ -125,7 +142,7 @@ interface HomeClientProps {
 }
 
 export default function HomeClient({ initialRepositories, initialTotal, initialPage, initialPageSize, initialSearchValue }: HomeClientProps) {
-  const [repositories, setRepositories] = useState<Repository[]>(initialRepositories);
+  const repositories = initialRepositories;
   const [formVisible, setFormVisible] = useState(false);
   const [lastRepoModalVisible, setLastRepoModalVisible] = useState(false);
   const [searchValue, setSearchValue] = useState<string>(initialSearchValue);
@@ -135,13 +152,13 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
 
   // 响应式状态
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // 获取URL参数
   const searchParams = useSearchParams();
 
   // 使用i18n
   const { t, i18n } = useTranslation();
-  
+
   // 监听URL参数变化，更新i18n语言
   useEffect(() => {
     const locale = searchParams.get('locale');
@@ -239,50 +256,6 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
     backgroundSize: 'cover',
   };
 
-  const contentStyle = {
-    padding: '40px 16px',
-    background: '#f8fafc',
-    minHeight: 'calc(100vh - 70px - 64px)', // 减去头部和底部高度
-    position: 'relative' as const,
-    zIndex: 1,
-    ...waveBgStyle
-  };
-
-  const pageContainerStyle = {
-    maxWidth: 1280,
-    margin: '0 auto'
-  };
-
-  const cardStyle = {
-    borderRadius: 16,
-    marginBottom: 32,
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
-    border: 'none',
-    overflow: 'hidden',
-    transition: 'all 0.3s ease',
-    backdropFilter: 'blur(4px)',
-    background: 'rgba(255, 255, 255, 0.9)'
-  };
-
-  const welcomeTitleStyle = {
-    fontSize: '2.5rem',
-    fontWeight: 700,
-    marginBottom: 16,
-    color: customTheme.token.colorText,
-    background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    display: 'inline-block'
-  };
-
-  const paragraphStyle = {
-    fontSize: 16,
-    marginBottom: 32,
-    color: customTheme.token.colorTextSecondary,
-    lineHeight: 1.8,
-    maxWidth: '90%'
-  };
-
   const buttonStyle = {
     height: 44,
     fontWeight: 500,
@@ -292,26 +265,6 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
     fontSize: 15
   };
 
-  const primaryButtonStyle = {
-    ...buttonStyle,
-    background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
-    border: 'none'
-  };
-
-  const searchStyle = {
-    width: isMobile ? '100%' : 340,
-    borderRadius: 8,
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
-  };
-
-  const pageHeaderStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    margin: '32px 0 24px',
-    flexWrap: 'wrap' as const,
-    gap: '16px'
-  };
 
   const statisticStyle = {
     padding: '20px',
@@ -324,68 +277,24 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
     backdropFilter: 'blur(8px)',
   };
 
-  const getHoverStatisticStyle = (key: string) => ({
-    ...statisticStyle,
-    transform: isHovering === key ? 'translateY(-5px)' : 'none',
-    boxShadow: isHovering === key ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' : 'none',
-    borderColor: isHovering === key ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-    background: isHovering === key ? 'rgba(99, 102, 241, 0.08)' : 'rgba(99, 102, 241, 0.03)'
-  });
 
   return (
     <ConfigProvider theme={customTheme as any}>
-      <Layout style={{ minHeight: '100vh' }}>
+      <Layout className="min-h-screen">
         <Header
-          style={{
-            background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
-            padding: '0 24px',
-            position: 'sticky',
-            top: 0,
-            zIndex: 1000,
-            height: 70,
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 sticky top-0 z-50 h-[70px] flex items-center px-6"
         >
           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              maxWidth: 1280,
-              margin: '0 auto',
-              width: '100%',
-              height: '100%',
-              position: 'relative'
-            }}
+            className="flex items-center justify-between max-w-7xl mx-auto w-full h-full relative"
           >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '8px 16px',
-            }}>
+            <div className="flex items-center py-2 px-4">
               <Avatar
                 src="/logo.png"
                 size={42}
-                style={{
-                  marginRight: 16,
-                  padding: 4,
-                }}
+                className="mr-4 p-1"
               />
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                height: '100%',
-              }}>
-                <span style={{
-                  color: 'white',
-                  margin: 0,
-                  fontSize: 18,
-                  letterSpacing: '0.5px',
-                  fontWeight: 700,
-                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                }}>
+              <div className="flex flex-col justify-center h-full">
+                <span className="text-white m-0 text-lg tracking-wider font-bold drop-shadow">
                   OpenDeepWiki
                 </span>
               </div>
@@ -395,21 +304,8 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               <LanguageSwitcher />
               <Button
                 type="text"
-                icon={<GithubOutlined style={{ fontSize: 20 }} />}
-                style={{
-                  color: 'white',
-                  height: 44,
-                  width: 44,
-                  borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.3s',
-                  backdropFilter: 'blur(4px)',
-                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}
+                icon={<GithubOutlined className="text-xl" />}
+                className="text-white h-11 w-11 rounded-xl flex items-center justify-center bg-white/20 transition-all duration-300 backdrop-blur border border-white/20 shadow-md"
                 href={homepage}
                 target="_blank"
               />
@@ -417,15 +313,12 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
           </div>
         </Header>
 
-        <Content style={contentStyle}>
-          <div style={pageContainerStyle}>
+        <Content className="p-10 bg-slate-50 min-h-[calc(100vh-70px-64px)] relative z-10 bg-no-repeat bg-bottom bg-cover" style={{ backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(waveSvg)}")` }}>
+          <div className="max-w-7xl mx-auto">
             <Row gutter={[32, 32]}>
               <Col span={24}>
                 <Card
-                  style={{
-                    ...cardStyle,
-                    background: 'rgba(255, 255, 255, 0.9)',
-                  }}
+                  className="rounded-2xl mb-8 shadow-lg border-none overflow-hidden transition-all duration-300 backdrop-blur-sm bg-white/90"
                   bodyStyle={{
                     padding: isMobile ? 24 : 40,
                   }}
@@ -433,24 +326,21 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   <Row gutter={[40, 40]} align="middle">
                     <Col xs={24} md={15}>
                       <div>
-                        <Badge.Ribbon text={t('home.title')} style={{ fontSize: 14, fontWeight: 600, borderRadius: 4 }}>
-                          <Title level={2} style={welcomeTitleStyle}>
+                        <Badge.Ribbon text={t('home.title')} className="text-sm font-semibold rounded">
+                          <Title level={2} className="text-4xl font-bold mb-4 text-slate-900 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent inline-block">
                             {t('home.title')}
                           </Title>
                         </Badge.Ribbon>
-                        <Paragraph style={paragraphStyle}>
+                        <Paragraph className="text-base mb-8 text-slate-600 leading-relaxed max-w-[90%]">
                           {t('home.subtitle')}
                         </Paragraph>
-                        <Space size={16} wrap style={{ marginTop: 8 }}>
+                        <Space size={16} wrap className="mt-2">
                           <Button
                             type="primary"
                             size="large"
                             icon={<PlusOutlined />}
                             onClick={() => setFormVisible(true)}
-                            style={{
-                              ...primaryButtonStyle,
-                              fontSize: 15
-                            }}
+                            className="h-11 font-medium shadow-none transition-all duration-300 rounded-lg text-base bg-gradient-to-r from-indigo-500 to-purple-500 border-none"
                           >
                             {t('home.add_repo_button')}
                           </Button>
@@ -458,11 +348,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                             type="default"
                             size="large"
                             onClick={handleLastRepoQuery}
-                            style={{
-                              ...buttonStyle,
-                              borderColor: 'rgba(99, 102, 241, 0.3)',
-                              color: '#6366f1'
-                            }}
+                            className="h-11 font-medium rounded-lg border-indigo-500/30 text-indigo-500"
                           >
                             {t('home.query_last_repo_button')}
                           </Button>
@@ -473,15 +359,15 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       <Row gutter={[24, 24]}>
                         <Col xs={12} md={24}>
                           <div
-                            style={getHoverStatisticStyle('repos')}
+                            className={`p-5 bg-indigo-500/[0.03] rounded-2xl h-full transition-all duration-300 cursor-pointer border border-transparent backdrop-blur-sm ${isHovering === 'repos' ? 'transform -translate-y-1 shadow-xl border-indigo-500/20 bg-indigo-500/[0.08]' : ''}`}
                             onMouseEnter={() => setIsHovering('repos')}
                             onMouseLeave={() => setIsHovering('')}
                           >
                             <Statistic
                               title={
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                                  <BookOutlined style={{ color: '#6366f1', fontSize: 18 }} />
-                                  <Typography.Text style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>{t('home.stats.total_repos')}</Typography.Text>
+                                <div className="flex items-center gap-2.5 mb-2.5">
+                                  <BookOutlined className="text-indigo-500 text-lg" />
+                                  <Typography.Text className="text-slate-500 text-base font-medium">{t('home.stats.total_repos')}</Typography.Text>
                                 </div>
                               }
                               value={stats.totalRepositories}
@@ -495,15 +381,15 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                         </Col>
                         <Col xs={12} md={24}>
                           <div
-                            style={getHoverStatisticStyle('git')}
+                            className={`p-5 bg-indigo-500/[0.03] rounded-2xl h-full transition-all duration-300 cursor-pointer border border-transparent backdrop-blur-sm ${isHovering === 'git' ? 'transform -translate-y-1 shadow-xl border-indigo-500/20 bg-indigo-500/[0.08]' : ''}`}
                             onMouseEnter={() => setIsHovering('git')}
                             onMouseLeave={() => setIsHovering('')}
                           >
                             <Statistic
                               title={
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                                  <GithubOutlined style={{ color: '#6366f1', fontSize: 18 }} />
-                                  <Typography.Text style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>{t('home.stats.git_repos')}</Typography.Text>
+                                <div className="flex items-center gap-2.5 mb-2.5">
+                                  <GithubOutlined className="text-indigo-500 text-lg" />
+                                  <Typography.Text className="text-slate-500 text-base font-medium">{t('home.stats.git_repos')}</Typography.Text>
                                 </div>
                               }
                               value={stats.gitRepos}
@@ -522,44 +408,30 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               </Col>
             </Row>
 
-            <div style={pageHeaderStyle}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Tag color="#6366f1" style={{
-                  fontSize: 16,
-                  padding: '6px 12px',
-                  borderRadius: 20,
-                  fontWeight: 600,
-                  boxShadow: '0 2px 5px rgba(99, 102, 241, 0.2)',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8
-                }}>
+            <div className="flex justify-between items-center my-8 flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <Tag color="#6366f1" className="text-base py-1.5 px-3 rounded-full font-semibold shadow-md shadow-indigo-200 border-none flex items-center gap-2">
                   <FireOutlined /> {t('home.repo_list.title')}
                 </Tag>
-                <Tag color="#e0e7ff" style={{
-                  color: '#4f46e5',
-                  marginLeft: 4,
-                  fontWeight: 500,
-                  padding: '4px 12px',
-                  borderRadius: 20
-                }}>{t('home.repo_list.total', { count: stats.totalRepositories })}</Tag>
+                <Tag color="#e0e7ff" className="text-indigo-700 ml-1 font-medium py-1 px-3 rounded-full">
+                  {t('home.repo_list.total', { count: stats.totalRepositories })}
+                </Tag>
               </div>
-              <Space wrap style={{ marginTop: isMobile ? 12 : 0 }} size={12}>
+              <Space wrap className={`${isMobile ? 'mt-3' : ''}`} size={12}>
                 <Search
                   placeholder={t('home.repo_list.search_placeholder')}
                   allowClear
                   value={searchValue}
                   onSearch={value => handleSearch(value)}
                   onChange={e => setSearchValue(e.target.value)}
-                  style={searchStyle}
+                  className={`${isMobile ? 'w-full' : 'w-[340px]'} rounded-lg shadow-sm`}
                   enterButton={<SearchOutlined />}
                 />
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={() => setFormVisible(true)}
-                  style={primaryButtonStyle}
+                  className="h-11 font-medium shadow-none transition-all duration-300 rounded-lg text-base bg-gradient-to-r from-indigo-500 to-purple-500 border-none"
                 >
                   {t('home.repo_list.add_button')}
                 </Button>
@@ -568,24 +440,20 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
 
             {repositories.length === 0 ? (
               <Card
-                style={{
-                  ...cardStyle,
-                  textAlign: 'center',
-                  background: 'rgba(255, 255, 255, 0.9)'
-                }}
+                className="rounded-2xl text-center bg-white/90 shadow-lg border-none"
                 bodyStyle={{ padding: 48 }}
               >
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
-                    <Typography.Text style={{ color: customTheme.token.colorTextSecondary, fontSize: 16 }}>
+                    <Typography.Text className="text-slate-500 text-base">
                       {searchValue ? t('home.repo_list.not_found', { keyword: searchValue }) : t('home.repo_list.empty')}
                     </Typography.Text>
                   }
                 >
                   <Button
                     type="primary"
-                    style={primaryButtonStyle}
+                    className="h-11 font-medium shadow-none transition-all duration-300 rounded-lg text-base bg-gradient-to-r from-indigo-500 to-purple-500 border-none"
                     onClick={() => setFormVisible(true)}
                     size="large"
                     icon={<PlusOutlined />}
@@ -598,14 +466,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               <>
                 <RepositoryList repositories={repositories} />
                 {!searchValue && initialTotal > pageSize && (
-                  <div style={{
-                    textAlign: 'center',
-                    marginTop: 40,
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    padding: '20px 24px',
-                    borderRadius: 16,
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)'
-                  }}>
+                  <div className="text-center mt-10 bg-white/90 py-5 px-6 rounded-2xl shadow-sm">
                     <Pagination
                       current={currentPage}
                       pageSize={pageSize}
@@ -614,7 +475,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       showSizeChanger
                       showQuickJumper
                       showTotal={(total) => t('home.pagination.total', { total })}
-                      style={{ fontWeight: 500 }}
+                      className="font-medium"
                     />
                   </div>
                 )}
@@ -634,35 +495,22 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
           </div>
         </Content>
 
-        <Footer style={{
-          background: '#fff',
-          padding: '48px 24px 24px',
-          marginTop: 'auto',
-          borderTop: `1px solid #e0e7ff`
-        }}>
-          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <Footer className="bg-white py-12 px-6 mt-auto border-t border-indigo-100">
+          <div className="max-w-7xl mx-auto">
             <Row gutter={[48, 32]}>
               <Col xs={24} sm={8} md={6}>
-                <div style={{ marginBottom: 24 }}>
-                  <Space align="center" style={{ marginBottom: 16 }}>
+                <div className="mb-6">
+                  <Space align="center" className="mb-4">
                     <Avatar
                       src="/logo.png"
                       size={32}
-                      style={{
-                        marginRight: 8,
-                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
-                        background: 'white',
-                        padding: 3,
-                      }}
+                      className="mr-2 shadow-md bg-white p-0.5"
                     />
-                    <Typography.Title level={4} style={{ margin: 0, color: '#1e293b' }}>
+                    <Typography.Title level={4} className="m-0 text-slate-900">
                       OpenDeepWiki
                     </Typography.Title>
                   </Space>
-                  <Typography.Paragraph style={{
-                    color: '#64748b',
-                    marginBottom: 16
-                  }}>
+                  <Typography.Paragraph className="text-slate-500 mb-4">
                     {t('description')}
                   </Typography.Paragraph>
                   <Space size={16}>
@@ -671,44 +519,56 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       icon={<GithubOutlined />}
                       href={homepage}
                       target="_blank"
-                      style={{ color: '#64748b' }}
+                      className="text-slate-500"
                     />
                   </Space>
                 </div>
               </Col>
               <Col xs={24} sm={16} md={18}>
                 <Row gutter={[48, 24]}>
-                  <Col xs={24} sm={8}>
-                    <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
+                  <Col xs={24} sm={6}>
+                    <Typography.Title level={5} className="mb-4 text-slate-900">
                       {t('footer.product')}
                     </Typography.Title>
                     <Space direction="vertical" size={12}>
                       {footerLinks.product.map(link => (
-                        <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
+                        <Typography.Link key={link.title} href={link.link} className="text-slate-500">
                           {t(`footer.${link.title === '功能介绍' ? 'features' : link.title === '使用指南' ? 'guide' : 'changelog'}`)}
                         </Typography.Link>
                       ))}
                     </Space>
                   </Col>
-                  <Col xs={24} sm={8}>
-                    <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
+                  <Col xs={24} sm={6}>
+                    <Typography.Title level={5} className="mb-4 text-slate-900">
                       {t('footer.resources')}
                     </Typography.Title>
                     <Space direction="vertical" size={12}>
                       {footerLinks.resources.map(link => (
-                        <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
+                        <Typography.Link key={link.title} href={link.link} className="text-slate-500">
                           {t(`footer.${link.title === '开发文档' ? 'docs' : link.title === 'API参考' ? 'api' : 'faq'}`)}
                         </Typography.Link>
                       ))}
                     </Space>
                   </Col>
-                  <Col xs={24} sm={8}>
-                    <Typography.Title level={5} style={{ marginBottom: 16, color: '#1e293b' }}>
+                  <Col xs={24} sm={6}>
+                    <Typography.Title level={5} className="mb-4 text-slate-900">
+                      {t('footer.sponsors', '赞助商')}
+                    </Typography.Title>
+                    <Space direction="vertical" size={12}>
+                      {sponsors.map(sponsor => (
+                        <Typography.Link key={sponsor.name} href={sponsor.url} target="_blank" className="text-slate-500 flex items-center gap-2">
+                          {sponsor.name}
+                        </Typography.Link>
+                      ))}
+                    </Space>
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Typography.Title level={5} className="mb-4 text-slate-900">
                       {t('footer.company')}
                     </Typography.Title>
                     <Space direction="vertical" size={12}>
                       {footerLinks.company.map(link => (
-                        <Typography.Link key={link.title} href={link.link} style={{ color: '#64748b' }}>
+                        <Typography.Link key={link.title} href={link.link} className="text-slate-500">
                           {t(`footer.${link.title === '关于我们' ? 'about' : link.title === '联系方式' ? 'contact' : 'join'}`)}
                         </Typography.Link>
                       ))}
@@ -717,36 +577,24 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 </Row>
               </Col>
             </Row>
-            <Divider style={{ borderColor: '#e2e8f0', margin: '32px 0 24px' }} />
+            <Divider className="border-slate-200 my-8" />
             <Row justify="space-between" align="middle" gutter={[16, 16]}>
               <Col xs={24} sm={12}>
-                <Space direction="vertical" size={8}>
-                  <Typography.Text style={{ color: '#64748b', fontSize: 14 }}>
+                <Space direction="vertical" size={2}>
+                  <Typography.Text className="text-slate-500 text-sm">
                     {t('footer.copyright', { year: new Date().getFullYear() })}
                   </Typography.Text>
-                  <Typography.Text style={{
-                    color: '#64748b',
-                    fontSize: 14,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}>
-                    {t('footer.powered_by')} <span style={{
-                      background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      fontWeight: 600,
-                      padding: '0 4px'
-                    }}>.NET 9.0</span>
+                  <Typography.Text className="text-slate-500 text-sm flex items-center gap-1">
+                    {t('footer.powered_by')} <span className="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent font-semibold px-1">.NET 9.0</span>
                   </Typography.Text>
                 </Space>
               </Col>
-              <Col xs={24} sm={12} style={{ textAlign: 'right' }}>
-                <Space split={<Divider type="vertical" style={{ borderColor: '#e2e8f0' }} />}>
-                  <Typography.Link href="/privacy" style={{ color: '#64748b', fontSize: 14 }}>    
-                    {t('footer.privacy')}                  
-                  </Typography.Link>                 
-                  <Typography.Link href="/terms" style={{ color: '#64748b', fontSize: 14 }}>
+              <Col xs={24} sm={12} className="text-right">
+                <Space split={<Divider type="vertical" className="border-slate-200" />}>
+                  <Typography.Link href="/privacy" className="text-slate-500 text-sm">
+                    {t('footer.privacy')}
+                  </Typography.Link>
+                  <Typography.Link href="/terms" className="text-slate-500 text-sm">
                     {t('footer.terms')}
                   </Typography.Link>
                 </Space>

@@ -16,6 +16,7 @@
       - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
       - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
+      - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
     volumes:
       - ./repositories:/app/repositories
       - ./data:/data

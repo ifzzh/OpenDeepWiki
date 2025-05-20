@@ -2,9 +2,8 @@ import { Metadata, ResolvingMetadata } from 'next';
 import RepositoryLayoutServer from './layout.server';
 
 type Props = {
-  params: { owner: string; name: string }
+  params: { owner: string; name: string; branch: string }
   children: React.ReactNode
-  searchParams: { [key: string]: string | string[] | undefined }
 }
 
 // 为页面生成动态元数据
@@ -13,7 +12,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const { owner, name } = params;
-  
+
   // 优化SEO的元数据
   return {
     title: `${name} - ${owner} 的文档仓库 | OpenDeekWiki`,
@@ -42,17 +41,15 @@ export async function generateMetadata(
   }
 }
 
-export default function RepositoryLayout({
+export default async function RepositoryLayout({
   params,
   children,
-  searchParams,
 }: Props) {
-  console.log('searchParams', searchParams);
   return (
     <RepositoryLayoutServer
       owner={params.owner}
       name={params.name}
-      searchParams={searchParams || {}}
+      branch={params.branch}
     >
       {children}
     </RepositoryLayoutServer>

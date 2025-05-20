@@ -78,6 +78,7 @@ services:
       - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
       - MAX_FILE_LIMIT=100 # The maximum limit for uploading files, in MB
       - DEEP_RESEARCH_MODEL= # Conduct in-depth research on the model and use CHAT_MODEL for the empty
+      - ENABLE_INCREMENTAL_UPDATE=true # Whether to enable incremental updates 
 ```
 
 AzureOpenAI:
@@ -100,6 +101,7 @@ services:
       - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
       - MAX_FILE_LIMIT=100 # The maximum limit for uploading files, in MB
       - DEEP_RESEARCH_MODEL= # Conduct in-depth research on the model and use CHAT_MODEL for the empty
+      - ENABLE_INCREMENTAL_UPDATE=true # Whether to enable incremental updates
 ```
 
 Anthropic:
@@ -122,6 +124,7 @@ services:
       - PARALLEL_COUNT=1 # The warehouse processes the quantity in parallel
       - MAX_FILE_LIMIT=100 # The maximum limit for uploading files, in MB
       - DEEP_RESEARCH_MODEL= # Conduct in-depth research on the model and use CHAT_MODEL for the empty
+      - ENABLE_INCREMENTAL_UPDATE=true # Whether to enable incremental updates
 ```
 
 > 💡 **How to get an API Key:**
@@ -229,6 +232,7 @@ graph TD
   - PARALLEL_COUNT The warehouse processes the quantity in parallel
   - MAX_FILE_LIMIT The maximum limit for uploading files, in MB
   - DEEP_RESEARCH_MODEL Conduct in-depth research on the model and use CHAT_MODEL for the empty
+  - ENABLE_INCREMENTAL_UPDATE Whether to enable incremental updates
 
 ### Build for Different Architectures
 The Makefile provides commands to build for different CPU architectures:

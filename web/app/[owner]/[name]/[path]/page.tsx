@@ -73,7 +73,7 @@ export default function DocumentPage() {
 
   // 渲染页面主体
   return (
-    <div className="doc-page-container" style={{ backgroundColor: token.colorBgLayout, minHeight: '100vh' }}>
+    <main className="doc-page-container" style={{ backgroundColor: token.colorBgLayout, minHeight: '100vh' }}>
       <Row 
         style={{ 
           padding: { xs: '8px', sm: '16px', md: '24px' }[token.screenSM],
@@ -111,19 +111,23 @@ export default function DocumentPage() {
             
             {/* 主要内容区 */}
             <Col xs={24} sm={24} md={18} lg={18} xl={18}>
-              <DocumentContent
-                document={document}
-                owner={owner as string}
-                name={name as string}
-                token={token}
-              />
+              <section itemProp="articleBody">
+                <DocumentContent
+                  document={document}
+                  owner={owner as string}
+                  name={name as string}
+                  token={token}
+                />
+              </section>
             </Col>
             
             <Col xs={0} sm={0} md={6} lg={6} xl={6}>
-              <DocumentSidebar
-                anchorItems={anchorItems}
-                document={document}
-              />
+              <nav aria-label="文档目录">
+                <DocumentSidebar
+                  anchorItems={anchorItems}
+                  document={document}
+                />
+              </nav>
             </Col>
           </>
         )}
@@ -139,6 +143,6 @@ export default function DocumentPage() {
       
       {/* 全局样式 */}
       <DocumentStyles token={token} />
-    </div>
+    </main>
   );
 }

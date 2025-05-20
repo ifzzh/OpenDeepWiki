@@ -18,12 +18,19 @@ export interface RepositoryFormValues {
  */
 export interface Repository {
   id: string;
-  owner: string;             // 仓库所有者/组织
+  owner?: string;            // 仓库所有者/组织（兼容旧版）
+  organizationName: string;  // 仓库所有者/组织
   name: string;              // 仓库名称
   address?: string;          // 仓库地址
+  type?: string;             // 仓库类型，如 git
   branch?: string;           // 分支名
-  status: string;            // 仓库状态
+  status: string | number;   // 仓库状态
   description?: string;      // 描述
   createdAt: string;         // 创建时间
-  updatedAt: string;         // 更新时间
+  updatedAt?: string;        // 更新时间
+  isEmbedded?: boolean;      // 是否为嵌入式仓库
+  isRecommended?: boolean;   // 是否推荐
+  error?: string;            // 错误信息
+  prompt?: string;           // 提示信息
+  version?: string;          // 版本
 } 
