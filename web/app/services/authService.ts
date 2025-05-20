@@ -1,3 +1,6 @@
+'use client';
+import { API_URL } from "./api";
+
 // 认证服务
 interface LoginResponse {
   item1: boolean;  // 是否成功
@@ -20,9 +23,9 @@ interface RefreshTokenResponse {
 }
 
 // 登录
-export const login = async (username: string, password: string): Promise<LoginResponse> => {
+export const login = async (username: string, password: string): Promise<any> => {
   try {
-    const response = await fetch(`/api/Auth/Login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
+    const response = await fetch(`${API_URL}/api/Auth/Login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -49,7 +52,7 @@ export const login = async (username: string, password: string): Promise<LoginRe
 // 注册
 export const register = async (username: string, email: string, password: string): Promise<RegisterResponse> => {
   try {
-    const response = await fetch(`/api/Auth/Register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+    const response = await fetch(`${API_URL}/api/Auth/Register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,7 +76,7 @@ export const register = async (username: string, email: string, password: string
 // GitHub登录
 export const githubLogin = async (code: string): Promise<LoginResponse> => {
   try {
-    const response = await fetch(`/api/Auth/GitHubLogin?code=${encodeURIComponent(code)}`, {
+    const response = await fetch(`${API_URL}/api/Auth/GitHubLogin?code=${encodeURIComponent(code)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -100,7 +103,7 @@ export const githubLogin = async (code: string): Promise<LoginResponse> => {
 // Google登录
 export const googleLogin = async (idToken: string): Promise<LoginResponse> => {
   try {
-    const response = await fetch(`/api/Auth/GoogleLogin?idToken=${encodeURIComponent(idToken)}`, {
+    const response = await fetch(`${API_URL}/api/Auth/GoogleLogin?idToken=${encodeURIComponent(idToken)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,7 +130,7 @@ export const googleLogin = async (idToken: string): Promise<LoginResponse> => {
 // 刷新令牌
 export const refreshToken = async (refreshToken: string): Promise<RefreshTokenResponse> => {
   try {
-    const response = await fetch(`/api/Auth/RefreshToken?refreshToken=${encodeURIComponent(refreshToken)}`, {
+    const response = await fetch(`${API_URL}/api/Auth/RefreshToken?refreshToken=${encodeURIComponent(refreshToken)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

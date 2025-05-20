@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using FastService;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains.Users;
+using KoalaWiki.Dto;
 using KoalaWiki.Infrastructure;
 using KoalaWiki.Options;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,7 @@ public class AuthService(
     /// <param name="username">用户名</param>
     /// <param name="password">密码</param>
     /// <returns>登录结果</returns>
-    public async Task<(bool Success, string Token, string? RefreshToken, User? User, string? ErrorMessage)> LoginAsync(
+    public async Task<LoginDto> LoginAsync(
         string username, string password)
     {
         try
@@ -43,13 +44,13 @@ public class AuthService(
             // 用户不存在
             if (user == null)
             {
-                return (false, string.Empty, null, null, "用户不存在");
+                return new LoginDto(false, string.Empty, null, null, "用户不存在");
             }
 
             // 验证密码
-            if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
+            if (password != user.Password)
             {
-                return (false, string.Empty, null, null, "密码错误");
+                return new LoginDto(false, string.Empty, null, null, "密码错误");
             }
 
             // 更新登录信息
@@ -57,17 +58,19 @@ public class AuthService(
             user.LastLoginIp = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
             dbContext.Users.Update(user);
             await dbContext.SaveChangesAsync();
+            
+            user.Password = string.Empty; // 清空密码
 
             // 生成JWT令牌
             var token = GenerateJwtToken(user);
             var refreshToken = GenerateRefreshToken(user);
 
-            return (true, token, refreshToken, user, null);
+            return new LoginDto(true, token, refreshToken, user, null);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "用户登录失败");
-            return (false, string.Empty, null, null, "登录失败，请稍后再试");
+            return new LoginDto(false, string.Empty, null, null, "登录失败，请稍后再试");
         }
     }
 

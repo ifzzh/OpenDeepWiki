@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import styles from '../login/auth.module.css';
 import { register } from '../services/authService';
 import { useState } from 'react';
+import { API_URL } from '../services/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -42,20 +43,14 @@ export default function RegisterPage() {
 
   // GitHub OAuth处理
   const handleGithubLogin = () => {
-    // 这里应该重定向到GitHub OAuth授权页面
-    // 实际项目中需要配置GitHub OAuth应用并获取clientId
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/api/auth/github-callback`;
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    
-    window.location.href = githubAuthUrl;
+    // 直接重定向到后端的GitHub OAuth授权URL
+    window.location.href = `${API_URL}/api/Auth/GitHubOAuth`;
   };
 
   // Google OAuth处理
   const handleGoogleLogin = () => {
-    // 这里应该重定向到Google OAuth授权页面
-    // 实际项目中需要配置Google OAuth应用并获取clientId
-    message.info('Google登录功能尚未实现');
+    // 直接重定向到后端的Google OAuth授权URL
+    window.location.href = `${API_URL}/api/Auth/GoogleOAuth`;
   };
 
   return (

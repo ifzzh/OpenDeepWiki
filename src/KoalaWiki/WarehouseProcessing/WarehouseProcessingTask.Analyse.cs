@@ -39,7 +39,7 @@ public partial class WarehouseProcessingTask
             logger.LogInformation("步骤1: 开始更新仓库 {GitPath}", document.GitPath);
             // 1. 更新仓库
             var (commits, commitId) = GitService.PullRepository(warehouse.Address, warehouse.Version,
-                warehouse.GitUserName, warehouse.GitPassword);
+                warehouse.GitUserName, warehouse.GitPassword,warehouse.Branch);
             logger.LogInformation("仓库更新完成，获取到 {CommitCount} 个提交记录", commits?.Count ?? 0);
             // 得到更新内容和更新文件
             var commitPrompt = new StringBuilder();

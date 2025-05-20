@@ -23,9 +23,11 @@ public class GitService
         [Description("仓库地址")] string repositoryUrl,
         string commitId,
         string userName = "",
-        string password = "")
+        string password = "",
+        string branch = "master")
     {
         var (localPath, organization) = GetRepositoryPath(repositoryUrl);
+        localPath = Path.Combine(localPath, branch);
         var pullOptions = new PullOptions
         {
             FetchOptions = new FetchOptions()
@@ -57,6 +59,11 @@ public class GitService
                 }
             };
             Repository.Clone(repositoryUrl, localPath, cloneOptions);
+        }
+        
+        if(!Directory.Exists(localPath))
+        {
+            throw new Exception("克隆失败");
         }
 
         // pull仓库

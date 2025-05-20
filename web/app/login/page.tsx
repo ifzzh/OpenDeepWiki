@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import styles from './auth.module.css';
 import { login } from '../services/authService';
 import { useState } from 'react';
+import { API_URL } from '../services/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,23 +17,22 @@ export default function LoginPage() {
   const onFinish = async (values: any) => {
     try {
       setLoading(true);
-      
+
       // 调用登录API
-      const response = await login(values.username, values.password);
-      
-      if (response.item1) {
+      const { data } = await login(values.username, values.password);
+      if (data.result.success) {
         // 登录成功
         // 保存登录状态
-        localStorage.setItem('userToken', response.item3);
-        localStorage.setItem('refreshToken', response.item5);
-        
+        localStorage.setItem('userToken', data.result.token);
+        localStorage.setItem('refreshToken', data.result.refreshToken);
+
         // 保存用户信息
-        if (response.item4) {
-          localStorage.setItem('userInfo', JSON.stringify(response.item4));
+        if (data.result.user) {
+          localStorage.setItem('userInfo', JSON.stringify(data.result.user));
         }
-        
+
         message.success('登录成功，即将跳转...');
-        
+
         // 延迟跳转，让用户看到成功消息
         setTimeout(() => {
           // 检查是否有上一个页面的路径（比如从管理页面重定向来的）
@@ -42,7 +42,7 @@ export default function LoginPage() {
         }, 1000);
       } else {
         // 登录失败
-        message.error(response.item2 || '用户名或密码错误');
+        message.error(data.result.errorMessage || '用户名或密码错误');
       }
     } catch (error) {
       console.error('登录错误:', error);
@@ -54,20 +54,14 @@ export default function LoginPage() {
 
   // GitHub OAuth处理
   const handleGithubLogin = () => {
-    // 这里应该重定向到GitHub OAuth授权页面
-    // 实际项目中需要配置GitHub OAuth应用并获取clientId
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/api/auth/github-callback`;
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    
-    window.location.href = githubAuthUrl;
+    // 直接重定向到后端的GitHub OAuth授权URL
+    window.location.href = `${API_URL}/api/Auth/GitHubOAuth`;
   };
 
   // Google OAuth处理
   const handleGoogleLogin = () => {
-    // 这里应该重定向到Google OAuth授权页面
-    // 实际项目中需要配置Google OAuth应用并获取clientId
-    message.info('Google登录功能尚未实现');
+    // 直接重定向到后端的Google OAuth授权URL
+    window.location.href = `${API_URL}/api/Auth/GoogleOAuth`;
   };
 
   return (
@@ -78,7 +72,7 @@ export default function LoginPage() {
             <h1 className={styles.authTitle}>登录 OpenDeepWiki</h1>
             <p className={styles.authSubtitle}>欢迎回来，请登录您的账户</p>
           </div>
-          
+
           <Form
             name="login_form"
             initialValues={{ remember: true }}
@@ -91,8 +85,8 @@ export default function LoginPage() {
               name="username"
               rules={[{ required: true, message: '请输入用户名/邮箱' }]}
             >
-              <Input 
-                prefix={<UserOutlined className={styles.siteFormItemIcon} />} 
+              <Input
+                prefix={<UserOutlined className={styles.siteFormItemIcon} />}
                 placeholder="用户名/邮箱"
                 size="large"
               />
@@ -122,9 +116,9 @@ export default function LoginPage() {
             </Form.Item>
 
             <Form.Item>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
+              <Button
+                type="primary"
+                htmlType="submit"
                 className={styles.loginButton}
                 size="large"
                 block
@@ -133,24 +127,24 @@ export default function LoginPage() {
                 登录
               </Button>
             </Form.Item>
-            
+
             <div className={styles.registerLink}>
               还没有账户? <Link href="/register">立即注册</Link>
             </div>
-            
+
             <Divider plain>其他登录方式</Divider>
-            
+
             <div className={styles.socialLogin}>
-              <Button 
-                icon={<GithubOutlined />} 
+              <Button
+                icon={<GithubOutlined />}
                 size="large"
                 className={styles.socialButton}
                 onClick={handleGithubLogin}
               >
                 Github
               </Button>
-              <Button 
-                icon={<GoogleOutlined />} 
+              <Button
+                icon={<GoogleOutlined />}
                 size="large"
                 className={styles.socialButton}
                 onClick={handleGoogleLogin}
