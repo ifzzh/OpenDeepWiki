@@ -1,5 +1,5 @@
 'use client'
-import { Card, Table, Button, Input, Space, Tag, Dropdown, Modal, Form, Select, Switch } from 'antd';
+import { Card, Table, Button, Input, Space, Tag, Dropdown, Modal, Form, Select, Switch, message } from 'antd';
 import { 
   UserOutlined, 
   SearchOutlined, 
@@ -11,81 +11,152 @@ import {
   MoreOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
-
-// 用户类型定义
-interface User {
-  key: string;
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-  status: 'active' | 'inactive' | 'locked';
-  lastLogin: string;
-  createdAt: string;
-}
-
-// 模拟用户数据
-const mockUsers: User[] = Array.from({ length: 20 }, (_, i) => ({
-  key: String(i + 1),
-  id: i + 1,
-  username: `user${i + 1}`,
-  email: `user${i + 1}@example.com`,
-  role: i % 5 === 0 ? 'admin' : (i % 3 === 0 ? 'editor' : 'user'),
-  status: i % 7 === 0 ? 'locked' : (i % 11 === 0 ? 'inactive' : 'active'),
-  lastLogin: `2023-${Math.floor(Math.random() * 12) + 1}-${Math.floor(Math.random() * 28) + 1} ${Math.floor(Math.random() * 24)}:${Math.floor(Math.random() * 60)}`,
-  createdAt: `2023-${Math.floor(Math.random() * 6) + 1}-${Math.floor(Math.random() * 28) + 1}`,
-}));
+import { useState, useEffect } from 'react';
+import { getUserList, createUser, updateUser, deleteUser, UserInfo, CreateUserRequest, UpdateUserRequest } from '../../services/userService';
 
 export default function UsersPage() {
   const [searchText, setSearchText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<UserInfo[]>([]);
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   const [form] = Form.useForm();
 
-  // 处理用户操作
-  const handleUserAction = (action: string, user: User) => {
+  // 加载用户数据
+  const loadUsers = async (page = currentPage, size = pageSize, keyword = searchText) => {
+    try {
+      setLoading(true);
+      const response = await getUserList(page, size, keyword);
+      if (response.code === 200) {
+        setUsers(response.data.items);
+        setTotal(response.data.total);
+      } else {
+        message.error(response.message || '获取用户列表失败');
+      }
+    } catch (error) {
+      console.error('加载用户数据失败:', error);
+      message.error('加载用户数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 初始加载
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  // 处理搜索
+  const handleSearch = () => {
+    setCurrentPage(1); // 重置到第一页
+    loadUsers(1, pageSize, searchText);
+  };
+
+  // 处理分页变化
+  const handleTableChange = (pagination: any) => {
+    setCurrentPage(pagination.current);
+    setPageSize(pagination.pageSize);
+    loadUsers(pagination.current, pagination.pageSize, searchText);
+  };
+
+  // 处理用户操作（编辑、删除等）
+  const handleUserAction = async (action: string, user: UserInfo) => {
     if (action === 'edit') {
       setCurrentUser(user);
       form.setFieldsValue({
-        username: user.username,
+        name: user.name,
         email: user.email,
         role: user.role,
-        status: user.status === 'active',
+        status: user.role !== 'inactive', // 假设inactive角色表示禁用状态
       });
       setIsModalOpen(true);
     } else if (action === 'delete') {
       Modal.confirm({
         title: '确认删除',
-        content: `确定要删除用户 ${user.username} 吗？此操作不可撤销。`,
-        okText: '确定',
+        content: `确定要删除用户 ${user.name} 吗？此操作不可恢复。`,
+        okText: '删除',
+        okType: 'danger',
         cancelText: '取消',
-        okButtonProps: { danger: true },
-      });
-    } else if (action === 'lock') {
-      Modal.confirm({
-        title: user.status === 'locked' ? '解锁账户' : '锁定账户',
-        content: user.status === 'locked' 
-          ? `确定要解锁用户 ${user.username} 的账户吗？` 
-          : `确定要锁定用户 ${user.username} 的账户吗？`,
-        okText: '确定',
-        cancelText: '取消',
+        onOk: async () => {
+          try {
+            const response = await deleteUser(user.id);
+            if (response.code === 200 && response.data) {
+              message.success('用户删除成功');
+              loadUsers(); // 重新加载用户列表
+            } else {
+              message.error(response.message || '删除用户失败');
+            }
+          } catch (error) {
+            console.error('删除用户失败:', error);
+            message.error('删除用户失败');
+          }
+        },
       });
     }
   };
 
+  // 处理表单提交（创建/更新用户）
+  const handleFormSubmit = () => {
+    form.validateFields().then(async (values) => {
+      try {
+        if (currentUser) {
+          // 更新用户
+          const updateData: UpdateUserRequest = {
+            name: values.name,
+            email: values.email,
+            role: values.role,
+            password: values.password, // 如果没有输入密码，会是undefined
+          };
+          
+          const response = await updateUser(currentUser.id, updateData);
+          if (response.code === 200) {
+            message.success('用户更新成功');
+            setIsModalOpen(false);
+            loadUsers(); // 重新加载用户列表
+          } else {
+            message.error(response.message || '更新用户失败');
+          }
+        } else {
+          // 创建用户
+          const createData: CreateUserRequest = {
+            name: values.name,
+            email: values.email,
+            password: values.password,
+            role: values.role,
+          };
+          
+          const response = await createUser(createData);
+          if (response.code === 200) {
+            message.success('用户创建成功');
+            setIsModalOpen(false);
+            loadUsers(); // 重新加载用户列表
+          } else {
+            message.error(response.message || '创建用户失败');
+          }
+        }
+      } catch (error) {
+        console.error('提交表单失败:', error);
+        message.error('操作失败，请重试');
+      }
+    });
+  };
+
+  // 创建新用户
+  const handleAddUser = () => {
+    setCurrentUser(null);
+    form.resetFields();
+    setIsModalOpen(true);
+  };
+
   // 表格列定义
-  const columns: ColumnsType<User> = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-    },
+  const columns: ColumnsType<UserInfo> = [
     {
       title: '用户名',
-      dataIndex: 'username',
-      key: 'username',
+      dataIndex: 'name',
+      key: 'name',
       render: (text) => <a>{text}</a>,
     },
     {
@@ -99,51 +170,30 @@ export default function UsersPage() {
       key: 'role',
       render: (role) => {
         let color = 'blue';
-        if (role === 'admin') color = 'red';
-        else if (role === 'editor') color = 'green';
-        return <Tag color={color}>{role.toUpperCase()}</Tag>;
-      },
-      filters: [
-        { text: '管理员', value: 'admin' },
-        { text: '编辑者', value: 'editor' },
-        { text: '普通用户', value: 'user' },
-      ],
-      onFilter: (value, record) => record.role === value,
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        let color = 'green';
-        let text = '正常';
-        if (status === 'locked') {
+        let text = '用户';
+        
+        if (role === 'admin') {
           color = 'red';
-          text = '已锁定';
-        } else if (status === 'inactive') {
-          color = 'orange';
-          text = '未激活';
+          text = '管理员';
+        } else if (role === 'editor') {
+          color = 'green';
+          text = '编辑者';
         }
+        
         return <Tag color={color}>{text}</Tag>;
       },
-      filters: [
-        { text: '正常', value: 'active' },
-        { text: '未激活', value: 'inactive' },
-        { text: '已锁定', value: 'locked' },
-      ],
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: '最后登录',
-      dataIndex: 'lastLogin',
-      key: 'lastLogin',
-      sorter: (a, b) => new Date(a.lastLogin).getTime() - new Date(b.lastLogin).getTime(),
+      dataIndex: 'lastLoginAt',
+      key: 'lastLoginAt',
+      render: (text) => text ? new Date(text).toLocaleString() : '从未登录',
     },
     {
       title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      render: (text) => new Date(text).toLocaleString(),
     },
     {
       title: '操作',
@@ -157,17 +207,6 @@ export default function UsersPage() {
                 icon: <EditOutlined />,
                 label: '编辑',
                 onClick: () => handleUserAction('edit', record),
-              },
-              record.status === 'locked' ? {
-                key: 'unlock',
-                icon: <UnlockOutlined />,
-                label: '解锁账户',
-                onClick: () => handleUserAction('lock', record),
-              } : {
-                key: 'lock',
-                icon: <LockOutlined />,
-                label: '锁定账户',
-                onClick: () => handleUserAction('lock', record),
               },
               {
                 type: 'divider',
@@ -188,42 +227,24 @@ export default function UsersPage() {
     },
   ];
 
-  // 处理搜索
-  const filteredUsers = mockUsers.filter(user => 
-    user.username.toLowerCase().includes(searchText.toLowerCase()) || 
-    user.email.toLowerCase().includes(searchText.toLowerCase())
-  );
-
-  // 处理表单提交
-  const handleFormSubmit = () => {
-    form.validateFields().then(values => {
-      console.log('Form values:', values);
-      // 在实际应用中这里会调用API更新用户
-      setIsModalOpen(false);
-    });
-  };
-
-  // 创建新用户
-  const handleAddUser = () => {
-    setCurrentUser(null);
-    form.resetFields();
-    setIsModalOpen(true);
-  };
-
   return (
     <div>
       <h2 style={{ marginBottom: 24 }}>用户管理</h2>
       
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <Input
-            placeholder="搜索用户名或邮箱"
-            prefix={<SearchOutlined />}
-            style={{ width: 300 }}
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            allowClear
-          />
+          <Space>
+            <Input
+              placeholder="搜索用户名或邮箱"
+              prefix={<SearchOutlined />}
+              style={{ width: 300 }}
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              onPressEnter={handleSearch}
+              allowClear
+            />
+            <Button type="primary" onClick={handleSearch}>搜索</Button>
+          </Space>
           <Button 
             type="primary" 
             icon={<PlusOutlined />}
@@ -235,12 +256,17 @@ export default function UsersPage() {
         
         <Table 
           columns={columns} 
-          dataSource={filteredUsers}
-          rowKey="key"
+          dataSource={users}
+          rowKey="id"
+          loading={loading}
           pagination={{ 
-            pageSize: 10,
+            current: currentPage,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
             showTotal: (total) => `共 ${total} 条记录`,
           }}
+          onChange={handleTableChange}
         />
       </Card>
 
@@ -258,7 +284,7 @@ export default function UsersPage() {
           layout="vertical"
         >
           <Form.Item
-            name="username"
+            name="name"
             label="用户名"
             rules={[{ required: true, message: '请输入用户名' }]}
           >
@@ -286,24 +312,27 @@ export default function UsersPage() {
             </Form.Item>
           )}
           
+          {currentUser && (
+            <Form.Item
+              name="password"
+              label="密码"
+              help="如需修改密码请输入新密码，否则留空"
+            >
+              <Input.Password placeholder="新密码（可选）" />
+            </Form.Item>
+          )}
+          
           <Form.Item
             name="role"
             label="角色"
             rules={[{ required: true, message: '请选择角色' }]}
+            initialValue="user"
           >
             <Select>
               <Select.Option value="admin">管理员</Select.Option>
               <Select.Option value="editor">编辑者</Select.Option>
               <Select.Option value="user">普通用户</Select.Option>
             </Select>
-          </Form.Item>
-          
-          <Form.Item
-            name="status"
-            label="状态"
-            valuePropName="checked"
-          >
-            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
           </Form.Item>
         </Form>
       </Modal>

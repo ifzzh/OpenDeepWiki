@@ -23,11 +23,8 @@ public class GitService
         [Description("仓库地址")] string repositoryUrl,
         string commitId,
         string userName = "",
-        string password = "",
-        string branch = "master")
+        string password = "")
     {
-        var (localPath, organization) = GetRepositoryPath(repositoryUrl);
-        localPath = Path.Combine(localPath, branch);
         var pullOptions = new PullOptions
         {
             FetchOptions = new FetchOptions()
@@ -43,7 +40,7 @@ public class GitService
         };
 
         // 先克隆
-        if (!Directory.Exists(localPath))
+        if (!Directory.Exists(repositoryUrl))
         {
             var cloneOptions = new CloneOptions
             {
@@ -58,16 +55,16 @@ public class GitService
                         }
                 }
             };
-            Repository.Clone(repositoryUrl, localPath, cloneOptions);
+            Repository.Clone(repositoryUrl, repositoryUrl, cloneOptions);
         }
         
-        if(!Directory.Exists(localPath))
+        if(!Directory.Exists(repositoryUrl))
         {
             throw new Exception("克隆失败");
         }
 
         // pull仓库
-        using var repo = new Repository(localPath);
+        using var repo = new Repository(repositoryUrl);
 
         var result = Commands.Pull(repo, new Signature("KoalaWiki", "239573049@qq.com", DateTimeOffset.Now),
             pullOptions);

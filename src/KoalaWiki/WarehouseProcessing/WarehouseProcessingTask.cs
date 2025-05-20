@@ -36,12 +36,13 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
 
                 var documents = await dbContext.Documents
                     .Where(x => ids.Contains(x.WarehouseId) && x.LastUpdate < DateTime.Now.AddDays(-updateInterval))
-                    .Select(x => x.WarehouseId)
                     .ToListAsync(stoppingToken);
+
+                var warehouseIds = documents.Select(x => x.WarehouseId).ToArray();
 
                 // 从这里得到了超过一星期没更新的仓库
                 warehouses = await dbContext.Warehouses
-                    .Where(x => documents.Contains(x.Id))
+                    .Where(x => warehouseIds.Contains(x.Id))
                     .ToListAsync(stoppingToken);
 
                 if (warehouses.Count == 0)
@@ -52,7 +53,9 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
                 {
                     foreach (var warehouse in warehouses)
                     {
-                        var commitId = await HandleAnalyseAsync(warehouse, dbContext);
+                        var document = documents.FirstOrDefault(x => x.WarehouseId == warehouse.Id);
+
+                        var commitId = await HandleAnalyseAsync(warehouse, document, dbContext);
 
                         if (string.IsNullOrEmpty(commitId))
                         {
@@ -60,10 +63,10 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
                             await dbContext.Documents
                                 .Where(x => x.WarehouseId == warehouse.Id)
                                 .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.Now), stoppingToken);
-                            
+
                             return;
                         }
-                        
+
                         // 更新git记录
                         await dbContext.Documents
                             .Where(x => x.WarehouseId == warehouse.Id)

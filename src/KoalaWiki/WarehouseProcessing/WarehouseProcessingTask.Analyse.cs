@@ -19,28 +19,23 @@ namespace KoalaWiki.WarehouseProcessing;
 
 public partial class WarehouseProcessingTask
 {
-    public async Task<string> HandleAnalyseAsync(Warehouse warehouse, IKoalaWikiContext dbContext)
+    public async Task<string> HandleAnalyseAsync(Warehouse warehouse, Document? document, IKoalaWikiContext dbContext)
     {
         try
         {
-            logger.LogInformation("开始分析仓库: {WarehouseId} - {WarehouseName}", warehouse.Id, warehouse.Name);
-
-            var document = await dbContext.Documents
-                .AsNoTracking()
-                .Where(x => x.WarehouseId == warehouse.Id)
-                .FirstOrDefaultAsync();
-
-            if (document == null)
+            logger.LogInformation("步骤1: 开始更新仓库 {GitPath}", document.GitPath);
+            
+            // 1. 更新仓库
+            var (commits, commitId) = GitService.PullRepository(document.GitPath, warehouse.Version,
+                warehouse.GitUserName, warehouse.GitPassword);
+            
+            logger.LogInformation("仓库更新完成，获取到 {CommitCount} 个提交记录", commits?.Count ?? 0);
+            if (commits == null || commits.Count == 0)
             {
-                logger.LogError("未找到仓库相关文档: {WarehouseId}", warehouse.Id);
+                logger.LogInformation("没有更新的提交记录");
                 return string.Empty;
             }
-
-            logger.LogInformation("步骤1: 开始更新仓库 {GitPath}", document.GitPath);
-            // 1. 更新仓库
-            var (commits, commitId) = GitService.PullRepository(warehouse.Address, warehouse.Version,
-                warehouse.GitUserName, warehouse.GitPassword,warehouse.Branch);
-            logger.LogInformation("仓库更新完成，获取到 {CommitCount} 个提交记录", commits?.Count ?? 0);
+            
             // 得到更新内容和更新文件
             var commitPrompt = new StringBuilder();
             if (commits is { Count: > 0 })
