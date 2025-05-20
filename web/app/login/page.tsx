@@ -20,15 +20,15 @@ export default function LoginPage() {
 
       // 调用登录API
       const { data } = await login(values.username, values.password);
-      if (data.result.success) {
+      if (data.success) {
         // 登录成功
         // 保存登录状态
-        localStorage.setItem('userToken', data.result.token);
-        localStorage.setItem('refreshToken', data.result.refreshToken);
+        localStorage.setItem('userToken', data.token);
+        localStorage.setItem('refreshToken', data.refreshToken);
 
         // 保存用户信息
-        if (data.result.user) {
-          localStorage.setItem('userInfo', JSON.stringify(data.result.user));
+        if (data.user) {
+          localStorage.setItem('userInfo', JSON.stringify(data.user));
         }
 
         message.success('登录成功，即将跳转...');
@@ -42,7 +42,7 @@ export default function LoginPage() {
         }, 1000);
       } else {
         // 登录失败
-        message.error(data.result.errorMessage || '用户名或密码错误');
+        message.error(data.errorMessage || '用户名或密码错误');
       }
     } catch (error) {
       console.error('登录错误:', error);

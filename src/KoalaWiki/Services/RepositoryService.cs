@@ -3,6 +3,7 @@ using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Dto;
 using KoalaWiki.Entities;
 using KoalaWiki.Git;
+using KoalaWiki.Infrastructure;
 using KoalaWiki.KoalaWarehouse;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace KoalaWiki.Services;
 /// 仓库管理服务
 /// </summary>
 [Tags("Repository")]
+[Filter(typeof(ResultFilter))]
 public class RepositoryService(IKoalaWikiContext dbContext, ILogger<RepositoryService> logger, WarehouseStore warehouseStore) : FastApi
 {
     /// <summary>

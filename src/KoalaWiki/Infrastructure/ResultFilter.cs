@@ -4,19 +4,19 @@ namespace KoalaWiki.Infrastructure;
 
 public class ResultFilter : IEndpointFilter
 {
-    public ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
-        var value = next(context);
+        var value = await next(context);
 
         if (value is EmptyResult)
         {
-            return new ValueTask<object?>(null);
+            return null;
         }
 
-        return new ValueTask<object?>(new
+        return new
         {
             code = 200,
             data = value,
-        });
+        };
     }
 }

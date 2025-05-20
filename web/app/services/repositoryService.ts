@@ -48,7 +48,7 @@ export async function getRepositoryList(
   pageSize: number = 10,
   keyword?: string
 ): Promise<ApiResponse<PageResponse<RepositoryInfo>>> {
-  let url = `${API_URL}/api/Repository/GetRepositoryList?page=${page}&pageSize=${pageSize}`;
+  let url = `${API_URL}/api/Repository/RepositoryList?page=${page}&pageSize=${pageSize}`;
   if (keyword) {
     url += `&keyword=${encodeURIComponent(keyword)}`;
   }
@@ -62,7 +62,7 @@ export async function getRepositoryList(
  * @returns 仓库详情
  */
 export async function getRepositoryById(id: string): Promise<ApiResponse<RepositoryInfo>> {
-  return fetchApi<RepositoryInfo>(`${API_URL}/api/Repository/GetRepository?id=${id}`);
+  return fetchApi<RepositoryInfo>(`${API_URL}/api/Repository/Repository?id=${id}`);
 }
 
 /**
@@ -93,7 +93,7 @@ export async function getRepositoryByOwnerAndName(
 export async function createGitRepository(
   repository: CreateGitRepositoryRequest
 ): Promise<ApiResponse<RepositoryInfo>> {
-  return fetchApi<RepositoryInfo>(`${API_URL}/api/Repository/CreateGitRepository`, {
+  return fetchApi<RepositoryInfo>(`${API_URL}/api/Repository/GitRepository`, {
     method: 'POST',
     body: JSON.stringify(repository),
   });
@@ -109,7 +109,7 @@ export async function updateRepository(
   id: string,
   repository: UpdateRepositoryRequest
 ): Promise<ApiResponse<RepositoryInfo>> {
-  return fetchApi<RepositoryInfo>(`${API_URL}/api/Repository/UpdateRepository?id=${id}`, {
+  return fetchApi<RepositoryInfo>(`${API_URL}/api/Repository/Repository?id=${id}`, {
     method: 'PUT',
     body: JSON.stringify(repository),
   });
@@ -121,7 +121,7 @@ export async function updateRepository(
  * @returns 删除结果
  */
 export async function deleteRepository(id: string): Promise<ApiResponse<boolean>> {
-  return fetchApi<boolean>(`${API_URL}/api/Repository/DeleteRepository?id=${id}`, {
+  return fetchApi<boolean>(`${API_URL}/api/Repository/Repository?id=${id}`, {
     method: 'DELETE',
   });
 }
@@ -132,7 +132,7 @@ export async function deleteRepository(id: string): Promise<ApiResponse<boolean>
  * @returns 处理结果
  */
 export async function reprocessRepository(id: string): Promise<ApiResponse<boolean>> {
-  return fetchApi<boolean>(`${API_URL}/api/Repository/ReprocessRepository?id=${id}`, {
+  return fetchApi<boolean>(`${API_URL}/api/Repository/Repository?id=${id}`, {
     method: 'POST',
   });
 } 

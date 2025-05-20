@@ -1,11 +1,11 @@
 'use client'
 import { Card, Table, Button, Input, Space, Tag, Dropdown, Modal, Form, Select, Badge, Avatar, message } from 'antd';
-import { 
-  SearchOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
-  EyeOutlined, 
+import {
+  SearchOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  EyeOutlined,
   StarOutlined,
   MoreOutlined,
   FolderOutlined,
@@ -45,12 +45,13 @@ export default function RepositoriesPage() {
   const loadRepositories = async (page = currentPage, size = pageSize, keyword = searchText) => {
     try {
       setLoading(true);
-      const response = await getRepositoryList(page, size, keyword);
-      if (response.code === 200) {
-        setRepositories(response.data.items);
-        setTotal(response.data.total);
+      const { code, data } = await getRepositoryList(page, size, keyword);
+      console.log(data);
+      if (code === 200) {
+        setRepositories(data.items);
+        setTotal(data.total);
       } else {
-        message.error(response.message || '获取仓库列表失败');
+        message.error('获取仓库列表失败');
       }
     } catch (error) {
       console.error('加载仓库数据失败:', error);
@@ -145,7 +146,7 @@ export default function RepositoriesPage() {
           gitUserName: values.enableGitAuth ? values.gitUserName : undefined,
           gitPassword: values.enableGitAuth ? values.gitPassword : undefined,
         };
-        
+
         const response = await createGitRepository(createData);
         if (response.code === 200) {
           message.success('仓库创建成功');
@@ -164,7 +165,7 @@ export default function RepositoriesPage() {
   // 处理编辑仓库表单提交
   const handleEditFormSubmit = () => {
     if (!currentRepository) return;
-    
+
     editForm.validateFields().then(async (values) => {
       try {
         // 更新仓库
@@ -173,7 +174,7 @@ export default function RepositoriesPage() {
           isRecommended: values.isRecommended,
           prompt: values.prompt,
         };
-        
+
         const response = await updateRepository(currentRepository.id, updateData);
         if (response.code === 200) {
           message.success('仓库更新成功');
@@ -290,7 +291,7 @@ export default function RepositoriesPage() {
   return (
     <div>
       <h2 style={{ marginBottom: 24 }}>仓库管理</h2>
-      
+
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Space>
@@ -305,21 +306,21 @@ export default function RepositoriesPage() {
             />
             <Button type="primary" onClick={handleSearch}>搜索</Button>
           </Space>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddRepository}
           >
             添加仓库
           </Button>
         </div>
-        
-        <Table 
-          columns={columns} 
+
+        <Table
+          columns={columns}
           dataSource={repositories}
           rowKey="id"
           loading={loading}
-          pagination={{ 
+          pagination={{
             current: currentPage,
             pageSize: pageSize,
             total: total,
@@ -351,7 +352,7 @@ export default function RepositoriesPage() {
           >
             <Input placeholder="例如: https://github.com/username/repo.git" />
           </Form.Item>
-          
+
           <Form.Item
             name="branch"
             label="分支"
@@ -359,7 +360,7 @@ export default function RepositoriesPage() {
           >
             <Input placeholder="例如: main, master" />
           </Form.Item>
-          
+
           <Form.Item
             name="enableGitAuth"
             valuePropName="checked"
@@ -373,12 +374,12 @@ export default function RepositoriesPage() {
               defaultValue={false}
             />
           </Form.Item>
-          
+
           <Form.Item
             noStyle
             shouldUpdate={(prevValues, currentValues) => prevValues.enableGitAuth !== currentValues.enableGitAuth}
           >
-            {({ getFieldValue }) => 
+            {({ getFieldValue }) =>
               getFieldValue('enableGitAuth') ? (
                 <>
                   <Form.Item
@@ -388,7 +389,7 @@ export default function RepositoriesPage() {
                   >
                     <Input placeholder="Git用户名" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="gitPassword"
                     label="Git密码/令牌"
@@ -423,7 +424,7 @@ export default function RepositoriesPage() {
           >
             <Input.TextArea rows={4} placeholder="仓库描述" />
           </Form.Item>
-          
+
           <Form.Item
             name="isRecommended"
             label="是否推荐"
@@ -436,7 +437,7 @@ export default function RepositoriesPage() {
               ]}
             />
           </Form.Item>
-          
+
           <Form.Item
             name="prompt"
             label="构建提示词"
