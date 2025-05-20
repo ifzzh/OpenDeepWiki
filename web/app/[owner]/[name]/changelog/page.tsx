@@ -2,10 +2,7 @@ import { getChangeLog } from '../../../services/warehouseService';
 import RepositoryInfo from '../RepositoryInfo';
 
 // 服务器组件，处理数据获取
-export default async function ChangelogPage({ params, searchParams }: {
-  params: { owner: string; name: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+export default async function ChangelogPage({ params, searchParams }: any) {
   try {
     const owner = params.owner;
     const name = params.name;
@@ -31,16 +28,16 @@ export default async function ChangelogPage({ params, searchParams }: {
 
     // 直接在服务器端渲染更新日志
     return (
-      <div style={{maxWidth: 800, margin: '0 auto', padding: '24px'}}>
-        <h2 style={{marginBottom: '24px'}}>更新日志</h2>
-        <div dangerouslySetInnerHTML={{__html: response.data.html || response.data.commitMessage}} />
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px' }}>
+        <h2 style={{ marginBottom: '24px' }}>更新日志</h2>
+        <div dangerouslySetInnerHTML={{ __html: response.data.html || response.data.commitMessage }} />
       </div>
     );
   } catch (error) {
     console.error('Failed to load changelog:', error);
     const owner = params?.owner || "";
     const name = params?.name || "";
-    
+
     // 出现错误时也展示GitHub仓库信息（如果有）
     return (
       <RepositoryInfo

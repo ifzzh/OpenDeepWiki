@@ -5,10 +5,7 @@ import RepositoryInfo from './RepositoryInfo';
 import { checkGitHubRepoExists } from '../../services/githubService';
 
 // 服务器组件，处理数据获取
-export default async function RepositoryPage({ params, searchParams }: {
-  params: { owner: string; name: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+export default async function RepositoryPage({ params, searchParams }: any) {
   try {
     const owner = params.owner;
     const name = params.name;
