@@ -1,5 +1,13 @@
-﻿namespace KoalaWiki.Extensions;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using KoalaWiki.Options;
+using Microsoft.IdentityModel.Tokens;
 
+namespace KoalaWiki.Extensions;
+
+/// <summary>
+/// 全局中间件
+/// </summary>
 public class GlobalMiddleware(ILogger<GlobalMiddleware> logger) : IMiddleware
 {
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)

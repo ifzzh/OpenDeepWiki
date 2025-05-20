@@ -6,9 +6,12 @@ using KoalaWiki.Git;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.MCP;
 using KoalaWiki.Options;
+using KoalaWiki.Services;
 using KoalaWiki.WarehouseProcessing;
 using Mapster;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -24,6 +27,10 @@ Log.Logger = new LoggerConfiguration()
 OpenAIOptions.InitConfig(builder.Configuration);
 builder.Configuration.GetSection(DocumentOptions.Name)
     .Get<DocumentOptions>();
+
+// 初始化JWT配置
+var jwtOptions = JwtOptions.InitConfig(builder.Configuration);
+builder.Services.AddSingleton(jwtOptions);
 
 #endregion
 
@@ -47,7 +54,36 @@ builder.Services.WithFast();
 builder.Services.AddSingleton<WarehouseStore>();
 builder.Services.AddSingleton<GitService>();
 builder.Services.AddSingleton<DocumentsService>();
-builder.Services.AddSingleton<GlobalMiddleware>();
+builder.Services.AddTransient<GlobalMiddleware>();
+builder.Services.AddScoped<AuthService>();
+
+// 添加JWT认证
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtOptions.Issuer,
+        ValidAudience = jwtOptions.Audience,
+        IssuerSigningKey = jwtOptions.GetSymmetricSecurityKey(),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+// 添加授权策略
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("admin"));
+    options.AddPolicy("RequireUserRole", policy => policy.RequireRole("user", "admin"));
+});
 
 builder.Services
     .AddCors(options =>
@@ -82,6 +118,11 @@ using (var scope = app.Services.CreateScope())
 app.UseSerilogRequestLogging();
 
 app.UseCors("AllowAll");
+
+// 添加认证和授权中间件
+app.UseAuthentication();
+app.UseAuthorization();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

@@ -56,9 +56,14 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
 
                         if (string.IsNullOrEmpty(commitId))
                         {
+                            // 更新git记录
+                            await dbContext.Documents
+                                .Where(x => x.WarehouseId == warehouse.Id)
+                                .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.Now), stoppingToken);
+                            
                             return;
                         }
-
+                        
                         // 更新git记录
                         await dbContext.Documents
                             .Where(x => x.WarehouseId == warehouse.Id)
