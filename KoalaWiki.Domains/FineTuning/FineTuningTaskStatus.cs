@@ -21,4 +21,9 @@ public enum FineTuningTaskStatus
     /// 失败
     /// </summary>
     Failed = 3,
+    
+    /// <summary>
+    /// 已取消
+    /// </summary>
+    Cancelled = 4,
 }

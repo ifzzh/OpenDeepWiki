@@ -311,7 +311,11 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
 
                     b.HasIndex("Name");
 
+                    b.HasIndex("Status");
+
                     b.HasIndex("TrainingDatasetId");
+
+                    b.HasIndex("UserId");
 
                     b.HasIndex("WarehouseId");
 
@@ -331,6 +335,10 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Model")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -615,6 +623,17 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                     b.HasIndex("Type");
 
                     b.ToTable("Warehouses");
+                });
+
+            modelBuilder.Entity("KoalaWiki.Domains.FineTuning.FineTuningTask", b =>
+                {
+                    b.HasOne("KoalaWiki.Domains.DocumentCatalog", "DocumentCatalog")
+                        .WithMany()
+                        .HasForeignKey("DocumentCatalogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DocumentCatalog");
                 });
 
             modelBuilder.Entity("KoalaWiki.Entities.DocumentFile.DocumentFileItemSource", b =>

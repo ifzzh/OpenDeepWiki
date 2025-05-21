@@ -272,13 +272,15 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasIndex(x => x.CreatedAt);
 
             options.HasIndex(x => x.TrainingDatasetId);
-            options.HasIndex(x => new
-            {
-                x.UserId,
-                x.Status,
-                x.WarehouseId,
-                x.DocumentCatalogId
-            });
+            options.HasIndex(x => x.UserId);
+            options.HasIndex(x => x.Status);
+            options.HasIndex(x => x.WarehouseId);
+            options.HasIndex(x => x.DocumentCatalogId);
+            
+            options.HasOne(x => x.DocumentCatalog)
+                .WithMany()
+                .HasForeignKey(x => x.DocumentCatalogId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

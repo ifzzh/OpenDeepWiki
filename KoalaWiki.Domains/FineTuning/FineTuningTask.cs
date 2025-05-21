@@ -59,4 +59,6 @@ public class FineTuningTask : Entity<string>
     /// 原始数据集
     /// </summary>
     public string? OriginalDataset { get; set; } = string.Empty;
+    
+    public DocumentCatalog DocumentCatalog { get; set; }
 }

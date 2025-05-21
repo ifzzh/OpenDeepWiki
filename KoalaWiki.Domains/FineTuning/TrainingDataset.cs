@@ -42,4 +42,9 @@ public class TrainingDataset : Entity<string>
     /// Prompt
     /// </summary>
     public string Prompt { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 模型名称
+    /// </summary>
+    public string Model { get; set; } = string.Empty; // 模型名称
 }

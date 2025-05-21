@@ -59,6 +59,7 @@ async function clientFetchApi<T>(
         ...options,
         headers: {
           ...options?.headers,
+          "Authorization": `Bearer ${localStorage.getItem("userToken")}`,
         },
       });
     } else {
@@ -67,8 +68,16 @@ async function clientFetchApi<T>(
         headers: {
           ...options?.headers,
           'Content-Type': 'application/json',
+          "Authorization": `Bearer ${localStorage.getItem("userToken")}`,
         },
       });
+    }
+
+    if(response.status === 401) {
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("userInfo");
+      localStorage.setItem("redirectPath", window.location.pathname);
+      window.location.href = "/login";
     }
 
     if (!response.ok) {
@@ -111,7 +120,13 @@ async function fetchApi<T>(
   // 判断是否在客户端环境
   if (typeof window !== 'undefined') {
     // 客户端环境
-    return clientFetchApi<T>(url, options);
+    return clientFetchApi<T>(url, {
+      ...options,
+      headers: {
+        ...options?.headers,
+        "Authorization": `Bearer ${localStorage.getItem("userToken")}`,
+      },
+    });
   } else {
     // 服务器端环境
     return serverFetchApi<T>(url, options);
@@ -120,7 +135,7 @@ async function fetchApi<T>(
 
 // SSE 辅助函数
 async function* fetchSSE(url: string, data: any): AsyncIterableIterator<any> {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("userToken");
   const headers = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
@@ -131,6 +146,14 @@ async function* fetchSSE(url: string, data: any): AsyncIterableIterator<any> {
     method: "POST",
     body: JSON.stringify(data),
   });
+
+  if(response.status === 401) {
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userInfo");
+    localStorage.setItem("redirectPath", window.location.pathname);
+    window.location.href = "/login";
+    return;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
