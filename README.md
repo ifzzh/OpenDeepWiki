@@ -31,6 +31,7 @@ Feature list:
 - [x] Supports multiple databases (SQLite, PostgreSQL, SqlServer, etc.)
 - [x] Supports multiple languages (Chinese, English, French, etc.)
 - [x] Supports uploading ZIP files, and uploading local files
+- [x] provides a data fine-tuning platform to generate fine-tuning datasets
 - [ ] Supports directory-level management of repositories, allowing for custom directory generation and dynamic documentation creation
 - [ ] Supports repository directory management, allowing for modification of repository directories
 - [ ] Supports user-level management, providing user management functions for adding, deleting, modifying, and querying users
