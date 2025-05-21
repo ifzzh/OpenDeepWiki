@@ -1,7 +1,5 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeDependencyAnalyzer
 {
@@ -460,13 +458,13 @@ namespace CodeDependencyAnalyzer
         public List<string> ExtractImports(string fileContent)
         {
             var imports = new List<string>();
-            var syntaxTree = CSharpSyntaxTree.ParseText(fileContent);
-            var root = syntaxTree.GetCompilationUnitRoot();
-            
-            foreach (var usingDirective in root.Usings)
-            {
-                imports.Add(usingDirective.Name.ToString());
-            }
+            // var syntaxTree = CSharpSyntaxTree.ParseText(fileContent);
+            // var root = syntaxTree.GetCompilationUnitRoot();
+            //
+            // foreach (var usingDirective in root.Usings)
+            // {
+            //     imports.Add(usingDirective.Name.ToString());
+            // }
             
             return imports;
         }
@@ -474,20 +472,20 @@ namespace CodeDependencyAnalyzer
         public List<Function> ExtractFunctions(string fileContent)
         {
             var functions = new List<Function>();
-            var syntaxTree = CSharpSyntaxTree.ParseText(fileContent);
-            var root = syntaxTree.GetCompilationUnitRoot();
-            
-            // 提取所有方法声明
-            var methodDeclarations = root.DescendantNodes().OfType<MethodDeclarationSyntax>();
-            
-            foreach (var method in methodDeclarations)
-            {
-                functions.Add(new Function
-                {
-                    Name = method.Identifier.ValueText,
-                    Body = method.Body?.ToString() ?? method.ExpressionBody?.ToString() ?? string.Empty
-                });
-            }
+            // var syntaxTree = CSharpSyntaxTree.ParseText(fileContent);
+            // var root = syntaxTree.GetCompilationUnitRoot();
+            //
+            // // 提取所有方法声明
+            // var methodDeclarations = root.DescendantNodes().OfType<MethodDeclarationSyntax>();
+            //
+            // foreach (var method in methodDeclarations)
+            // {
+            //     functions.Add(new Function
+            //     {
+            //         Name = method.Identifier.ValueText,
+            //         Body = method.Body?.ToString() ?? method.ExpressionBody?.ToString() ?? string.Empty
+            //     });
+            // }
             
             return functions;
         }
@@ -496,41 +494,41 @@ namespace CodeDependencyAnalyzer
         {
             var functionCalls = new List<string>();
             
-            try
-            {
-                var syntaxTree = CSharpSyntaxTree.ParseText($"class C {{ void M() {{ {functionBody} }} }}");
-                var root = syntaxTree.GetCompilationUnitRoot();
-                
-                // 提取所有方法调用
-                var invocations = root.DescendantNodes().OfType<InvocationExpressionSyntax>();
-                
-                foreach (var invocation in invocations)
-                {
-                    if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
-                    {
-                        functionCalls.Add(memberAccess.Name.Identifier.ValueText);
-                    }
-                    else if (invocation.Expression is IdentifierNameSyntax identifier)
-                    {
-                        functionCalls.Add(identifier.Identifier.ValueText);
-                    }
-                }
-            }
-            catch
-            {
-                // 使用正则表达式作为备用解析方法
-                var callRegex = new Regex(@"(\w+)\s*\(", RegexOptions.Compiled);
-                var matches = callRegex.Matches(functionBody);
-                
-                foreach (Match match in matches)
-                {
-                    var name = match.Groups[1].Value;
-                    if (!new[] { "if", "for", "while", "switch", "catch" }.Contains(name))
-                    {
-                        functionCalls.Add(name);
-                    }
-                }
-            }
+            // try
+            // {
+            //     var syntaxTree = CSharpSyntaxTree.ParseText($"class C {{ void M() {{ {functionBody} }} }}");
+            //     var root = syntaxTree.GetCompilationUnitRoot();
+            //     
+            //     // 提取所有方法调用
+            //     var invocations = root.DescendantNodes().OfType<InvocationExpressionSyntax>();
+            //     
+            //     foreach (var invocation in invocations)
+            //     {
+            //         if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
+            //         {
+            //             functionCalls.Add(memberAccess.Name.Identifier.ValueText);
+            //         }
+            //         else if (invocation.Expression is IdentifierNameSyntax identifier)
+            //         {
+            //             functionCalls.Add(identifier.Identifier.ValueText);
+            //         }
+            //     }
+            // }
+            // catch
+            // {
+            //     // 使用正则表达式作为备用解析方法
+            //     var callRegex = new Regex(@"(\w+)\s*\(", RegexOptions.Compiled);
+            //     var matches = callRegex.Matches(functionBody);
+            //     
+            //     foreach (Match match in matches)
+            //     {
+            //         var name = match.Groups[1].Value;
+            //         if (!new[] { "if", "for", "while", "switch", "catch" }.Contains(name))
+            //         {
+            //             functionCalls.Add(name);
+            //         }
+            //     }
+            // }
             
             return functionCalls;
         }

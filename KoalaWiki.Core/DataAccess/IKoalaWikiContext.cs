@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.FineTuning;
 using KoalaWiki.Domains.Users;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
@@ -27,6 +28,13 @@ public interface IKoalaWikiContext
     public DbSet<ChatShareMessage> ChatShareMessages { get; set; }
 
     public DbSet<ChatShareMessageItem> ChatShareMessageItems { get; set; }
+    
+    /// <summary>
+    /// 训练数据集
+    /// </summary>
+    public DbSet<TrainingDataset> TrainingDatasets { get; set; }
+    
+    public DbSet<FineTuningTask> FineTuningTasks { get; set; }
     
     public DbSet<User> Users { get; set; }
 

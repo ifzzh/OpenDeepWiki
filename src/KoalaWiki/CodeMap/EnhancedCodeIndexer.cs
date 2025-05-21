@@ -214,7 +214,7 @@ public class EnhancedCodeIndexer
     {
         return language switch
         {
-            "csharp" => await ParseCSharp.ParseCSharpCodeWithRoslynAsync(code, filePath),
+            // "csharp" => await ParseCSharp.ParseCSharpCodeWithRoslynAsync(code, filePath),
             "python" => ParsePython.ParsePythonCode(code),
             "javascript" => ParseJavaScript.ParseJavaScriptCode(code),
             "typescript" => ParseJavaScript.ParseTypeScriptCode(code),

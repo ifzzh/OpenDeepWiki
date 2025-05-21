@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.FineTuning;
 using KoalaWiki.Domains.Users;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
@@ -31,7 +32,11 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
     public DbSet<ChatShareMessage> ChatShareMessages { get; set; }
 
     public DbSet<ChatShareMessageItem> ChatShareMessageItems { get; set; }
-    
+
+    public DbSet<TrainingDataset> TrainingDatasets { get; set; }
+
+    public DbSet<FineTuningTask> FineTuningTasks { get; set; }
+
     public DbSet<User> Users { get; set; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
@@ -241,6 +246,39 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasIndex(x => x.CreatedAt);
 
             options.HasIndex(x => x.LastLoginAt);
+        });
+
+        modelBuilder.Entity<TrainingDataset>(options =>
+        {
+            options.HasKey(x => x.Id);
+
+            options.Property(x => x.Name).IsRequired();
+
+            options.HasIndex(x => x.Name);
+
+            options.HasIndex(x => x.CreatedAt);
+
+            options.HasIndex(x => x.WarehouseId);
+        });
+
+        modelBuilder.Entity<FineTuningTask>(options =>
+        {
+            options.HasKey(x => x.Id);
+
+            options.Property(x => x.Name).IsRequired();
+
+            options.HasIndex(x => x.Name);
+
+            options.HasIndex(x => x.CreatedAt);
+
+            options.HasIndex(x => x.TrainingDatasetId);
+            options.HasIndex(x => new
+            {
+                x.UserId,
+                x.Status,
+                x.WarehouseId,
+                x.DocumentCatalogId
+            });
         });
     }
 }
