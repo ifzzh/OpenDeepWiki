@@ -8,6 +8,12 @@
 </div>
 
 
+# 赞助
+
+![image](https://github.com/user-attachments/assets/b1bcb56e-38cb-47bf-adfe-7a21d83774b4)
+
+[302.AI](https://share.302.ai/jXcaTv) 是一个按需付费的一站式企业级AI应用平台，开放平台，开源生态，让AI为每个需求找到答案。现凭邀请码注册，即可领取$1测试额度，快来体验吧！
+
 # 项目介绍
 
 OpenDeepWiki 是参考[DeepWiki](https://deepwiki.com/) 作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成、知识图谱等功能。
