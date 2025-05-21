@@ -28,12 +28,18 @@ export async function fetchApi<T>(
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-
   try {
+    // 创建 AbortController 用于超时控制
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5分钟超时
+
     const response = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId); // 清除超时定时器
 
     // 如果响应不成功，抛出错误
     if (!response.ok) {

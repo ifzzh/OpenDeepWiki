@@ -279,14 +279,13 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
       form.resetFields();
     } else if (initialValues) {
       form.setFieldsValue(initialValues);
-      
       // 如果初始值包含地址，尝试获取分支
       if (initialValues.address && !disabledFields.includes('address')) {
         setLastAddress(initialValues.address);
         fetchBranches(initialValues.address);
       }
     }
-  }, [open, form, initialValues, disabledFields]);
+  }, [open]);
 
   return (
     <Modal
@@ -301,7 +300,6 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
       }
       open={open}
       onCancel={onCancel}
-
       destroyOnClose
       footer={[
         <Button key="cancel" onClick={onCancel} disabled={loading}>

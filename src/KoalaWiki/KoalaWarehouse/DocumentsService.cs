@@ -361,10 +361,10 @@ public partial class DocumentsService
     /// 返回列表
     /// </returns>
     /// </summary>
-    private static async Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)>
+    public static async Task<(DocumentCatalog catalog, DocumentFileItem fileItem, List<string> files)>
         ProcessDocumentAsync(
             DocumentCatalog catalog, Kernel kernel, string catalogue, string gitRepository, string branch, string path,
-            SemaphoreSlim semaphore)
+            SemaphoreSlim? semaphore)
     {
         int retryCount = 0;
         const int retries = 5;
@@ -375,20 +375,25 @@ public partial class DocumentsService
         {
             try
             {
-                await semaphore.WaitAsync();
+                if (semaphore != null)
+                {
+                    await semaphore.WaitAsync();
+                }
+
                 Log.Logger.Information("处理仓库；{path} ,处理标题：{name}", path, catalog.Name);
                 var fileItem = await ProcessCatalogueItems(catalog, kernel, catalogue, gitRepository, branch, path);
                 files.AddRange(DocumentContext.DocumentStore.Files);
 
                 Log.Logger.Information("处理仓库；{path} ,处理标题：{name} 完成！", path, catalog.Name);
-                semaphore.Release();
+                semaphore?.Release();
 
                 return (catalog, fileItem, files);
             }
             catch (Exception ex)
             {
                 Log.Logger.Error("处理仓库；{path} ,处理标题：{name} 失败:{ex}", path, catalog.Name, ex.ToString());
-                semaphore.Release();
+                semaphore?.Release();
+
                 retryCount++;
                 if (retryCount >= retries)
                 {
@@ -433,7 +438,7 @@ public partial class DocumentsService
     /// Mermaid可能存在语法错误，使用大模型进行修复
     /// </summary>
     /// <param name="fileItem"></param>
-    private static void RepairMermaid(DocumentFileItem fileItem)
+    public static void RepairMermaid(DocumentFileItem fileItem)
     {
         try
         {

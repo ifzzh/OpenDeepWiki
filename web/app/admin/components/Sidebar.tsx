@@ -6,6 +6,7 @@ import {
   UserOutlined, 
   DatabaseOutlined, 
   SettingOutlined,
+  ApiOutlined,
 } from '@ant-design/icons';
 import styles from '../styles.module.css';
 
@@ -42,6 +43,12 @@ export default function Sidebar({ isSidebarOpen, selectedKey }: SidebarProps) {
       icon: <DatabaseOutlined className={styles.navItemIcon} />,
       label: '仓库管理',
       path: '/admin/repositories',
+    },
+    {
+      key: 'finetune',
+      icon: <ApiOutlined className={styles.navItemIcon} />,
+      label: '微调数据',
+      path: '/admin/finetune',
     },
     {
       key: 'settings',

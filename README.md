@@ -13,6 +13,30 @@
 
 [302.AI](https://share.302.ai/jXcaTv)is a pay-as-you-go, one-stop enterprise-level AI application platform. It offers an open platform and open-source ecosystem, allowing AI to find solutions for every need. Click [here](https://share.302.ai/jXcaTv) to get your $1 free credit!
 
+## Function
+
+- **Quick Conversion:** All Github, Gitlab, Gitee, Gitea and other code repositories can be converted into knowledge bases in just a few minutes.
+- **Multi-language Support:** Code analysis and documentation generation are supported for all programming languages.
+- **Code Structure:** Automatic Mermaid diagrams are generated to understand the code structure.
+- **Custom Models:** Custom models and custom APIs are supported, allowing for expansion as needed.
+- **AI Intelligent Analysis:** Code analysis and understanding of code relationships based on AI.
+- **Easy SEO:** Generate SEO-friendly documents and knowledge bases using Next.js, making it easier for search engines to index.
+- **Dialogic Interaction:** Supports dialogic interaction with AI to obtain detailed information and usage methods of the code, and to deeply understand the code.
+
+Feature list:
+- [x] Supports multiple code repositories (Github, Gitlab, Gitee, Gitea, etc.)
+- [x] Supports multiple programming languages (Python, Java, C#, JavaScript, etc.)
+- [x] Supports repository management, providing functions for adding, deleting, modifying, and querying repositories
+- [x] Supports multiple AI providers (OpenAI, AzureOpenAI, Anthropic, etc.)
+- [x] Supports multiple databases (SQLite, PostgreSQL, SqlServer, etc.)
+- [x] Supports multiple languages (Chinese, English, French, etc.)
+- [x] Supports uploading ZIP files, and uploading local files
+- [ ] Supports directory-level management of repositories, allowing for custom directory generation and dynamic documentation creation
+- [ ] Supports repository directory management, allowing for modification of repository directories
+- [ ] Supports user-level management, providing user management functions for adding, deleting, modifying, and querying users
+- [ ] Supports user permission management, providing user permission management functions for adding, deleting, modifying, and querying user permissions
+- [ ] Supports generating different fine-tuning framework datasets at the repository level
+
 # Project Introduction
 
 OpenDeepWiki is an open-source project inspired by [DeepWiki](https://deepwiki.com/), developed using .NET 9 and Semantic Kernel. It aims to help developers better understand and utilize codebases by providing features such as code analysis, documentation generation, and knowledge graph creation.
@@ -43,16 +67,6 @@ After adding the repository, test by asking a question (please note that before 
 
 
 In this way, you can use OpenDeepWiki as an MCPServer, making it available for other AI models to call upon, facilitating the analysis and understanding of an open-source project.
-
-## Features
-
-- **Quick Generation:** Convert all code repositories from Github, Gitlab, Gitee, Gitea, etc., into a knowledge base in just a few minutes.
-- **Multi-language Support:** Supports code analysis and documentation generation for all programming languages.
-- **Code Structure:** Automatically generate Mermaid charts to understand code structure.
-- **Custom Models:** Supports custom models and custom APIs for extension as needed.
-- **AI Intelligent Analysis:** AI-based code analysis and understanding of code relationships.
-- **Easy SEO:** Generate SEO-friendly documents and knowledge bases using Next.js for better search engine indexing.
-- **Conversational Interaction:** Support for conversational interaction with AI to obtain detailed information and usage methods for code, enabling deeper understanding.
 
 ## 🚀 Quick Start
 
