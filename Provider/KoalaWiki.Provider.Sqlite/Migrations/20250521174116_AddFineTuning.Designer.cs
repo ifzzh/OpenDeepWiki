@@ -3,6 +3,7 @@ using System;
 using KoalaWiki.Provider.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KoalaWiki.Provider.Sqlite.Migrations
 {
     [DbContext(typeof(SqliteContext))]
-    partial class SqliteContextModelSnapshot : ModelSnapshot
+    [Migration("20250521174116_AddFineTuning")]
+    partial class AddFineTuning
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.4");
@@ -335,10 +338,6 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Endpoint")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Model")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

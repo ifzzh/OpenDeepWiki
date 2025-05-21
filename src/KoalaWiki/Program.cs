@@ -3,6 +3,7 @@ using KoalaWiki.Core.DataAccess;
 using KoalaWiki.DataMigration;
 using KoalaWiki.Extensions;
 using KoalaWiki.Git;
+using KoalaWiki.Infrastructure;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.MCP;
 using KoalaWiki.Options;
@@ -55,6 +56,7 @@ builder.Services.AddSingleton<GitService>();
 builder.Services.AddSingleton<DocumentsService>();
 builder.Services.AddTransient<GlobalMiddleware>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddMemoryCache();
 
 // 添加JWT认证

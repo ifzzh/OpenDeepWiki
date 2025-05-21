@@ -31,8 +31,6 @@ export default function LoginPage() {
           localStorage.setItem('userInfo', JSON.stringify(data.user));
         }
 
-        message.success('登录成功，即将跳转...');
-
         // 延迟跳转，让用户看到成功消息
         setTimeout(() => {
           // 检查是否有上一个页面的路径（比如从管理页面重定向来的）

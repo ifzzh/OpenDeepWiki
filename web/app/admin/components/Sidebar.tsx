@@ -60,6 +60,11 @@ export default function Sidebar({ isSidebarOpen, selectedKey }: SidebarProps) {
 
   return (
     <aside 
+      style={{
+        width: isSidebarOpen ? '250px' : '50px',
+        minWidth: isSidebarOpen ? '250px' : '50px',
+        transition: 'width 0.3s ease-in-out',
+      }}
       className={`${styles.sidebarContainer} ${isSidebarOpen ? styles.sidebarOpen : styles.sidebarClosed}`}
     >
       {/* Logo区域 */}
