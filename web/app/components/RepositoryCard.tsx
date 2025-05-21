@@ -25,23 +25,24 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
   const currentLocale = i18n.language;
   const [repoInfo, setRepoInfo] = useState<RepoExtendedInfo | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
 
   // 格式化仓库地址，显示简洁的URL
   const formatRepoAddress = (address: string): string => {
     try {
       if (!address) return '';
-      
+
       // 移除协议前缀
       let formattedAddress = address.replace(/^(https?:\/\/)/, '');
-      
+
       // 移除末尾的.git后缀
       formattedAddress = formattedAddress.replace(/\.git$/, '');
-      
+
       // 如果地址太长，进行截断
       if (formattedAddress.length > 30) {
         return formattedAddress.substring(0, 27) + '...';
       }
-      
+
       return formattedAddress;
     } catch (e) {
       return address;
@@ -190,7 +191,20 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
   };
 
   return (
-    <Link href={`/${repository.organizationName}/${repository.name}`} className="block no-underline text-inherit">
+    <span
+      style={{
+        cursor: 'pointer',
+        color: 'inherit',
+        position: 'relative',
+        display: 'block',
+        overflow: 'hidden',
+      }}
+      onClick={() => {
+        window.location.href = `/${repository.organizationName}/${repository.name}`;
+      }}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      className="block no-underline text-inherit">
       <Badge.Ribbon
         style={{
           display: repository.isRecommended ? 'block' : 'none',
@@ -199,9 +213,22 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
         text={<Heart size={14} />}
         color="pink">
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow h-[180px] transition-shadow">
-          {/* 仓库头部信息 */}
+          {/* 发光效果元素 */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: isHovering ? '100%' : '-100%',
+              width: '50%',
+              height: '100%',
+              background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%)',
+              transform: 'skewX(-20deg)',
+              transition: isHovering ? 'left 0.6s ease-in' : 'left 0.9s ease-out',
+              pointerEvents: 'none',
+              zIndex: 10,
+            }}
+          />
           <div className="flex p-3 border-b border-gray-100">
-            {/* 仓库头像/图标 */}
             <div className="flex-shrink-0 mr-3">
               {avatarUrl ? (
                 <img
@@ -283,7 +310,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
           </div>
         </div>
       </Badge.Ribbon>
-    </Link>
+    </span>
   );
 };
 
