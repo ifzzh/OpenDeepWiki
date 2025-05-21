@@ -487,24 +487,46 @@ public class RepositoryService(
                 .ExecuteUpdateAsync(x => x.SetProperty(y => y.Prompt, input.Prompt));
         }
 
-        var fileItem = await dbContext.DocumentFileItems
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.DocumentCatalogId == input.Id);
-
-        if (fileItem == null)
-        {
-            throw new Exception("文件不存在");
-        }
-
         var catalog = await dbContext.DocumentCatalogs
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == fileItem.DocumentCatalogId);
+            .FirstOrDefaultAsync(x => x.Id == input.Id);
 
-        if (catalog == null)
+        var warehouse = await dbContext.Warehouses
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == catalog.WarehouseId);
+        var document = await dbContext.Documents
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.WarehouseId == catalog.WarehouseId);
+
+        var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.ChatModel, false);
+        // 对当前单目录进行分析
+        var (catalogs, fileItem, files)
+            = await DocumentsService.ProcessDocumentAsync(catalog, fileKernel, warehouse.OptimizedDirectoryStructure,
+                warehouse.Address, warehouse.Branch, document.GitPath, null);
+
+        // 处理完成后，更新目录状态
+
+        // 更新文档状态
+        await dbContext.DocumentCatalogs.Where(x => x.Id == catalog.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsCompleted, true));
+
+        // 修复Mermaid语法错误
+        DocumentsService.RepairMermaid(fileItem);
+
+        await dbContext.DocumentFileItems.Where(x => x.Id == fileItem.Id)
+            .ExecuteDeleteAsync();
+
+        await dbContext.DocumentFileItems.AddAsync(fileItem);
+        await dbContext.DocumentFileItemSources.AddRangeAsync(files.Select(x => new DocumentFileItemSource()
         {
-            throw new Exception("目录不存在");
-        }
+            Address = x,
+            DocumentFileItemId = fileItem.Id,
+            Name = x,
+            Id = Guid.NewGuid().ToString("N"),
+        }));
 
+        await dbContext.SaveChangesAsync();
 
         return true;
     }

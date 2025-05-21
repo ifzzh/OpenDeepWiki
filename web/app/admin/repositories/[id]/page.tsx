@@ -19,7 +19,6 @@ import {
   aiGenerateFileContent
 } from '../../../services/repositoryService';
 
-const { Title, Text } = Typography;
 const { DirectoryTree } = Tree;
 
 // 定义文件树节点类型

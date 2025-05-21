@@ -484,5 +484,6 @@ export async function aiGenerateFileContent(id: string, prompt: string): Promise
   return fetchApi<string>(`${API_URL}/api/Repository/GenerateFileContent`, {
     method: 'POST',
     body: JSON.stringify({ id, prompt }),
+    // 超时时间设置5分钟
   });
 }
