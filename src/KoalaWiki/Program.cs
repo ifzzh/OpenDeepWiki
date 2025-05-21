@@ -51,7 +51,6 @@ builder.Services.AddSerilog(Log.Logger);
 
 builder.Services.AddOpenApi();
 builder.Services.WithFast();
-builder.Services.AddSingleton<WarehouseStore>();
 builder.Services.AddSingleton<GitService>();
 builder.Services.AddSingleton<DocumentsService>();
 builder.Services.AddTransient<GlobalMiddleware>();

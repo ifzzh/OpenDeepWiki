@@ -8,7 +8,6 @@ using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Functions;
 using KoalaWiki.Git;
-using KoalaWiki.KoalaWarehouse;
 using LibGit2Sharp;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace KoalaWiki.Services;
 
-public class WarehouseService(IKoalaWikiContext access, IMapper mapper, WarehouseStore warehouseStore,IMemoryCache memory) : FastApi
+public class WarehouseService(IKoalaWikiContext access, IMapper mapper, IMemoryCache memory) : FastApi
 {
     /// <summary>
     /// 更新仓库状态，并且重新提交
@@ -31,8 +30,6 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             .AsNoTracking()
             .Where(x => x.Id == warehouseId)
             .FirstOrDefaultAsync();
-
-        await warehouseStore.WriteAsync(warehouse);
     }
 
     /// <summary>
@@ -244,9 +241,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         await access.Warehouses.AddAsync(entity);
 
         await access.SaveChangesAsync();
-
-        await warehouseStore.WriteAsync(entity);
-
+        
         await context.Response.WriteAsJsonAsync(new
         {
             code = 200,
@@ -324,8 +319,6 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
 
             await access.SaveChangesAsync();
 
-            await warehouseStore.WriteAsync(entity);
-
             await context.Response.WriteAsJsonAsync(new
             {
                 code = 200,
@@ -363,8 +356,8 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             .AsNoTracking()
             .Where(x => x.WarehouseId == warehouse.Id)
             .FirstOrDefaultAsync();
-        
-        if(document == null)
+
+        if (document == null)
         {
             throw new NotFoundException("没有找到文档, 可能在生成中或者已经出现错误");
         }
@@ -412,8 +405,8 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
         var total = await groupedQuery.CountAsync();
 
         var queryList = await groupedQuery.ToListAsync();
-        
-        var list =  queryList
+
+        var list = queryList
             .OrderByDescending(x => x.IsRecommended)
             .ThenByDescending(x => x.Status == WarehouseStatus.Completed)
             .ThenByDescending(x => x.CreatedAt)

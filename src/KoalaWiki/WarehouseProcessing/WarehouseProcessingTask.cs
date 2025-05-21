@@ -14,6 +14,7 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
 
         if (DocumentOptions.EnableIncrementalUpdate == false)
         {
+            logger.LogWarning("增量更新未启用，跳过增量更新任务");
             return;
         }
 

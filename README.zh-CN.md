@@ -100,7 +100,6 @@ services:
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
       - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
-      - PARALLEL_COUNT=1 # 仓库并行处理数量 
       - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
       - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
       - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
@@ -124,7 +123,6 @@ services:
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
       - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
-      - PARALLEL_COUNT=1 # 仓库并行处理数量 
       - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
       - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
       - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
@@ -147,7 +145,6 @@ services:
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
       - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
       - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
-      - PARALLEL_COUNT=1 # 仓库并行处理数量 
       - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
       - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
       - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
@@ -256,7 +253,6 @@ graph TD
   - MODEL_PROVIDER  模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
   - EnableSmartFilter 是否启用智能过滤，这可能影响AI得到仓库的文件目录
   - UPDATE_INTERVAL 仓库增量更新间隔，单位天
-  - PARALLEL_COUNT 仓库并行处理数量
   - MAX_FILE_LIMIT 上传文件的最大限制，单位MB
   - DEEP_RESEARCH_MODEL 深度研究模型，为空使用CHAT_MODEL
   - ENABLE_INCREMENTAL_UPDATE 是否启用增量更新

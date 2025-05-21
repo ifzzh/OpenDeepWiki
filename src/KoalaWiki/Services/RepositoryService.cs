@@ -23,8 +23,7 @@ namespace KoalaWiki.Services;
 [Authorize(Roles = "admin")]
 public class RepositoryService(
     IKoalaWikiContext dbContext,
-    ILogger<RepositoryService> logger,
-    WarehouseStore warehouseStore) : FastApi
+    ILogger<RepositoryService> logger) : FastApi
 {
     /// <summary>
     /// 获取仓库列表
@@ -213,9 +212,6 @@ public class RepositoryService(
         await dbContext.Warehouses.AddAsync(entity);
         await dbContext.SaveChangesAsync();
 
-        // 提交到仓库处理队列
-        await warehouseStore.WriteAsync(entity);
-
         // 将实体映射为DTO
         var repositoryDto = entity.Adapt<RepositoryInfoDto>();
 
@@ -299,9 +295,6 @@ public class RepositoryService(
         {
             return false;
         }
-
-        // 提交到仓库处理队列
-        await warehouseStore.WriteAsync(warehouse);
 
         return true;
     }
