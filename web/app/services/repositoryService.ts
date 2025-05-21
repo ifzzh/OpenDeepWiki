@@ -20,6 +20,18 @@ export interface RepositoryInfo {
   createdAt: string;
 }
 
+export interface CreateCatalogInput {
+  name: string;
+  url: string;
+  description: string;
+  parentId: string;
+  order: number;
+  ducumentId: string;
+  warehouseId: string;
+  prompt: string;
+  dependentFile: string[];
+}
+
 // 创建Git仓库请求
 export interface CreateGitRepositoryRequest {
   address: string;
@@ -204,8 +216,10 @@ export async function getRepositoryFiles(id: string): Promise<ApiResponse<any>> 
  * @param path 文件路径
  * @returns 文件内容
  */
-export async function getRepositoryFileContent(id: string, path: string): Promise<ApiResponse<string>> {
-  return fetchApi<string>(`${API_URL}/api/Repository/FileContent?id=${id}&path=${encodeURIComponent(path)}`);
+export async function getRepositoryFileContent(id: string): Promise<ApiResponse<string>> {
+  return fetchApi<string>(`${API_URL}/api/Repository/FileContent?id=${id}`,{
+    method: 'GET',
+  });
 }
 
 /**
@@ -217,12 +231,11 @@ export async function getRepositoryFileContent(id: string, path: string): Promis
  */
 export async function saveRepositoryFileContent(
   id: string, 
-  path: string, 
   content: string
 ): Promise<ApiResponse<boolean>> {
-  return fetchApi<boolean>(`${API_URL}/api/Repository/FileContent?id=${id}&path=${encodeURIComponent(path)}`, {
-    method: 'PUT',
-    body: JSON.stringify({ content }),
+  return fetchApi<boolean>(`${API_URL}/api/Repository/FileContent`, {
+    method: 'POST',
+    body: JSON.stringify({ id, content }),
   });
 }
 
@@ -432,3 +445,44 @@ export async function getRepositoryExtendedInfo(
     return result;
   }
 } 
+
+
+/**
+ * /api/Repository/Catalog
+ * 新增目录结构
+ */
+export async function addCatalog(catalog: CreateCatalogInput): Promise<ApiResponse<boolean>> {
+  return fetchApi<boolean>(`${API_URL}/api/Repository/Catalog`, {
+    method: 'POST',
+    body: JSON.stringify(catalog),
+  });
+}
+
+/**
+ * 重命名菜单
+ */
+export async function renameCatalog(id: string, newName: string): Promise<ApiResponse<boolean>> {
+  return fetchApi<boolean>(`${API_URL}/api/Repository/RenameCatalog?id=${id}&newName=${newName}`,{
+    method: 'POST',
+  });
+}
+
+/**
+ * 删除菜单
+ */
+export async function deleteCatalog(id: string): Promise<ApiResponse<boolean>> {
+  return fetchApi<boolean>(`${API_URL}/api/Repository/${id}`,{
+    method: 'DELETE',
+  });
+}
+
+/**
+ * /api/Repository/GenerateFileContent
+ * AI 智能生成文件内容
+ */
+export async function aiGenerateFileContent(id: string, prompt: string): Promise<ApiResponse<string>> {
+  return fetchApi<string>(`${API_URL}/api/Repository/GenerateFileContent`, {
+    method: 'POST',
+    body: JSON.stringify({ id, prompt }),
+  });
+}
