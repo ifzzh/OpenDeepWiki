@@ -255,6 +255,19 @@ make build-frontend-amd
 ![0fff53b3927a3088483d50f821b80815](https://github.com/user-attachments/assets/c0b6c199-0001-40ee-8a72-a128b45c4fa3)
 
 
+# Sponsor
+![image](https://github.com/user-attachments/assets/b1bcb56e-38cb-47bf-adfe-7a21d83774b4)
+
+302.AI is a one-stop enterprise-level AI application platform that charges on demand. It is an open platform and an open-source ecosystem, enabling AI to find answers for every need.
+Gather the latest and most comprehensive AI models and brands, including but not limited to language models, image models, voice models, and video models.
+2. In-depth application development based on the basic model enables even novice users to get started with it without any threshold.
+3. Zero monthly fee, all functions are paid for as needed, fully open, truly achieving "low threshold and high upper limit".
+4. Innovate the usage mode and separate management from usage. Designed for teams and small and medium-sized enterprises, managed by one person and used by multiple people.
+5. All AI capabilities are provided with API access, and all applications are open source to support self-customization (ongoing).
+6. A powerful development team launches 2 to 3 new applications every week and updates platform functions daily.
+【 Surprise Benefit 】
+Register now with the invitation code and you can get a $1 test quota. Come and experience it now!
+Link: https://share.302.ai/jXcaTv
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
