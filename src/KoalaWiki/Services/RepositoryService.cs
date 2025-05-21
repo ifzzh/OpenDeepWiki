@@ -6,6 +6,7 @@ using KoalaWiki.Git;
 using KoalaWiki.Infrastructure;
 using KoalaWiki.KoalaWarehouse;
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace KoalaWiki.Services;
@@ -15,6 +16,7 @@ namespace KoalaWiki.Services;
 /// </summary>
 [Tags("Repository")]
 [Filter(typeof(ResultFilter))]
+[Authorize]
 public class RepositoryService(IKoalaWikiContext dbContext, ILogger<RepositoryService> logger, WarehouseStore warehouseStore) : FastApi
 {
     /// <summary>
@@ -277,19 +279,8 @@ public class RepositoryService(IKoalaWikiContext dbContext, ILogger<RepositorySe
     {
         try
         {
-            var repository = await dbContext.Warehouses.FindAsync(id);
-            if (repository == null)
-            {
-                return ResultDto<bool>.Fail("仓库不存在");
-            }
-
-            // 删除仓库
-            dbContext.Warehouses.Remove(repository);
-            await dbContext.SaveChangesAsync();
-
-            // 删除相关文档
-            await dbContext.Documents
-                .Where(d => d.WarehouseId == id)
+            await dbContext.Warehouses
+                .Where(x => x.Id == id)
                 .ExecuteDeleteAsync();
 
             return ResultDto<bool>.Success(true);
