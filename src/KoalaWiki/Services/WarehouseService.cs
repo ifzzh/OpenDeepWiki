@@ -12,10 +12,11 @@ using KoalaWiki.KoalaWarehouse;
 using LibGit2Sharp;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace KoalaWiki.Services;
 
-public class WarehouseService(IKoalaWikiContext access, IMapper mapper, WarehouseStore warehouseStore) : FastApi
+public class WarehouseService(IKoalaWikiContext access, IMapper mapper, WarehouseStore warehouseStore,IMemoryCache memory) : FastApi
 {
     /// <summary>
     /// 更新仓库状态，并且重新提交
@@ -400,11 +401,6 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
             query = query.Where(x => x.Name.Contains(keyword) || x.Address.Contains(keyword));
         }
 
-        query = query
-            .OrderByDescending(x => x.IsRecommended)
-            .ThenByDescending(x => x.Status == WarehouseStatus.Completed)
-            .ThenByDescending(x => x.CreatedAt);
-
         // 按仓库名称和组织名称分组，保持排序一致性
         var groupedQuery = query
             .GroupBy(x => new { x.Name, x.OrganizationName })
@@ -415,11 +411,15 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, Warehous
 
         var total = await groupedQuery.CountAsync();
 
-        var list = await groupedQuery
-            // 不再需要重复创建新对象，直接使用实体
+        var queryList = await groupedQuery.ToListAsync();
+        
+        var list =  queryList
+            .OrderByDescending(x => x.IsRecommended)
+            .ThenByDescending(x => x.Status == WarehouseStatus.Completed)
+            .ThenByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
 
         return new PageDto<Warehouse>(total, list);
     }

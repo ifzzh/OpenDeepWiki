@@ -56,6 +56,7 @@ builder.Services.AddSingleton<GitService>();
 builder.Services.AddSingleton<DocumentsService>();
 builder.Services.AddTransient<GlobalMiddleware>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddMemoryCache();
 
 // 添加JWT认证
 builder.Services.AddAuthentication(options =>
