@@ -317,7 +317,9 @@ export default function RepositoryLayoutClient({
         }}>
           <Flex align="center" justify="space-between" style={{ height: '100%' }}>
             <Flex align="center" gap={token.marginXS}>
-              <Link href="/">
+              <span onClick={() => {
+                window.location.href = '/';
+              }}>
                 <Flex align="center" gap={token.marginXS}>
                   <RocketOutlined
                     style={{
@@ -341,7 +343,7 @@ export default function RepositoryLayoutClient({
                     OpenDeepWiki
                   </span>
                 </Flex>
-              </Link>
+              </span>
 
               <Typography.Title
                 level={4}

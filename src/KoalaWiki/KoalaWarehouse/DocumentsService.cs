@@ -420,6 +420,7 @@ public partial class DocumentsService
             "o3-mini" => 16384,
             "Qwen/Qwen3-235B-A22B" => null,
             "grok-3" => 65536,
+            "qwen2.5-coder-3b-instruct" => 65535,
             "qwen3-235b-a22b" => 65535,
             "gemini-2.5-pro-preview-05-06" => 32768,
             "gemini-2.5-flash-preview-04-17" => 32768,
