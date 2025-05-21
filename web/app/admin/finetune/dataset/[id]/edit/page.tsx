@@ -8,7 +8,7 @@ import { getDataset, updateDataset, TrainingDataset, UpdateDatasetInput } from '
 
 const { TextArea } = Input;
 
-export default function EditDatasetPage({ params }: { params: { id: string } }) {
+export default function EditDatasetPage({ params }: any) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [dataset, setDataset] = useState<TrainingDataset | null>(null);
