@@ -267,15 +267,23 @@ public class RepositoryService(
     public async Task<bool> DeleteRepositoryAsync(string id)
     {
         await dbContext.Warehouses
-            .Where(x => x.Id.Equals(id, StringComparison.CurrentCultureIgnoreCase))
+            .Where(x => x.Id.ToLower() == id.ToLower())
             .ExecuteDeleteAsync();
 
+        var document = await dbContext.Documents
+            .AsNoTracking()
+            .Where(x => x.WarehouseId.ToLower() == id.ToLower())
+            .FirstOrDefaultAsync();
+
+        if (document != null)
+            Directory.Delete(document.GitPath);
+
         await dbContext.Documents
-            .Where(x => x.WarehouseId.Equals(id, StringComparison.CurrentCultureIgnoreCase))
+            .Where(x => x.WarehouseId.ToLower() == id.ToLower())
             .ExecuteDeleteAsync();
 
         await dbContext.DocumentCatalogs
-            .Where(x => x.WarehouseId.Equals(id, StringComparison.CurrentCultureIgnoreCase))
+            .Where(x => x.WarehouseId.ToLower() == id.ToLower())
             .ExecuteDeleteAsync();
 
 
