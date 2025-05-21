@@ -36,6 +36,58 @@ export interface UpdateRepositoryRequest {
   prompt?: string;
 }
 
+// 缓存相关配置
+// 缓存对象，用于存储已获取的仓库信息，避免重复请求
+interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+}
+const apiCache: Record<string, CacheItem<any>> = {};
+// 缓存有效期，默认10分钟（单位：毫秒）
+const DEFAULT_CACHE_EXPIRY = 10 * 60 * 1000;
+
+/**
+ * 从缓存获取数据
+ * @param key 缓存键
+ * @param expiryTime 过期时间（毫秒）
+ * @returns 缓存的数据或undefined
+ */
+function getFromCache<T>(key: string, expiryTime: number = DEFAULT_CACHE_EXPIRY): T | undefined {
+  const cachedItem = apiCache[key];
+  const now = Date.now();
+  
+  if (cachedItem && (now - cachedItem.timestamp < expiryTime)) {
+    return cachedItem.data as T;
+  }
+  
+  return undefined;
+}
+
+/**
+ * 将数据存入缓存
+ * @param key 缓存键
+ * @param data 要缓存的数据
+ */
+function setCache<T>(key: string, data: T): void {
+  apiCache[key] = {
+    data,
+    timestamp: Date.now()
+  };
+}
+
+/**
+ * 清除特定键的缓存
+ * @param key 缓存键
+ */
+export function clearCache(key?: string): void {
+  if (key) {
+    delete apiCache[key];
+  } else {
+    // 清除所有缓存
+    Object.keys(apiCache).forEach(k => delete apiCache[k]);
+  }
+}
+
 /**
  * 获取仓库列表
  * @param page 页码
@@ -195,9 +247,24 @@ export interface RepoExtendedInfo {
 /**
  * 根据仓库URL获取仓库的详细信息（如星数、头像等）
  * @param repoUrl 仓库URL
+ * @param useCache 是否使用缓存（默认使用）
+ * @param cacheExpiry 缓存过期时间（毫秒，默认10分钟）
  * @returns 仓库扩展信息
  */
-export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoExtendedInfo> {
+export async function getRepositoryExtendedInfo(
+  repoUrl: string, 
+  useCache: boolean = true,
+  cacheExpiry: number = DEFAULT_CACHE_EXPIRY
+): Promise<RepoExtendedInfo> {
+  // 如果启用缓存，先从缓存中查找
+  if (useCache) {
+    const cacheKey = `repo_info:${repoUrl}`;
+    const cachedData = getFromCache<RepoExtendedInfo>(cacheKey, cacheExpiry);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
   try {
     // 解析仓库地址
     let owner = '';
@@ -214,6 +281,11 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
       const parts = repoUrl.replace('https://gitee.com/', '').split('/');
       owner = parts[0];
       repo = parts[1]?.split('/')[0].replace('.git', '');
+    } else if (repoUrl.includes('gitlab.com')) {
+      platform = 'gitlab';
+      const parts = repoUrl.replace('https://gitlab.com/', '').split('/');
+      owner = parts[0];
+      repo = parts[1]?.split('/')[0].replace('.git', '');
     } else {
       try {
         const url = new URL(repoUrl);
@@ -228,7 +300,7 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
           platform = 'unknown';
         }
       } catch (e) {
-        return {
+        const result = {
           success: false,
           stars: 0,
           forks: 0,
@@ -237,11 +309,18 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
           repoUrl: repoUrl,
           error: '无效的仓库地址'
         };
+        
+        // 即使失败也缓存结果，避免重复请求无效地址
+        if (useCache) {
+          setCache(`repo_info:${repoUrl}`, result);
+        }
+        
+        return result;
       }
     }
 
     if (!owner || !repo) {
-      return {
+      const result = {
         success: false,
         stars: 0,
         forks: 0,
@@ -250,14 +329,22 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
         repoUrl: repoUrl,
         error: '无法解析仓库所有者或名称'
       };
+      
+      if (useCache) {
+        setCache(`repo_info:${repoUrl}`, result);
+      }
+      
+      return result;
     }
 
     // 根据平台获取信息
+    let result: RepoExtendedInfo;
+    
     if (platform === 'github') {
       const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
       if (response.ok) {
         const data = await response.json();
-        return {
+        result = {
           success: true,
           stars: data.stargazers_count || 0,
           forks: data.forks_count || 0,
@@ -270,7 +357,7 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
         };
       } else {
         // GitHub API 请求失败，返回基本信息
-        return {
+        result = {
           success: false,
           stars: 0,
           forks: 0,
@@ -284,7 +371,7 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
       const response = await fetch(`https://gitee.com/api/v5/repos/${owner}/${repo}`);
       if (response.ok) {
         const data = await response.json();
-        return {
+        result = {
           success: true,
           stars: data.stargazers_count || 0,
           forks: data.forks_count || 0,
@@ -297,7 +384,7 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
         };
       } else {
         // Gitee API 请求失败，返回基本信息
-        return {
+        result = {
           success: false,
           stars: 0,
           forks: 0,
@@ -309,7 +396,7 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
       }
     } else {
       // 未知平台，返回基础信息
-      return {
+      result = {
         success: false,
         stars: 0,
         forks: 0,
@@ -319,8 +406,15 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
         error: '不支持的代码托管平台'
       };
     }
+    
+    // 缓存结果
+    if (useCache) {
+      setCache(`repo_info:${repoUrl}`, result);
+    }
+    
+    return result;
   } catch (error) {
-    return {
+    const result = {
       success: false,
       stars: 0,
       forks: 0,
@@ -329,5 +423,12 @@ export async function getRepositoryExtendedInfo(repoUrl: string): Promise<RepoEx
       repoUrl: repoUrl,
       error: `获取仓库信息失败: ${error instanceof Error ? error.message : String(error)}`
     };
+    
+    // 缓存错误结果，避免频繁重试失败请求
+    if (useCache) {
+      setCache(`repo_info:${repoUrl}`, result);
+    }
+    
+    return result;
   }
 } 
