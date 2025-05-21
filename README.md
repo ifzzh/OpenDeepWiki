@@ -11,7 +11,7 @@
 
 ![image](https://github.com/user-attachments/assets/b1bcb56e-38cb-47bf-adfe-7a21d83774b4)
 
-[302.AI](https://share.302.ai/jXcaTv)is a pay-as-you-go, one-stop enterprise-level AI application platform. It offers an open platform and open-source ecosystem, allowing AI to find solutions for every need. Click here to get your $1 free credit!
+[302.AI](https://share.302.ai/jXcaTv)is a pay-as-you-go, one-stop enterprise-level AI application platform. It offers an open platform and open-source ecosystem, allowing AI to find solutions for every need. Click [here](https://share.302.ai/jXcaTv) to get your $1 free credit!
 
 # Project Introduction
 
