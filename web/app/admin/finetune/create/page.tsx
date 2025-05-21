@@ -214,6 +214,9 @@ export default function CreateDatasetPage() {
             <Select
               placeholder="选择用于生成数据集的模型"
               loading={modelLoading}
+              // 支持搜索
+              showSearch
+              // 支持自己填写模型
               notFoundContent={modelLoading ? <Spin size="small" /> : (
                 models.length === 0 ? "请先填写API端点和密钥并刷新" : "没有找到模型"
               )}
@@ -238,7 +241,7 @@ Here is the Markdown content you need to process:
 {{markdown_content}}
 </markdown_content>
 
-Your task is to create 10-15 high-quality instruction-response pairs based on this Markdown document. These pairs will be used to train an AI model, so they should be diverse, comprehensive, and accurately reflect the content of the document.
+Your task is to create 15-20 high-quality instruction-response pairs based on this Markdown document. These pairs will be used to train an AI model, so they should be diverse, comprehensive, and accurately reflect the content of the document.
 
 When creating instructions:
 1. Use a variety of formats (questions, commands, requests, etc.)
@@ -254,8 +257,7 @@ When creating responses:
 
 Ensure that your dataset comprehensively covers all core content and knowledge structures in the document.
 
-Your output should be in the following JSON format:
-
+Your output should be in the following JSON format using <data> tags:
 <data>
 [
   {"instruction": "Instruction content", "input": "", "output": "Response content"},

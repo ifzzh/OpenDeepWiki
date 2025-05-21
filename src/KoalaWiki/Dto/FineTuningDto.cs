@@ -35,6 +35,8 @@ public class CreateDatasetInput
     /// 提示词
     /// </summary>
     public string Prompt { get; set; } = string.Empty;
+    
+    public string Model { get; set; } = string.Empty;
 }
 
 /// <summary>

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react';
-import { Card, Typography, Tag, Button, Table, Space, Descriptions, message, Spin, Divider, Tree, Modal, Form, Input } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, SaveOutlined, FolderOutlined, FileOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { useState, useEffect, useRef } from 'react';
+import { Card, Typography, Tag, Button, Table, Space, Descriptions, message, Spin, Divider, Tree, Modal, Form, Input, Dropdown, Menu } from 'antd';
+import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, SaveOutlined, FolderOutlined, FileOutlined, ExclamationCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { getDataset, deleteDataset, TrainingDataset, createTask, getTasks, FineTuningTask, getTask, deleteTask, startTask, startTaskStream } from '../../../../services/fineTuningService';
 import { getRepositoryFiles, getRepositoryFileContent, saveRepositoryFileContent } from '../../../../services/repositoryService';
@@ -79,6 +79,23 @@ export default function DatasetDetailPage() {
   const [taskDetailsLoading, setTaskDetailsLoading] = useState(false);
   const [deletingTask, setDeletingTask] = useState(false);
   const [startingTask, setStartingTask] = useState(false);
+
+  // 启动任务相关状态
+  const [taskProgress, setTaskProgress] = useState<string>('');
+  const [isProgressModalVisible, setIsProgressModalVisible] = useState(false);
+
+  // 添加对进度容器的引用
+  const progressContainerRef = useRef<HTMLDivElement>(null);
+
+  // 添加导出相关状态
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [exportFormat, setExportFormat] = useState('llamaFactory');
+  const [exportContent, setExportContent] = useState('');
+
+  // 添加整体数据集导出相关状态
+  const [entireDatasetContent, setEntireDatasetContent] = useState<string>('');
+  const [entireDatasetLoading, setEntireDatasetLoading] = useState(false);
 
   // 加载数据集详情
   const fetchDataset = async () => {
@@ -307,7 +324,7 @@ export default function DatasetDetailPage() {
       if (data.code === 200) {
         setTaskDetails(data.data);
         setIsTaskDetailsModalVisible(true);
-        
+
         // 处理dataset字段，如果是JSON字符串则尝试解析
         if (data.data.dataset) {
           try {
@@ -342,7 +359,7 @@ export default function DatasetDetailPage() {
       onOk: async () => {
         setDeletingTask(true);
         try {
-          const {data} = await deleteTask(taskId);
+          const { data } = await deleteTask(taskId);
           if (data.code === 200) {
             message.success('微调任务删除成功');
             // 刷新任务列表
@@ -370,27 +387,35 @@ export default function DatasetDetailPage() {
     }
 
     setStartingTask(true);
-    // 创建一个消息通知，用于显示进度
-    const messageKey = 'task-progress';
-    const hideLoading = message.loading({ content: '微调任务启动中...', key: messageKey, duration: 0 });
 
+    // 显示进度对话框
+    setIsProgressModalVisible(true);
+    let progress = '';
     try {
       // 使用流式API获取实时更新
       const stream = await startTaskStream(taskId);
-      
-      
+
       for await (const chunk of stream) {
         if (chunk.type === 'start') {
-          message.loading({ content: chunk.content, key: messageKey, duration: 0 });
+          message.info(chunk.content);
         } else if (chunk.type === 'progress') {
-          message.loading({ content: `训练进行中: ${chunk.content.substring(0, 30)}...`, key: messageKey, duration: 0 });
+          progress += chunk.content;
+          setTaskProgress(progress);
         } else if (chunk.type === 'complete') {
-          message.success({ content: chunk.content, key: messageKey, duration: 3 });
+          message.success(chunk.content);
+          break;
         } else if (chunk.type === 'error') {
-          message.error({ content: chunk.content, key: messageKey, duration: 3 });
+          message.error(chunk.content);
+          break;
         }
+
+        setTimeout(() => {
+          if (progressContainerRef.current) {
+            progressContainerRef.current.scrollTop = progressContainerRef.current.scrollHeight;
+          }
+        }, 100);
       }
-      
+
       // 刷新任务列表
       if (dataset?.warehouseId) {
         await fetchTasksList(dataset.warehouseId);
@@ -398,12 +423,11 @@ export default function DatasetDetailPage() {
     } catch (error) {
       console.error('启动微调任务失败:', error);
       message.error('启动微调任务失败');
-      hideLoading();
-
-      // 关闭message
-      message.destroy(messageKey);
+      progress = '启动微调任务失败';
+      setTaskProgress(progress);
     } finally {
       setStartingTask(false);
+      // 不自动关闭进度对话框，让用户自己关闭
     }
   };
 
@@ -411,6 +435,177 @@ export default function DatasetDetailPage() {
   const handleCloseTaskDetails = () => {
     setIsTaskDetailsModalVisible(false);
     setTaskDetails(null);
+  };
+
+  // 关闭微调进度对话框
+  const handleCloseProgressModal = () => {
+    if (startingTask) {
+      message.warning('任务正在启动中，请稍后再关闭');
+      return;
+    }
+
+    setIsProgressModalVisible(false);
+    // 延迟清空进度记录，以避免弹窗关闭时的视觉跳跃
+    setTimeout(() => {
+      setTaskProgress('');
+    }, 300);
+  };
+
+  // 导出数据集函数
+  const exportDataset = (format: string, dataset: string) => {
+    if (!dataset) {
+      message.error('没有可导出的数据');
+      return;
+    }
+
+    try {
+      // 尝试解析数据集内容
+      let parsedData;
+      try {
+        parsedData = JSON.parse(dataset);
+      } catch (e) {
+        message.error('数据集格式无效，无法导出');
+        return;
+      }
+
+      let exportData;
+      switch (format) {
+        case 'llamaFactory':
+          // LLaMA-Factory 格式
+          exportData = parsedData.map((item: any) => ({
+            instruction: item.instruction || "",
+            input: item.input || "",
+            output: item.output || ""
+          }));
+          break;
+        case 'alpaca':
+          // Alpaca 格式
+          exportData = parsedData.map((item: any) => ({
+            instruction: item.instruction || "",
+            input: item.input || "",
+            output: item.output || "",
+            text: `${item.instruction || ""}${item.input ? "\n\n" + item.input : ""}\n\n${item.output || ""}`
+          }));
+          break;
+        case 'chatML':
+          // ChatML 格式
+          exportData = parsedData.map((item: any) => ({
+            messages: [
+              { role: "system", content: item.instruction || "" },
+              { role: "user", content: item.input || "" },
+              { role: "assistant", content: item.output || "" }
+            ]
+          }));
+          break;
+        default:
+          exportData = parsedData;
+      }
+
+      setExportContent(JSON.stringify(exportData, null, 2));
+      setExportFormat(format);
+      setExportModalVisible(true);
+    } catch (error) {
+      console.error('导出失败:', error);
+      message.error('导出失败');
+    }
+  };
+
+  // 下载导出的文件
+  const downloadExportFile = () => {
+    if (!exportContent) {
+      message.error('没有内容可下载');
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      const blob = new Blob([exportContent], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      let formatSuffix = '';
+      
+      switch (exportFormat) {
+        case 'llamaFactory':
+          formatSuffix = 'llama-factory';
+          break;
+        case 'alpaca':
+          formatSuffix = 'alpaca';
+          break;
+        case 'chatML':
+          formatSuffix = 'chatml';
+          break;
+        default:
+          formatSuffix = 'json';
+      }
+      
+      a.href = url;
+      a.download = `dataset-export-${formatSuffix}-${new Date().getTime()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('文件下载成功');
+    } catch (error) {
+      console.error('下载失败:', error);
+      message.error('下载失败');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // 修改任务详情对话框
+  const handleExportDataset = (format: string) => {
+    if (taskDetails?.dataset) {
+      exportDataset(format, taskDetails.dataset);
+    } else {
+      message.error('没有可导出的数据集内容');
+    }
+  };
+
+  // 导出整体数据集
+  const handleExportEntireDataset = async () => {
+    if (!dataset || !dataset.warehouseId) {
+      message.error('数据集不存在或未关联仓库');
+      return;
+    }
+
+    setEntireDatasetLoading(true);
+    try {
+      // 获取所有微调任务数据
+      const { data } = await getTasks(dataset.warehouseId);
+      if (data.code !== 200 || !data.data) {
+        throw new Error('获取任务数据失败');
+      }
+
+      // 合并所有任务数据
+      let allDatasets: any[] = [];
+      for (const task of data.data) {
+        if (task.dataset) {
+          try {
+            const taskDataset = JSON.parse(task.dataset);
+            if (Array.isArray(taskDataset)) {
+              allDatasets = [...allDatasets, ...taskDataset];
+            }
+          } catch (e) {
+            console.error(`解析任务 ${task.id} 的数据集失败:`, e);
+          }
+        }
+      }
+
+      if (allDatasets.length === 0) {
+        message.warning('没有找到可用的数据集内容');
+        return;
+      }
+
+      // 设置导出内容为合并后的数据集
+      setExportContent(JSON.stringify(allDatasets, null, 2));
+      setExportFormat('llamaFactory');
+      setExportModalVisible(true);
+      message.success(`成功合并 ${allDatasets.length} 条数据记录`);
+    } catch (error) {
+      console.error('导出整体数据集失败:', error);
+      message.error('导出整体数据集失败');
+    } finally {
+      setEntireDatasetLoading(false);
+    }
   };
 
   // 定义表格列
@@ -499,6 +694,16 @@ export default function DatasetDetailPage() {
   // 使用any类型获取额外字段
   const datasetWithExtras = dataset as any;
 
+  // 导出菜单项
+  const exportMenu = (
+    <Menu onClick={({key}) => handleExportDataset(key as string)}>
+      <Menu.Item key="llamaFactory">LLaMA-Factory 格式</Menu.Item>
+      <Menu.Item key="alpaca">Alpaca 格式</Menu.Item>
+      <Menu.Item key="chatML">ChatML 格式</Menu.Item>
+      <Menu.Item key="raw">原始格式</Menu.Item>
+    </Menu>
+  );
+
   return (
     <div>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -513,6 +718,13 @@ export default function DatasetDetailPage() {
           <span style={{ fontSize: '18px', fontWeight: 'bold' }}>数据集: {dataset.name}</span>
         </div>
         <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExportEntireDataset}
+            loading={entireDatasetLoading}
+          >
+            导出整体数据集
+          </Button>
           <Button
             icon={<ReloadOutlined />}
             onClick={fetchDataset}
@@ -641,11 +853,16 @@ export default function DatasetDetailPage() {
         title="微调任务详情"
         open={isTaskDetailsModalVisible}
         onCancel={handleCloseTaskDetails}
-        footer={[
-          <Button key="close" onClick={handleCloseTaskDetails}>
-            关闭
-          </Button>
-        ]}
+        footer={
+          <Space>
+            <Dropdown overlay={exportMenu} disabled={!taskDetails?.dataset}>
+              <Button icon={<DownloadOutlined />}>导出数据集</Button>
+            </Dropdown>
+            <Button onClick={handleCloseTaskDetails}>
+              关闭
+            </Button>
+          </Space>
+        }
         width={800}
       >
         {taskDetailsLoading ? (
@@ -672,7 +889,7 @@ export default function DatasetDetailPage() {
                 </Descriptions.Item>
               )}
             </Descriptions>
-            
+
             <Divider>数据集内容</Divider>
             <div style={{ maxHeight: '400px', overflow: 'auto', marginTop: '16px', border: '1px solid #e8e8e8', padding: '12px', borderRadius: '4px', backgroundColor: '#f5f5f5' }}>
               <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
@@ -683,6 +900,93 @@ export default function DatasetDetailPage() {
         ) : (
           <div>未找到任务详情</div>
         )}
+      </Modal>
+
+      {/* 微调任务进度对话框 */}
+      <Modal
+        title="微调任务进度"
+        open={isProgressModalVisible}
+        onCancel={handleCloseProgressModal}
+        footer={[
+          <Button key="close" onClick={handleCloseProgressModal}>
+            关闭
+          </Button>
+        ]}
+        width={600}
+      >
+        <div
+          ref={progressContainerRef}
+          style={{
+            maxHeight: '400px',
+            overflow: 'auto',
+            padding: '12px',
+            backgroundColor: '#f5f5f5',
+            borderRadius: '4px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all'
+          }}
+        >
+          {taskProgress}
+        </div>
+      </Modal>
+
+      {/* 导出数据集对话框 */}
+      <Modal
+        title={`导出数据集 - ${exportFormat === 'llamaFactory' ? 'LLaMA-Factory' : 
+                exportFormat === 'alpaca' ? 'Alpaca' : 
+                exportFormat === 'chatML' ? 'ChatML' : '原始'} 格式`}
+        open={exportModalVisible}
+        onCancel={() => setExportModalVisible(false)}
+        footer={[
+          <Button 
+            key="download" 
+            type="primary" 
+            icon={<DownloadOutlined />} 
+            loading={exportLoading}
+            onClick={downloadExportFile}
+          >
+            下载
+          </Button>,
+          <Button key="close" onClick={() => setExportModalVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={800}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <Space>
+            <Button
+              type={exportFormat === 'llamaFactory' ? 'primary' : 'default'}
+              onClick={() => handleExportDataset('llamaFactory')}
+            >
+              LLaMA-Factory
+            </Button>
+            <Button
+              type={exportFormat === 'alpaca' ? 'primary' : 'default'}
+              onClick={() => handleExportDataset('alpaca')}
+            >
+              Alpaca
+            </Button>
+            <Button
+              type={exportFormat === 'chatML' ? 'primary' : 'default'}
+              onClick={() => handleExportDataset('chatML')}
+            >
+              ChatML
+            </Button>
+            <Button
+              type={exportFormat === 'raw' ? 'primary' : 'default'}
+              onClick={() => handleExportDataset('raw')}
+            >
+              原始格式
+            </Button>
+          </Space>
+        </div>
+        
+        <div style={{ maxHeight: '400px', overflow: 'auto', border: '1px solid #e8e8e8', padding: '12px', borderRadius: '4px', backgroundColor: '#f5f5f5' }}>
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            {exportContent}
+          </pre>
+        </div>
       </Modal>
     </div>
   );

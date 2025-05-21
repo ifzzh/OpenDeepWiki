@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using FastService;
 using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains;
@@ -48,6 +49,7 @@ public class FineTuningService(IKoalaWikiContext koala, IUserContext userContext
             Status = TrainingDatasetStatus.NotStarted,
             Name = input.Name,
             Endpoint = input.Endpoint,
+            Model = input.Model,
             ApiKey = input.ApiKey,
             Prompt = input.Prompt
         };
@@ -293,10 +295,36 @@ public class FineTuningService(IKoalaWikiContext koala, IUserContext userContext
                 await context.Response.Body.FlushAsync();
             }
 
-            await koala.FineTuningTasks.Where(x => x.Id == dataset.Id)
+            var datasetContent = sb.ToString();
+
+            // 提取<data>标签中的内容
+            var regex = new Regex(@"<data>(.*?)</data>", RegexOptions.Singleline);
+
+            var match = regex.Match(datasetContent);
+            if (match.Success)
+            {
+                datasetContent = match.Groups[1].Value;
+            }
+
+            // 提取```json```标签中的内容
+            regex = new Regex(@"```json(.*?)```", RegexOptions.Singleline);
+            match = regex.Match(datasetContent);
+            if (match.Success)
+            {
+                datasetContent = match.Groups[1].Value;
+            }
+
+
+            await koala.FineTuningTasks.Where(x => x.Id == task.Id)
                 .ExecuteUpdateAsync(x => x.SetProperty(a => a.Status, FineTuningTaskStatus.Completed)
-                        .SetProperty(x => x.Dataset, sb.ToString())
+                        .SetProperty(x => x.Dataset, datasetContent)
+                        .SetProperty(x=>x.OriginalDataset,sb.ToString())
                         .SetProperty(a => a.CompletedAt, DateTime.Now),
+                    context.RequestAborted);
+            
+            await koala.TrainingDatasets.Where(x => x.Id == dataset.Id)
+                .ExecuteUpdateAsync(x => x.SetProperty(a => a.Status, TrainingDatasetStatus.Completed)
+                        .SetProperty(a => a.UpdatedAt, DateTime.Now),
                     context.RequestAborted);
 
             await context.Response.WriteAsync($"data: {JsonSerializer.Serialize(new
