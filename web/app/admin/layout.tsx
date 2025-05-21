@@ -6,7 +6,6 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import styles from './styles.module.css';
 import Script from 'next/script';
-// import '../globals.css'; // 不再导入全局CSS
 
 export default function AdminLayout({
   children,
@@ -37,6 +36,7 @@ export default function AdminLayout({
     if (pathname === '/admin') return 'dashboard';
     if (pathname.startsWith('/admin/users')) return 'users';
     if (pathname.startsWith('/admin/repositories')) return 'repositories';
+    if (pathname.startsWith('/admin/finetune')) return 'finetune';
     if (pathname.startsWith('/admin/settings')) return 'settings';
     return '';
   };

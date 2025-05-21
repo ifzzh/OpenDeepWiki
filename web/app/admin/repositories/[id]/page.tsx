@@ -256,14 +256,13 @@ export default function RepositoryDetailPage() {
       // 调用API生成内容
       const response = await aiGenerateFileContent(selectedCatalog.catalog.id, prompt);
       
-      if (response.code === 200 && response.data) {
-        // 更新文件内容
-        setFileContent(response.data);
-        message.success('AI内容生成成功');
-        setIsAiModalVisible(false);
-      } else {
-        message.error(response.message || 'AI内容生成失败');
+      // 重新获取文件内容
+      const fileContentResponse = await getRepositoryFileContent(selectedCatalog.catalog.id);
+      if (fileContentResponse.code === 200) {
+        setFileContent(fileContentResponse.data);
       }
+      message.success('AI内容生成成功');
+      setIsAiModalVisible(false);
     } catch (error) {
       console.error('AI内容生成失败:', error);
       message.error('AI内容生成失败，请重试');
