@@ -42,7 +42,7 @@ public partial class DocumentsService
                                    new OpenAIPromptExecutionSettings()
                                    {
                                        ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-                                       Temperature = 0.5,
+                                       Temperature = 0.3,
                                        // 这里使用分析模型的最大token
                                        MaxTokens = GetMaxTokens(OpenAIOptions.AnalysisModel)
                                    }, analysisModel))

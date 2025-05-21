@@ -44,6 +44,9 @@ public partial class DocumentsService
                 var task = ProcessDocumentAsync(documentCatalog, fileKernel, catalogue, gitRepository,
                     warehouse.Branch, path, semaphore);
                 runningTasks.Add(task);
+                
+                // 这里使用了一个小的延迟来避免过于频繁的任务启动
+                await Task.Delay(1000, CancellationToken.None);
             }
 
             // 如果没有正在运行的任务，退出循环
@@ -85,6 +88,8 @@ public partial class DocumentsService
                 await dbContext.SaveChangesAsync();
 
                 Log.Logger.Information("处理仓库；{path}, 处理标题：{name} 完成并保存到数据库！", path, catalog.Name);
+                
+                
             }
             catch (Exception ex)
             {

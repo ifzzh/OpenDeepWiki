@@ -122,7 +122,7 @@ public partial class WarehouseProcessingTask
                                    new OpenAIPromptExecutionSettings()
                                    {
                                        MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.AnalysisModel),
-                                       Temperature = 0.5,
+                                       Temperature = 0.3,
                                    }, kernel))
                 {
                     if (!string.IsNullOrEmpty(item.Content))
