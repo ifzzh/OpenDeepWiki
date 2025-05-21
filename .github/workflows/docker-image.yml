@@ -1,5 +1,6 @@
 name: Build and Push Docker Images
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
 jobs:
@@ -7,10 +8,8 @@ jobs:
     strategy:
       matrix:
         image: [
-          { name: 'koala-wiki', type: 'backend', platform: 'amd64', dockerfile: 'src/KoalaWiki/Dockerfile', context: '.' },
-          { name: 'koala-wiki', type: 'backend', platform: 'arm64', dockerfile: 'src/KoalaWiki/Dockerfile.arm', context: '.', tag: ':arm64' },
-          { name: 'koala-wiki-web', type: 'frontend', platform: 'amd64', dockerfile: 'web/Dockerfile', context: 'web' },
-          { name: 'koala-wiki-web', type: 'frontend', platform: 'arm64', dockerfile: 'web/Dockerfile.arm', context: 'web', tag: ':arm64' }
+          { name: 'koala-wiki', type: 'backend', dockerfile: 'src/KoalaWiki/Dockerfile', context: '.' },
+          { name: 'koala-wiki-web', type: 'frontend', dockerfile: 'web/Dockerfile', context: 'web' }
         ]
       fail-fast: false
     runs-on: ubuntu-latest
@@ -27,11 +26,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
-      - name: Build and push ${{ matrix.image.name }} for ${{ matrix.image.platform }}
+      - name: Build and push ${{ matrix.image.name }}
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.image.context }}
           file: ${{ matrix.image.dockerfile }}
-          platforms: linux/${{ matrix.image.platform }}
+          platforms: linux/arm64,linux/amd64
           push: true
           tags: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/${{ matrix.image.name }}${{ matrix.image.tag || '' }}
