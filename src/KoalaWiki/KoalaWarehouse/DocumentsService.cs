@@ -182,10 +182,10 @@ public partial class DocumentsService
     {
         var readme = await ReadMeFile(path);
 
-        var catalogue = GetCatalogue(path);
-
         if (string.IsNullOrEmpty(readme) && string.IsNullOrEmpty(warehouse.Readme))
         {
+            var catalogue = GetCatalogue(path);
+
             var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
                 OpenAIOptions.ChatApiKey,
                 path, OpenAIOptions.ChatModel);
@@ -219,6 +219,11 @@ public partial class DocumentsService
                 readme = extractedContent;
             }
 
+            await koalaWikiContext.Warehouses.Where(x => x.Id == warehouse.Id)
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.Readme, readme));
+        }
+        else
+        {
             await koalaWikiContext.Warehouses.Where(x => x.Id == warehouse.Id)
                 .ExecuteUpdateAsync(x => x.SetProperty(y => y.Readme, readme));
         }
