@@ -108,6 +108,12 @@ builder.Services.AddDbContext(builder.Configuration);
 
 builder.Services.AddMapster();
 
+builder.Services.AddHttpClient("KoalaWiki", client =>
+{
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.DefaultRequestHeaders.Add("User-Agent", "KoalaWiki");
+});
+
 var app = builder.Build();
 
 // 添加自动迁移代码

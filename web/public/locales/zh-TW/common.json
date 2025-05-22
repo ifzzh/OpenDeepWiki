@@ -9,9 +9,43 @@
     "subtitle": "OpenDeepWiki 是參考DeepWiki作為靈感，基於 .NET 9 和 Semantic Kernel 開發的開源項目。它旨在幫助開發者更好地理解和使用代碼庫，提供代碼分析、文檔生成等功能。",
     "add_repo_button": "添加新倉庫",
     "query_last_repo_button": "查詢上次提交倉庫",
+    "badge": {
+      "ai_powered": "AI驅動"
+    },
+    "features": {
+      "fast_conversion": {
+        "title": "快速轉換",
+        "description": "幾分鐘內將任何代碼倉庫轉換為智能知識庫"
+      },
+      "multi_language": {
+        "title": "多語言支持",
+        "description": "支持所有主流編程語言的代碼分析"
+      },
+      "code_structure": {
+        "title": "代碼結構圖",
+        "description": "自動生成Mermaid圖表，直觀理解代碼架構"
+      },
+      "ai_analysis": {
+        "title": "AI智能分析",
+        "description": "基於AI的代碼分析和關係理解"
+      }
+    },
     "stats": {
       "total_repos": "倉庫總數",
+      "processing_tasks": "處理中任務",
+      "completed_tasks": "已完成",
       "git_repos": "Git倉庫"
+    },
+    "sponsors": {
+      "title": "感謝贊助商支持",
+      "antsk": {
+        "name": "AntSK",
+        "description": "大模型企業AI解決方案"
+      },
+      "302ai": {
+        "name": "302.AI",
+        "description": "AI應用開發平台"
+      }
     },
     "repo_list": {
       "title": "倉庫列表",
@@ -24,6 +58,15 @@
     },
     "pagination": {
       "total": "共 {{total}} 個倉庫"
+    },
+    "tags": {
+      "open_source": "開源免費"
+    },
+    "messages": {
+      "repo_add_success": "倉庫添加成功",
+      "repo_add_failed": "添加倉庫失敗: {{error}}",
+      "repo_add_error": "添加倉庫出錯，請稍後重試",
+      "unknown_error": "未知錯誤"
     }
   },
   "repository": {

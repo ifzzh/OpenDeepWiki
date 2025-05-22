@@ -9,9 +9,43 @@
     "subtitle": "OpenDeepWiki is an open-source project inspired by DeepWiki, built on .NET 9 and Semantic Kernel. It helps developers better understand and use code repositories, providing code analysis, documentation generation, and more.",
     "add_repo_button": "Add New Repository",
     "query_last_repo_button": "Check Last Submitted Repo",
+    "badge": {
+      "ai_powered": "AI-Powered"
+    },
+    "features": {
+      "fast_conversion": {
+        "title": "Fast Conversion",
+        "description": "Convert any code repository into an intelligent knowledge base within minutes"
+      },
+      "multi_language": {
+        "title": "Multi-Language Support",
+        "description": "Support code analysis for all mainstream programming languages"
+      },
+      "code_structure": {
+        "title": "Code Structure Diagram",
+        "description": "Automatically generate Mermaid charts for intuitive code architecture understanding"
+      },
+      "ai_analysis": {
+        "title": "AI Intelligent Analysis",
+        "description": "AI-based code analysis and relationship understanding"
+      }
+    },
     "stats": {
       "total_repos": "Total Repositories",
+      "processing_tasks": "Processing Tasks",
+      "completed_tasks": "Completed",
       "git_repos": "Git Repositories"
+    },
+    "sponsors": {
+      "title": "Thanks to Our Sponsors",
+      "antsk": {
+        "name": "AntSK",
+        "description": "Enterprise AI Solutions for Large Models"
+      },
+      "302ai": {
+        "name": "302.AI",
+        "description": "AI Application Development Platform"
+      }
     },
     "repo_list": {
       "title": "Repository List",
@@ -24,6 +58,15 @@
     },
     "pagination": {
       "total": "Total {{total}} repositories"
+    },
+    "tags": {
+      "open_source": "Open Source & Free"
+    },
+    "messages": {
+      "repo_add_success": "Repository added successfully",
+      "repo_add_failed": "Failed to add repository: {{error}}",
+      "repo_add_error": "Error adding repository, please try again later",
+      "unknown_error": "Unknown error"
     }
   },
   "repository": {

@@ -9,9 +9,43 @@
     "subtitle": "OpenDeepWiki 是参考DeepWiki作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成等功能。",
     "add_repo_button": "添加新仓库",
     "query_last_repo_button": "查询上次提交仓库",
+    "badge": {
+      "ai_powered": "AI驱动"
+    },
+    "features": {
+      "fast_conversion": {
+        "title": "快速转换",
+        "description": "几分钟内将任何代码仓库转换为智能知识库"
+      },
+      "multi_language": {
+        "title": "多语言支持",
+        "description": "支持所有主流编程语言的代码分析"
+      },
+      "code_structure": {
+        "title": "代码结构图",
+        "description": "自动生成Mermaid图表，直观理解代码架构"
+      },
+      "ai_analysis": {
+        "title": "AI智能分析",
+        "description": "基于AI的代码分析和关系理解"
+      }
+    },
     "stats": {
       "total_repos": "仓库总数",
+      "processing_tasks": "处理中任务",
+      "completed_tasks": "已完成",
       "git_repos": "Git仓库"
+    },
+    "sponsors": {
+      "title": "感谢赞助商支持",
+      "antsk": {
+        "name": "AntSK",
+        "description": "大模型企业AI解决方案"
+      },
+      "302ai": {
+        "name": "302.AI",
+        "description": "AI应用开发平台"
+      }
     },
     "repo_list": {
       "title": "仓库列表",
@@ -24,6 +58,15 @@
     },
     "pagination": {
       "total": "共 {{total}} 个仓库"
+    },
+    "tags": {
+      "open_source": "开源免费"
+    },
+    "messages": {
+      "repo_add_success": "仓库添加成功",
+      "repo_add_failed": "添加仓库失败: {{error}}",
+      "repo_add_error": "添加仓库出错，请稍后重试",
+      "unknown_error": "未知错误"
     }
   },
   "repository": {

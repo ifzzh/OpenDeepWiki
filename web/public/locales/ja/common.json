@@ -9,9 +9,43 @@
     "subtitle": "OpenDeepWikiはDeepWikiをインスピレーションとし、.NET 9とSemantic Kernelで開発されたオープンソースプロジェクトです。開発者がコードベースをより理解し活用できるよう、コード分析、ドキュメント生成などの機能を提供します。",
     "add_repo_button": "新しいリポジトリを追加",
     "query_last_repo_button": "最後に提出したリポジトリを確認",
+    "badge": {
+      "ai_powered": "AI駆動"
+    },
+    "features": {
+      "fast_conversion": {
+        "title": "高速変換",
+        "description": "数分でコードリポジトリをインテリジェントな知識ベースに変換"
+      },
+      "multi_language": {
+        "title": "多言語サポート",
+        "description": "すべての主要プログラミング言語のコード分析をサポート"
+      },
+      "code_structure": {
+        "title": "コード構造図",
+        "description": "Mermaidチャートを自動生成し、コードアーキテクチャを直感的に理解"
+      },
+      "ai_analysis": {
+        "title": "AIインテリジェント分析",
+        "description": "AIベースのコード分析と関係理解"
+      }
+    },
     "stats": {
       "total_repos": "リポジトリ総数",
+      "processing_tasks": "処理中のタスク",
+      "completed_tasks": "完了済み",
       "git_repos": "Gitリポジトリ"
+    },
+    "sponsors": {
+      "title": "スポンサーの皆様に感謝",
+      "antsk": {
+        "name": "AntSK",
+        "description": "大規模モデル企業AIソリューション"
+      },
+      "302ai": {
+        "name": "302.AI",
+        "description": "AIアプリケーション開発プラットフォーム"
+      }
     },
     "repo_list": {
       "title": "リポジトリリスト",
@@ -24,6 +58,15 @@
     },
     "pagination": {
       "total": "合計 {{total}} リポジトリ"
+    },
+    "tags": {
+      "open_source": "オープンソース・無料"
+    },
+    "messages": {
+      "repo_add_success": "リポジトリが正常に追加されました",
+      "repo_add_failed": "リポジトリの追加に失敗しました: {{error}}",
+      "repo_add_error": "リポジトリの追加でエラーが発生しました、後で再試行してください",
+      "unknown_error": "不明なエラー"
     }
   },
   "repository": {

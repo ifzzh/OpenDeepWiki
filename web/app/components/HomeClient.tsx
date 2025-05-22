@@ -1,13 +1,19 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { Button, Typography, Layout, Space, Input, Empty, Card, Row, Col, Statistic, Tooltip, Pagination, message, ConfigProvider, Badge, Divider, Avatar, Tag } from 'antd';
+import { Button, Typography, Layout, Space, Input, Empty, Card, Row, Col, Statistic, Pagination, message, ConfigProvider, Divider, Avatar, Tag, Badge } from 'antd';
 import {
   PlusOutlined,
   GithubOutlined,
-  FireOutlined,
   SearchOutlined,
   BookOutlined,
-  HeartOutlined,
+  StarOutlined,
+  RocketOutlined,
+  CodeOutlined,
+  BranchesOutlined,
+  ClockCircleOutlined,
+  FireOutlined,
+  TrophyOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import RepositoryForm from './RepositoryForm';
 import RepositoryList from './RepositoryList';
@@ -22,102 +28,196 @@ import { useTranslation } from '../i18n/client';
 import { useSearchParams } from 'next/navigation';
 
 const { Content, Header, Footer } = Layout;
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
 const { Search } = Input;
 
-// 增强的主题配置
-const customTheme = {
+// 现代简约设计系统 - 增强版光晕效果
+const designSystem = {
+  colors: {
+    primary: '#2563eb',      // 专业蓝色
+    primaryLight: '#3b82f6', // 浅蓝色
+    primaryDark: '#1d4ed8',  // 深蓝色
+    success: '#059669',      // 成功绿色
+    warning: '#d97706',      // 警告橙色
+    error: '#dc2626',        // 错误红色
+    neutral: {
+      50: '#f8fafc',
+      100: '#f1f5f9',
+      200: '#e2e8f0',
+      300: '#cbd5e1',
+      400: '#94a3b8',
+      500: '#64748b',
+      600: '#475569',
+      700: '#334155',
+      800: '#1e293b',
+      900: '#0f172a',
+    },
+    background: {
+      primary: '#ffffff',
+      secondary: '#f8fafc',
+      tertiary: '#f1f5f9',
+    },
+    glow: {
+      primary: 'rgba(37, 99, 235, 0.15)',
+      secondary: 'rgba(37, 99, 235, 0.08)',
+      accent: 'rgba(59, 130, 246, 0.12)',
+    }
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    xxl: 48,
+  },
+  borderRadius: {
+    sm: 6,
+    md: 8,
+    lg: 12,
+    xl: 16,
+  },
+  shadows: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+    glow: '0 0 20px rgba(37, 99, 235, 0.15), 0 0 40px rgba(37, 99, 235, 0.08)',
+    glowHover: '0 0 30px rgba(37, 99, 235, 0.25), 0 0 60px rgba(37, 99, 235, 0.12)',
+  }
+};
+
+// 优化的主题配置 - 支持光晕效果
+const modernTheme = {
   token: {
-    colorPrimary: '#6366f1', // 更紫色调的主色
-    colorSuccess: '#22c55e',
-    colorError: '#ef4444',
-    colorWarning: '#f59e0b',
-    colorBgContainer: '#ffffff',
-    colorBgLayout: '#f8fafc', // 浅蓝背景
-    colorText: '#1e293b', // 更暗的文本色
-    colorTextSecondary: '#64748b',
-    borderRadius: 8, // 增加圆角
-    fontSizeHeading2: 30, // 增大标题
-    fontSizeHeading3: 22,
-    fontSizeBase: 14,
-    lineHeight: 1.6, // 增加行高
-    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-    fontFamily: '"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    colorPrimary: designSystem.colors.primary,
+    colorSuccess: designSystem.colors.success,
+    colorWarning: designSystem.colors.warning,
+    colorError: designSystem.colors.error,
+    colorBgContainer: designSystem.colors.background.primary,
+    colorBgLayout: designSystem.colors.background.secondary,
+    colorText: designSystem.colors.neutral[800],
+    colorTextSecondary: designSystem.colors.neutral[500],
+    colorTextTertiary: designSystem.colors.neutral[400],
+    colorBorder: designSystem.colors.neutral[200],
+    colorBorderSecondary: designSystem.colors.neutral[100],
+    borderRadius: designSystem.borderRadius.md,
+    borderRadiusLG: designSystem.borderRadius.lg,
+    borderRadiusSM: designSystem.borderRadius.sm,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
+    fontSize: 14,
+    fontSizeHeading1: 32,
+    fontSizeHeading2: 24,
+    fontSizeHeading3: 20,
+    fontSizeHeading4: 16,
+    lineHeight: 1.5,
+    lineHeightHeading: 1.2,
+    boxShadow: designSystem.shadows.md,
+    boxShadowSecondary: designSystem.shadows.sm,
   },
   components: {
+    Layout: {
+      headerBg: designSystem.colors.background.primary,
+      headerHeight: 64,
+      headerPadding: '0 24px',
+      footerBg: designSystem.colors.background.primary,
+      bodyBg: designSystem.colors.background.secondary,
+    },
     Button: {
-      colorPrimary: '#6366f1',
-      algorithm: true,
-      borderRadius: 6,
+      borderRadius: designSystem.borderRadius.md,
       controlHeight: 40,
-      paddingInline: 18, // 增加内边距
+      controlHeightLG: 48,
+      fontWeight: 500,
+      primaryShadow: 'none',
+      defaultShadow: 'none',
     },
     Card: {
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-      borderRadius: 12,
-      colorBgContainer: '#ffffff',
+      borderRadius: designSystem.borderRadius.lg,
+      boxShadow: designSystem.shadows.sm,
+      headerBg: 'transparent',
+      paddingLG: designSystem.spacing.xl,
     },
     Input: {
-      borderRadius: 6,
+      borderRadius: designSystem.borderRadius.md,
       controlHeight: 40,
+      controlHeightLG: 48,
     },
-    Message: {
-      duration: 0.1,
+    Typography: {
+      titleMarginBottom: '0.5em',
+      titleMarginTop: 0,
     },
-    Modal: {
-      borderRadius: 12,
-    },
-    Dropdown: {
-      motion: false,
-    },
-    Pagination: {
-      motion: false,
-      colorPrimary: '#6366f1',
-    },
-    Tooltip: {
-      motion: false,
-      colorBgSpotlight: 'rgba(0, 0, 0, 0.85)',
+    Tag: {
+      borderRadius: designSystem.borderRadius.xl,
+      fontWeight: 500,
     },
     Statistic: {
-      fontSizeTitle: 14,
-      fontSizeValue: 26,
-      colorText: '#1e293b',
+      titleFontSize: 14,
+      contentFontSize: 28,
+      fontFamily: 'inherit',
     },
   },
 };
 
-// 添加页脚链接配置
+// 页脚链接配置
 const footerLinks = {
   product: [
-    { title: '功能介绍', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
-    { title: '使用指南', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
-    { title: '更新日志', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { titleKey: 'footer.features', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { titleKey: 'footer.guide', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { titleKey: 'footer.changelog', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
   ],
   resources: [
-    { title: '开发文档', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
-    { title: 'API参考', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
-    { title: '常见问题', link: 'https://github.com/AIDotNet/OpenDeepWiki/issues' },
+    { titleKey: 'footer.docs', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { titleKey: 'footer.api', link: 'https://github.com/AIDotNet/OpenDeepWiki/blob/main/README.md' },
+    { titleKey: 'footer.faq', link: 'https://github.com/AIDotNet/OpenDeepWiki/issues' },
   ],
   company: [
-    { title: '关于我们', link: 'https://github.com/OpenDeepWiki' },
-    { title: '联系方式', link: 'mailto:239573049@qq.com' },
-    { title: '加入我们', link: 'https://github.com/AIDotNet/OpenDeepWiki/issues' },
+    { titleKey: 'footer.about', link: 'https://github.com/OpenDeepWiki' },
+    { titleKey: 'footer.contact', link: 'mailto:239573049@qq.com' },
+    { titleKey: 'footer.join', link: 'https://github.com/AIDotNet/OpenDeepWiki/issues' },
   ],
 };
 
-// 添加赞助商配置
+// 赞助商配置
 const sponsors = [
   {
     name: 'AntSK',
-    logo: '/sponsors/antsk-logo.png', // 占位图片路径，实际使用时需要替换为真实图片路径
+    logo: 'https://antsk.cn/logo.ico',
     url: 'https://antsk.cn/',
-    description: '大模型企业AI解决方案'
+    descriptionKey: 'home.sponsors.antsk.description'
   },
   {
     name: '302.AI',
-    logo: '/sponsors/302ai-logo.png', // 占位图片路径，实际使用时需要替换为真实图片路径
+    logo: 'https://302.ai/logo.ico',
     url: 'https://302.ai/',
-    description: 'AI应用开发平台'
+    descriptionKey: 'home.sponsors.302ai.description'
+  }
+];
+
+// 特性卡片配置
+const features = [
+  {
+    icon: <RocketOutlined className="text-2xl text-blue-500" />,
+    titleKey: 'home.features.fast_conversion.title',
+    descriptionKey: 'home.features.fast_conversion.description',
+    color: 'blue'
+  },
+  {
+    icon: <CodeOutlined className="text-2xl text-green-500" />,
+    titleKey: 'home.features.multi_language.title',
+    descriptionKey: 'home.features.multi_language.description',
+    color: 'green'
+  },
+  {
+    icon: <BranchesOutlined className="text-2xl text-purple-500" />,
+    titleKey: 'home.features.code_structure.title',
+    descriptionKey: 'home.features.code_structure.description',
+    color: 'purple'
+  },
+  {
+    icon: <FireOutlined className="text-2xl text-orange-500" />,
+    titleKey: 'home.features.ai_analysis.title',
+    descriptionKey: 'home.features.ai_analysis.description',
+    color: 'orange'
   }
 ];
 
@@ -148,15 +248,9 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
   const [searchValue, setSearchValue] = useState<string>(initialSearchValue);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
-  const [isHovering, setIsHovering] = useState('');
-
-  // 响应式状态
   const [isMobile, setIsMobile] = useState(false);
 
-  // 获取URL参数
   const searchParams = useSearchParams();
-
-  // 使用i18n
   const { t, i18n } = useTranslation();
 
   // 监听URL参数变化，更新i18n语言
@@ -165,7 +259,6 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
     if (locale) {
       i18n.changeLanguage(locale);
     } else {
-      // 如果URL中没有locale参数，则根据浏览器语言设置
       const browserLang = navigator.language;
       const lang = browserLang.includes('zh') ? 'zh-CN' : 'en-US';
       i18n.changeLanguage(lang);
@@ -180,34 +273,21 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
 
     handleResize();
     window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleAddRepository = async (values: RepositoryFormValues) => {
     try {
       const response = await submitWarehouse(values);
       if (response.success) {
-        message.config({
-          duration: 1.5,
-        });
-        message.success('仓库添加成功');
-        // 刷新页面以获取最新数据
+        message.success(t('home.messages.repo_add_success'));
         window.location.reload();
       } else {
-        message.config({
-          duration: 1.5,
-        });
-        message.error('添加仓库失败: ' + (response.error || '未知错误'));
+        message.error(t('home.messages.repo_add_failed', { error: response.error || t('home.messages.unknown_error') }));
       }
     } catch (error) {
       console.error('添加仓库出错:', error);
-      message.config({
-        duration: 1.5,
-      });
-      message.error('添加仓库出错，请稍后重试');
+      message.error(t('home.messages.repo_add_error'));
     }
     setFormVisible(false);
   };
@@ -232,255 +312,478 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
   // 计算统计数据
   const stats = {
     totalRepositories: initialTotal || repositories.length,
-    gitRepos: repositories.filter(repo => repo.type === 'git').length,
-    lastUpdated: repositories.length ? new Date(
-      Math.max(...repositories.map(repo => new Date(repo.createdAt).getTime()))
-    ).toLocaleDateString('zh-CN') : '-'
   };
-
-  // 生成波浪背景的SVG
-  const waveSvg = `
-  <svg width="100%" height="100%" id="svg" viewBox="0 0 1440 400" xmlns="http://www.w3.org/2000/svg">
-    <path d="M 0,400 C 0,400 0,200 0,200 C 114.35714285714289,165.85714285714283 228.71428571428578,131.71428571428572 351,133 C 473.2857142857142,134.28571428571428 603.4999999999998,171 713,192 C 822.5000000000002,213 911.2857142857144,218.28571428571428 1029,214 C 1146.7142857142856,209.71428571428572 1293.3571428571427,195.85714285714286 1440,182 C 1440,182 1440,400 1440,400 Z" 
-    fill="#6366f1" fill-opacity="0.06"></path>
-    <path d="M 0,400 C 0,400 0,266 0,266 C 93.53571428571428,293.67857142857144 187.07142857142856,321.35714285714283 311,325 C 434.92857142857144,328.64285714285717 589.25,308.25 724,288 C 858.75,267.75 973.9285714285713,247.64285714285714 1087,242 C 1200.0714285714287,236.35714285714286 1311.0357142857142,245.17857142857142 1422,254 C 1422,254 1422,400 1422,400 Z" 
-    fill="#6366f1" fill-opacity="0.1"></path>
-  </svg>
-  `;
-
-  // 动态波浪背景样式
-  const waveBgStyle = {
-    backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(waveSvg)}")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'bottom',
-    backgroundSize: 'cover',
-  };
-
-  const buttonStyle = {
-    height: 44,
-    fontWeight: 500,
-    boxShadow: 'none',
-    transition: 'all 0.3s ease',
-    borderRadius: 8,
-    fontSize: 15
-  };
-
-
-  const statisticStyle = {
-    padding: '20px',
-    background: 'rgba(99, 102, 241, 0.03)',
-    borderRadius: 16,
-    height: '100%',
-    transition: 'all 0.3s ease',
-    cursor: 'pointer',
-    border: '1px solid transparent',
-    backdropFilter: 'blur(8px)',
-  };
-
 
   return (
-    <ConfigProvider theme={customTheme as any}>
-      <Layout className="min-h-screen">
-        <Header
-          className="bg-gradient-to-r from-indigo-500 to-purple-500 sticky top-0 z-50 h-[70px] flex items-center px-6"
-        >
-          <div
-            className="flex items-center justify-between max-w-7xl mx-auto w-full h-full relative"
-          >
-            <div className="flex items-center py-2 px-4">
+    <ConfigProvider theme={modernTheme}>
+      <style jsx global>{`
+        /* 光晕动画效果 */
+        @keyframes glow-pulse {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.15), 0 0 40px rgba(37, 99, 235, 0.08);
+          }
+          50% {
+            box-shadow: 0 0 30px rgba(37, 99, 235, 0.25), 0 0 60px rgba(37, 99, 235, 0.12);
+          }
+        }
+
+        @keyframes hero-glow {
+          0%, 100% {
+            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+          }
+          50% {
+            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* 英雄区域光晕背景 */
+        .hero-glow {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .hero-glow::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+          animation: hero-glow 6s ease-in-out infinite;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .hero-content {
+          position: relative;
+          z-index: 1;
+          animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* Logo浮动效果 */
+        .hero-content .ant-avatar {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        /* 统计卡片光晕效果 */
+        .stat-card {
+          position: relative;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
+          overflow: hidden;
+        }
+
+        .stat-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border-radius: 12px;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          pointer-events: none;
+        }
+
+        .stat-card:hover::before {
+          opacity: 1;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 0 25px rgba(37, 99, 235, 0.15), 0 8px 32px rgba(0, 0, 0, 0.12);
+          border-color: rgba(37, 99, 235, 0.2);
+        }
+
+        /* 特性卡片动画 */
+        .hero-content .ant-card {
+          animation: fadeInUp 0.8s ease-out;
+          animation-fill-mode: both;
+        }
+
+        .hero-content .ant-card:nth-child(1) { animation-delay: 0.1s; }
+        .hero-content .ant-card:nth-child(2) { animation-delay: 0.2s; }
+        .hero-content .ant-card:nth-child(3) { animation-delay: 0.3s; }
+        .hero-content .ant-card:nth-child(4) { animation-delay: 0.4s; }
+
+        /* 主按钮光晕效果 */
+        .glow-button {
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glow-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transition: left 0.5s ease;
+        }
+
+        .glow-button:hover::before {
+          left: 100%;
+        }
+
+        .glow-button:hover {
+          box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), 0 0 40px rgba(37, 99, 235, 0.2);
+          transform: translateY(-2px);
+        }
+
+        /* 搜索框光晕效果 */
+        .search-glow .ant-input-affix-wrapper {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
+        }
+
+        .search-glow .ant-input-affix-wrapper:hover,
+        .search-glow .ant-input-affix-wrapper:focus,
+        .search-glow .ant-input-affix-wrapper-focused {
+          box-shadow: 0 0 15px rgba(37, 99, 235, 0.15), 0 4px 20px rgba(0, 0, 0, 0.08);
+          border-color: rgba(37, 99, 235, 0.3);
+        }
+
+        /* 页脚链接光晕效果 */
+        .footer-link {
+          position: relative;
+          transition: all 0.3s ease;
+        }
+
+        .footer-link::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #2563eb, #3b82f6);
+          transition: width 0.3s ease;
+        }
+
+        .footer-link:hover::after {
+          width: 100%;
+        }
+
+        .footer-link:hover {
+          color: #2563eb !important;
+          text-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
+        }
+
+        /* 赞助商卡片悬停效果 */
+        .sponsor-card {
+          transition: all 0.3s ease;
+          border-radius: 12px;
+        }
+
+        .sponsor-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 响应式动画优化 */
+        @media (prefers-reduced-motion: reduce) {
+          .stat-card,
+          .glow-button,
+          .search-glow .ant-input-affix-wrapper,
+          .footer-link,
+          .hero-content .ant-avatar {
+            transition: none;
+            animation: none;
+          }
+          
+          .hero-glow::before {
+            animation: none;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .stat-card:hover {
+            transform: translateY(-2px);
+          }
+          
+          .glow-button:hover {
+            transform: translateY(-1px);
+          }
+
+          .hero-content .ant-avatar {
+            animation-duration: 4s;
+          }
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+
+      <Layout className="min-h-screen bg-slate-50">
+        {/* 现代化头部 */}
+        <Header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto flex items-center justify-between h-full">
+            <div className="flex items-center space-x-3">
               <Avatar
                 src="/logo.png"
-                size={42}
-                className="mr-4 p-1"
+                size={40}
+                className="shadow-sm"
               />
-              <div className="flex flex-col justify-center h-full">
-                <span className="text-white m-0 text-lg tracking-wider font-bold drop-shadow">
-                  OpenDeepWiki
-                </span>
-              </div>
+              <Title level={4} className="m-0 text-slate-800 font-semibold">
+                OpenDeepWiki
+              </Title>
             </div>
 
-            <Space size={16} align="center">
+            <Space size="middle" align="center">
               <LanguageSwitcher />
               <Button
                 type="text"
-                icon={<GithubOutlined className="text-xl" />}
-                className="text-white h-11 w-11 rounded-xl flex items-center justify-center bg-white/20 transition-all duration-300 backdrop-blur border border-white/20 shadow-md"
+                icon={<GithubOutlined />}
                 href={homepage}
                 target="_blank"
+                className="text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                size="large"
               />
             </Space>
           </div>
         </Header>
 
-        <Content className="p-10 bg-slate-50 min-h-[calc(100vh-70px-64px)] relative z-10 bg-no-repeat bg-bottom bg-cover" style={{ backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(waveSvg)}")` }}>
-          <div className="max-w-7xl mx-auto">
-            <Row gutter={[32, 32]}>
-              <Col span={24}>
-                <Card
-                  className="rounded-2xl mb-8 shadow-lg border-none overflow-hidden transition-all duration-300 backdrop-blur-sm bg-white/90"
-                  bodyStyle={{
-                    padding: isMobile ? 24 : 40,
-                  }}
-                >
-                  <Row gutter={[40, 40]} align="middle">
-                    <Col xs={24} md={15}>
-                      <div>
-                        <Badge.Ribbon text={t('home.title')} className="text-sm font-semibold rounded">
-                          <Title level={2} className="text-4xl font-bold mb-4 text-slate-900 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent inline-block">
-                            {t('home.title')}
-                          </Title>
-                        </Badge.Ribbon>
-                        <Paragraph className="text-base mb-8 text-slate-600 leading-relaxed max-w-[90%]">
-                          {t('home.subtitle')}
-                        </Paragraph>
-                        <Space size={16} wrap className="mt-2">
-                          <Button
-                            type="primary"
-                            size="large"
-                            icon={<PlusOutlined />}
-                            onClick={() => setFormVisible(true)}
-                            className="h-11 font-medium shadow-none transition-all duration-300 rounded-lg text-base bg-gradient-to-r from-indigo-500 to-purple-500 border-none"
-                          >
-                            {t('home.add_repo_button')}
-                          </Button>
-                          <Button
-                            type="default"
-                            size="large"
-                            onClick={handleLastRepoQuery}
-                            className="h-11 font-medium rounded-lg border-indigo-500/30 text-indigo-500"
-                          >
-                            {t('home.query_last_repo_button')}
-                          </Button>
-                        </Space>
+        <Content className="flex-1">
+          <div className="max-w-7xl mx-auto px-6 py-12">
+            {/* 英雄区域 - 带光晕背景 */}
+            <div className="hero-glow text-center mb-20">
+              <div className="hero-content max-w-4xl mx-auto">
+                <div className="mb-8">
+                  <Badge.Ribbon text={t('home.badge.ai_powered')} color="blue" className="text-sm font-medium">
+                    <div className="inline-block">
+                      <Avatar
+                        src="/logo.png"
+                        size={80}
+                        className="shadow-lg mb-6"
+                      />
+                    </div>
+                  </Badge.Ribbon>
+                </div>
+                
+                <Title level={1} className="text-slate-900 mb-6 font-bold text-4xl lg:text-5xl">
+                  {t('home.title')}
+                </Title>
+                
+                <Paragraph className="text-xl lg:text-2xl text-slate-600 mb-8 leading-relaxed max-w-3xl mx-auto">
+                  {t('home.subtitle')}
+                </Paragraph>
+                
+                <div className="mb-12">
+                  <Space size="large" wrap className="justify-center">
+                    <Button
+                      type="primary"
+                      size="large"
+                      icon={<PlusOutlined />}
+                      onClick={() => setFormVisible(true)}
+                      className="glow-button h-14 px-10 text-lg font-medium"
+                    >
+                      {t('home.add_repo_button')}
+                    </Button>
+                    <Button
+                      size="large"
+                      onClick={handleLastRepoQuery}
+                      className="h-14 px-10 text-lg font-medium border-2"
+                    >
+                      {t('home.query_last_repo_button')}
+                    </Button>
+                  </Space>
+                </div>
+
+                {/* 特性展示 */}
+                <Row gutter={[24, 24]} className="mt-16">
+                  {features.map((feature, index) => (
+                    <Col xs={24} sm={12} lg={6} key={index}>
+                      <Card 
+                        className="text-center border-0 bg-white/60 backdrop-blur-sm hover:bg-white/80 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                        bodyStyle={{ padding: '24px 16px' }}
+                      >
+                        <div className="mb-4">
+                          {feature.icon}
+                        </div>
+                        <Title level={5} className="mb-2 text-slate-800">
+                          {t(feature.titleKey)}
+                        </Title>
+                        <Text className="text-slate-600 text-sm">
+                          {t(feature.descriptionKey)}
+                        </Text>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+            </div>
+
+            {/* 统计卡片 - 带光晕效果 */}
+            <Row gutter={[24, 24]} className="mb-20">
+              <Col xs={24} sm={12} lg={8}>
+                <Card className="stat-card text-center border-0">
+                  <Statistic
+                    title={
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <BookOutlined className="text-blue-500" />
+                        <Text className="text-slate-600">{t('home.stats.total_repos')}</Text>
                       </div>
-                    </Col>
-                    <Col xs={24} md={9}>
-                      <Row gutter={[24, 24]}>
-                        <Col xs={12} md={24}>
-                          <div
-                            className={`p-5 bg-indigo-500/[0.03] rounded-2xl h-full transition-all duration-300 cursor-pointer border border-transparent backdrop-blur-sm ${isHovering === 'repos' ? 'transform -translate-y-1 shadow-xl border-indigo-500/20 bg-indigo-500/[0.08]' : ''}`}
-                            onMouseEnter={() => setIsHovering('repos')}
-                            onMouseLeave={() => setIsHovering('')}
-                          >
-                            <Statistic
-                              title={
-                                <div className="flex items-center gap-2.5 mb-2.5">
-                                  <BookOutlined className="text-indigo-500 text-lg" />
-                                  <Typography.Text className="text-slate-500 text-base font-medium">{t('home.stats.total_repos')}</Typography.Text>
-                                </div>
-                              }
-                              value={stats.totalRepositories}
-                              valueStyle={{
-                                color: customTheme.token.colorText,
-                                fontWeight: 700,
-                                fontSize: 32
-                              }}
-                            />
-                          </div>
-                        </Col>
-                        <Col xs={12} md={24}>
-                          <div
-                            className={`p-5 bg-indigo-500/[0.03] rounded-2xl h-full transition-all duration-300 cursor-pointer border border-transparent backdrop-blur-sm ${isHovering === 'git' ? 'transform -translate-y-1 shadow-xl border-indigo-500/20 bg-indigo-500/[0.08]' : ''}`}
-                            onMouseEnter={() => setIsHovering('git')}
-                            onMouseLeave={() => setIsHovering('')}
-                          >
-                            <Statistic
-                              title={
-                                <div className="flex items-center gap-2.5 mb-2.5">
-                                  <GithubOutlined className="text-indigo-500 text-lg" />
-                                  <Typography.Text className="text-slate-500 text-base font-medium">{t('home.stats.git_repos')}</Typography.Text>
-                                </div>
-                              }
-                              value={stats.gitRepos}
-                              valueStyle={{
-                                color: customTheme.token.colorText,
-                                fontWeight: 700,
-                                fontSize: 32
-                              }}
-                            />
-                          </div>
-                        </Col>
-                      </Row>
-                    </Col>
-                  </Row>
+                    }
+                    value={stats.totalRepositories}
+                    valueStyle={{ color: designSystem.colors.neutral[800], fontWeight: 600 }}
+                  />
+                </Card>
+              </Col>
+              
+              <Col xs={24} sm={12} lg={8}>
+                <Card className="stat-card text-center border-0">
+                  <Statistic
+                    title={
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <RocketOutlined className="text-green-500" />
+                        <Text className="text-slate-600">{t('home.stats.processing_tasks')}</Text>
+                      </div>
+                    }
+                    value={repositories.filter(repo => repo.status === 1).length}
+                    valueStyle={{ color: designSystem.colors.success, fontWeight: 600 }}
+                  />
+                </Card>
+              </Col>
+              
+              <Col xs={24} sm={12} lg={8}>
+                <Card className="stat-card text-center border-0">
+                  <Statistic
+                    title={
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <TrophyOutlined className="text-purple-500" />
+                        <Text className="text-slate-600">{t('home.stats.completed_tasks')}</Text>
+                      </div>
+                    }
+                    value={repositories.filter(repo => repo.status === 2).length}
+                    valueStyle={{ color: '#722ed1', fontWeight: 600 }}
+                  />
                 </Card>
               </Col>
             </Row>
 
-            <div className="flex justify-between items-center my-8 flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <Tag color="#6366f1" className="text-base py-1.5 px-3 rounded-full font-semibold shadow-md shadow-indigo-200 border-none flex items-center gap-2">
-                  <FireOutlined /> {t('home.repo_list.title')}
-                </Tag>
-                <Tag color="#e0e7ff" className="text-indigo-700 ml-1 font-medium py-1 px-3 rounded-full">
-                  {t('home.repo_list.total', { count: stats.totalRepositories })}
-                </Tag>
-              </div>
-              <Space wrap className={`${isMobile ? 'mt-3' : ''}`} size={12}>
-                <Search
-                  placeholder={t('home.repo_list.search_placeholder')}
-                  allowClear
-                  value={searchValue}
-                  onSearch={value => handleSearch(value)}
-                  onChange={e => setSearchValue(e.target.value)}
-                  className={`${isMobile ? 'w-full' : 'w-[340px]'} rounded-lg shadow-sm`}
-                  enterButton={<SearchOutlined />}
-                />
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => setFormVisible(true)}
-                  className="h-11 font-medium shadow-none transition-all duration-300 rounded-lg text-base bg-gradient-to-r from-indigo-500 to-purple-500 border-none"
-                >
-                  {t('home.repo_list.add_button')}
-                </Button>
-              </Space>
-            </div>
-
-            {repositories.length === 0 ? (
-              <Card
-                className="rounded-2xl text-center bg-white/90 shadow-lg border-none"
-                bodyStyle={{ padding: 48 }}
-              >
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    <Typography.Text className="text-slate-500 text-base">
-                      {searchValue ? t('home.repo_list.not_found', { keyword: searchValue }) : t('home.repo_list.empty')}
-                    </Typography.Text>
-                  }
-                >
-                  <Button
-                    type="primary"
-                    className="h-11 font-medium shadow-none transition-all duration-300 rounded-lg text-base bg-gradient-to-r from-indigo-500 to-purple-500 border-none"
-                    onClick={() => setFormVisible(true)}
-                    size="large"
-                    icon={<PlusOutlined />}
-                  >
-                    {t('home.repo_list.add_now')}
-                  </Button>
-                </Empty>
-              </Card>
-            ) : (
-              <>
-                <RepositoryList repositories={repositories} />
-                {!searchValue && initialTotal > pageSize && (
-                  <div className="text-center mt-10 bg-white/90 py-5 px-6 rounded-2xl shadow-sm">
-                    <Pagination
-                      current={currentPage}
-                      pageSize={pageSize}
-                      total={initialTotal}
-                      onChange={handlePageChange}
-                      showSizeChanger
-                      showQuickJumper
-                      showTotal={(total) => t('home.pagination.total', { total })}
-                      className="font-medium"
+            {/* 仓库列表区域 */}
+            <Card className="border-0 shadow-sm bg-white/90 backdrop-blur-md">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
+                <div className="flex items-center space-x-3">
+                  <Tag color="blue" className="px-3 py-1 text-sm font-medium">
+                    <RocketOutlined className="mr-1" />
+                    {t('home.repo_list.title')}
+                  </Tag>
+                  <Text className="text-slate-500">
+                    {t('home.repo_list.total', { count: stats.totalRepositories })}
+                  </Text>
+                </div>
+                
+                <Space size="middle" wrap>
+                  <div className="search-glow">
+                    <Search
+                      placeholder={t('home.repo_list.search_placeholder')}
+                      allowClear
+                      value={searchValue}
+                      onSearch={handleSearch}
+                      onChange={e => setSearchValue(e.target.value)}
+                      className="w-80"
+                      size="large"
                     />
                   </div>
-                )}
-              </>
-            )}
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setFormVisible(true)}
+                    size="large"
+                    className="glow-button font-medium"
+                  >
+                    {t('home.repo_list.add_button')}
+                  </Button>
+                </Space>
+              </div>
+
+              {repositories.length === 0 ? (
+                <div className="text-center py-16">
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      <Text className="text-slate-500 text-base">
+                        {searchValue ? t('home.repo_list.not_found', { keyword: searchValue }) : t('home.repo_list.empty')}
+                      </Text>
+                    }
+                  >
+                    <Button
+                      type="primary"
+                      onClick={() => setFormVisible(true)}
+                      size="large"
+                      icon={<PlusOutlined />}
+                      className="glow-button mt-4"
+                    >
+                      {t('home.repo_list.add_now')}
+                    </Button>
+                  </Empty>
+                </div>
+              ) : (
+                <>
+                  <RepositoryList repositories={repositories} />
+                  {!searchValue && initialTotal > pageSize && (
+                    <div className="text-center mt-8 pt-6 border-t border-slate-100">
+                      <Pagination
+                        current={currentPage}
+                        pageSize={pageSize}
+                        total={initialTotal}
+                        onChange={handlePageChange}
+                        showSizeChanger
+                        showQuickJumper
+                        showTotal={(total) => t('home.pagination.total', { total })}
+                        className="font-medium"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </Card>
 
             <RepositoryForm
               open={formVisible}
@@ -495,108 +798,145 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
           </div>
         </Content>
 
-        <Footer className="bg-white py-12 px-6 mt-auto border-t border-indigo-100">
-          <div className="max-w-7xl mx-auto">
+        {/* 现代化页脚 */}
+        <Footer className="bg-white/90 backdrop-blur-md border-t border-slate-200 mt-16">
+          <div className="max-w-7xl mx-auto px-6 py-12">
+            {/* 赞助商区域 */}
+            <div className="text-center mb-12">
+              <Title level={4} className="text-slate-800 mb-6">
+                {t('home.sponsors.title')}
+              </Title>
+              <Row gutter={[32, 16]} justify="center">
+                {sponsors.map((sponsor, index) => (
+                  <Col key={index}>
+                    <a 
+                      href={sponsor.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block p-4 rounded-lg hover:bg-slate-50 transition-colors duration-300"
+                    >
+                      <Space direction="vertical" align="center" size="small">
+                        <Avatar 
+                          src={sponsor.logo} 
+                          size={48}
+                          className="shadow-sm"
+                        />
+                        <div className="text-center">
+                          <Text className="font-medium text-slate-800 block">
+                            {sponsor.name}
+                          </Text>
+                          <Text className="text-slate-500 text-xs">
+                            {t(sponsor.descriptionKey)}
+                          </Text>
+                        </div>
+                      </Space>
+                    </a>
+                  </Col>
+                ))}
+              </Row>
+            </div>
+            
+            <Divider className="my-8 border-slate-200" />
+            
             <Row gutter={[48, 32]}>
-              <Col xs={24} sm={8} md={6}>
+              <Col xs={24} lg={8}>
                 <div className="mb-6">
                   <Space align="center" className="mb-4">
-                    <Avatar
-                      src="/logo.png"
-                      size={32}
-                      className="mr-2 shadow-md bg-white p-0.5"
-                    />
-                    <Typography.Title level={4} className="m-0 text-slate-900">
+                    <Avatar src="/logo.png" size={32} />
+                    <Title level={4} className="m-0 text-slate-800">
                       OpenDeepWiki
-                    </Typography.Title>
+                    </Title>
                   </Space>
-                  <Typography.Paragraph className="text-slate-500 mb-4">
+                  <Paragraph className="text-slate-600 mb-6 max-w-sm">
                     {t('description')}
-                  </Typography.Paragraph>
-                  <Space size={16}>
+                  </Paragraph>
+                  <Space size="middle">
                     <Button
                       type="text"
                       icon={<GithubOutlined />}
                       href={homepage}
                       target="_blank"
-                      className="text-slate-500"
+                      className="text-slate-500 hover:text-slate-700 p-0"
                     />
+                    <Tag color="blue" className="px-3 py-1">
+                      .NET 9.0
+                    </Tag>
+                    <Tag color="green" className="px-3 py-1">
+                      {t('home.tags.open_source')}
+                    </Tag>
                   </Space>
                 </div>
               </Col>
-              <Col xs={24} sm={16} md={18}>
-                <Row gutter={[48, 24]}>
-                  <Col xs={24} sm={6}>
-                    <Typography.Title level={5} className="mb-4 text-slate-900">
+              
+              <Col xs={24} lg={16}>
+                <Row gutter={[32, 24]}>
+                  <Col xs={12} sm={8}>
+                    <Title level={5} className="text-slate-800 mb-4">
                       {t('footer.product')}
-                    </Typography.Title>
-                    <Space direction="vertical" size={12}>
+                    </Title>
+                    <Space direction="vertical" size="small">
                       {footerLinks.product.map(link => (
-                        <Typography.Link key={link.title} href={link.link} className="text-slate-500">
-                          {t(`footer.${link.title === '功能介绍' ? 'features' : link.title === '使用指南' ? 'guide' : 'changelog'}`)}
-                        </Typography.Link>
+                        <a key={link.titleKey} href={link.link} className="footer-link text-slate-600 block">
+                          {t(link.titleKey)}
+                        </a>
                       ))}
                     </Space>
                   </Col>
-                  <Col xs={24} sm={6}>
-                    <Typography.Title level={5} className="mb-4 text-slate-900">
+                  
+                  <Col xs={12} sm={8}>
+                    <Title level={5} className="text-slate-800 mb-4">
                       {t('footer.resources')}
-                    </Typography.Title>
-                    <Space direction="vertical" size={12}>
+                    </Title>
+                    <Space direction="vertical" size="small">
                       {footerLinks.resources.map(link => (
-                        <Typography.Link key={link.title} href={link.link} className="text-slate-500">
-                          {t(`footer.${link.title === '开发文档' ? 'docs' : link.title === 'API参考' ? 'api' : 'faq'}`)}
-                        </Typography.Link>
+                        <a key={link.titleKey} href={link.link} className="footer-link text-slate-600 block">
+                          {t(link.titleKey)}
+                        </a>
                       ))}
                     </Space>
                   </Col>
-                  <Col xs={24} sm={6}>
-                    <Typography.Title level={5} className="mb-4 text-slate-900">
-                      {t('footer.sponsors', '赞助商')}
-                    </Typography.Title>
-                    <Space direction="vertical" size={12}>
-                      {sponsors.map(sponsor => (
-                        <Typography.Link key={sponsor.name} href={sponsor.url} target="_blank" className="text-slate-500 flex items-center gap-2">
-                          {sponsor.name}
-                        </Typography.Link>
-                      ))}
-                    </Space>
-                  </Col>
-                  <Col xs={24} sm={6}>
-                    <Typography.Title level={5} className="mb-4 text-slate-900">
+                  
+                  <Col xs={12} sm={8}>
+                    <Title level={5} className="text-slate-800 mb-4">
                       {t('footer.company')}
-                    </Typography.Title>
-                    <Space direction="vertical" size={12}>
+                    </Title>
+                    <Space direction="vertical" size="small">
                       {footerLinks.company.map(link => (
-                        <Typography.Link key={link.title} href={link.link} className="text-slate-500">
-                          {t(`footer.${link.title === '关于我们' ? 'about' : link.title === '联系方式' ? 'contact' : 'join'}`)}
-                        </Typography.Link>
+                        <a key={link.titleKey} href={link.link} className="footer-link text-slate-600 block">
+                          {t(link.titleKey)}
+                        </a>
                       ))}
                     </Space>
                   </Col>
                 </Row>
               </Col>
             </Row>
-            <Divider className="border-slate-200 my-8" />
+            
+            <Divider className="my-8 border-slate-200" />
+            
             <Row justify="space-between" align="middle" gutter={[16, 16]}>
               <Col xs={24} sm={12}>
                 <Space direction="vertical" size={2}>
-                  <Typography.Text className="text-slate-500 text-sm">
+                  <Text className="text-slate-500 text-sm">
                     {t('footer.copyright', { year: new Date().getFullYear() })}
-                  </Typography.Text>
-                  <Typography.Text className="text-slate-500 text-sm flex items-center gap-1">
-                    {t('footer.powered_by')} <span className="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent font-semibold px-1">.NET 9.0</span>
-                  </Typography.Text>
+                  </Text>
+                  <Text className="text-slate-500 text-sm">
+                    {t('footer.powered_by')} <span className="text-blue-600 font-medium">.NET 9.0</span> & <span className="text-green-600 font-medium">Semantic Kernel</span>
+                  </Text>
                 </Space>
               </Col>
-              <Col xs={24} sm={12} className="text-right">
-                <Space split={<Divider type="vertical" className="border-slate-200" />}>
-                  <Typography.Link href="/privacy" className="text-slate-500 text-sm">
+              
+              <Col xs={24} sm={12} className="text-left sm:text-right">
+                <Space split={<Divider type="vertical" className="border-slate-300" />}>
+                  <a href="/privacy" className="footer-link text-slate-500 text-sm">
                     {t('footer.privacy')}
-                  </Typography.Link>
-                  <Typography.Link href="/terms" className="text-slate-500 text-sm">
+                  </a>
+                  <a href="/terms" className="footer-link text-slate-500 text-sm">
                     {t('footer.terms')}
-                  </Typography.Link>
+                  </a>
+                  <Text className="text-slate-400 text-sm">
+                    v2.0.0
+                  </Text>
                 </Space>
               </Col>
             </Row>

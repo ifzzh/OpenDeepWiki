@@ -1,20 +1,18 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Repository } from '../types';
-import Link from 'next/link';
 import {
   FileOutlined,
   ClockCircleOutlined,
   GithubOutlined,
   StarOutlined,
   ForkOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
-import { ChevronsRight, Heart } from 'lucide-react';
-import { Badge, Tooltip } from 'antd';
-import { MaskShadow } from '@lobehub/ui';
+import { Card, Tag, Tooltip, Avatar, Typography, Space } from 'antd';
 import { useTranslation } from '../i18n/client';
 import { getRepositoryExtendedInfo, RepoExtendedInfo } from '../services/repositoryService';
 
-// 不再需要组件级别的缓存，因为已经在服务层实现了缓存
+const { Text, Title } = Typography;
 
 interface RepositoryCardProps {
   repository: Repository;
@@ -25,70 +23,42 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
   const currentLocale = i18n.language;
   const [repoInfo, setRepoInfo] = useState<RepoExtendedInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
-
-  // 格式化仓库地址，显示简洁的URL
-  const formatRepoAddress = (address: string): string => {
-    try {
-      if (!address) return '';
-
-      // 移除协议前缀
-      let formattedAddress = address.replace(/^(https?:\/\/)/, '');
-
-      // 移除末尾的.git后缀
-      formattedAddress = formattedAddress.replace(/\.git$/, '');
-
-      // 如果地址太长，进行截断
-      if (formattedAddress.length > 30) {
-        return formattedAddress.substring(0, 27) + '...';
-      }
-
-      return formattedAddress;
-    } catch (e) {
-      return address;
-    }
-  };
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // 在组件挂载时获取仓库扩展信息
   useEffect(() => {
     fetchRepositoryInfo();
   }, [repository.address]);
 
-  // 获取仓库所有者和名称
-  const getRepoInfo = (address: string) => {
-    try {
-      if (address.includes('github.com')) {
-        const parts = address.replace('https://github.com/', '').split('/');
-        return {
-          owner: parts[0],
-          name: parts[1].split('/')[0].replace('.git', '')
-        }
-      }
-
-      // 解析 url
-      const url = new URL(address);
-      const owner = url.pathname.split('/')[1];
-      const name = url.pathname.split('/')[2];
-      return {
-        owner: owner,
-        name: name.split('.')[0]
-      }
-
-    } catch (e) {
-      // 如果解析失败，返回默认值
-    }
-    return { owner: repository.organizationName, name: repository.name };
+  // 鼠标移动事件处理
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePosition({ x, y });
   };
 
-  // 获取仓库的扩展信息，直接使用服务层的缓存机制
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+
+  // 获取仓库的扩展信息
   const fetchRepositoryInfo = async () => {
     if (!repository.address) return;
 
     setLoading(true);
     try {
-      // 服务层已实现缓存，直接调用API
-      const info = await getRepositoryExtendedInfo(repository.address);
-      setRepoInfo(info);
+      const { data } = await getRepositoryExtendedInfo(repository.address);
+      setRepoInfo(data);
     } catch (error) {
       console.error('获取仓库信息失败:', error);
     } finally {
@@ -98,12 +68,10 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
 
   // 根据地址获取头像
   const getAvatarUrl = () => {
-    // 优先使用API获取的头像
     if (repoInfo?.avatarUrl) {
       return repoInfo.avatarUrl;
     }
 
-    // 回退到原来的逻辑
     if (repository.address?.includes('github.com')) {
       const owner = repository.organizationName;
       if (owner) {
@@ -124,16 +92,10 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
       if (owner) {
         return `https://gitlab.com/${owner}.png`;
       }
-    } else if (repository.address?.includes('bitbucket.org')) {
-      const owner = repository.organizationName;
-      if (owner) {
-        return `https://bitbucket.org/${owner}.png`;
-      }
     }
     return null;
   };
 
-  // 使用useMemo缓存头像URL，避免重复计算
   const avatarUrl = useMemo(() => getAvatarUrl(), [repoInfo, repository.address, repository.organizationName]);
 
   const getStatusNumber = (status: string | number): number => {
@@ -141,176 +103,409 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
     return parseInt(status, 10) || 0;
   };
 
-  // 获取状态小圆点
-  const getStatusDot = (status: string | number) => {
-    const statusNumber = getStatusNumber(status);
-    let statusColorClass = '';
-
-    switch (statusNumber) {
-      case 0: statusColorClass = 'bg-yellow-400'; break;
-      case 1: statusColorClass = 'bg-blue-400'; break;
-      case 2: statusColorClass = 'bg-green-500'; break;
-      case 3: statusColorClass = 'bg-gray-400'; break;
-      case 4: statusColorClass = 'bg-purple-500'; break;
-      case 99: statusColorClass = 'bg-red-500'; break;
-      default: statusColorClass = 'bg-gray-300'; break;
-    }
-
-    return <span className={`inline-block w-2 h-2 rounded-full ${statusColorClass}`}></span>;
-  };
-
-  // 获取状态文本
-  const getStatusText = (status: string | number) => {
+  // 获取状态配置
+  const getStatusConfig = (status: string | number) => {
     const statusNumber = getStatusNumber(status);
 
     switch (statusNumber) {
-      case 0: return t('repository.status.pending', '待处理');
-      case 1: return t('repository.status.processing', '处理中');
-      case 2: return t('repository.status.completed', '已完成');
-      case 3: return t('repository.status.cancelled', '已取消');
-      case 4: return t('repository.status.unauthorized', '未授权');
-      case 99: return t('repository.status.failed', '已失败');
-      default: return t('repository.status.unknown', '未知状态');
+      case 0: return { color: 'orange', text: t('repository.status.pending', '待处理') };
+      case 1: return { color: 'blue', text: t('repository.status.processing', '处理中') };
+      case 2: return { color: 'green', text: t('repository.status.completed', '已完成') };
+      case 3: return { color: 'default', text: t('repository.status.cancelled', '已取消') };
+      case 4: return { color: 'purple', text: t('repository.status.unauthorized', '未授权') };
+      case 99: return { color: 'red', text: t('repository.status.failed', '已失败') };
+      default: return { color: 'default', text: t('repository.status.unknown', '未知状态') };
     }
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const locale = currentLocale === 'zh-CN' ? 'zh-CN' : 'en-US';
-    return date.toLocaleDateString(locale);
+    return date.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const getRepoIcon = () => {
     if (repository.address?.includes('github.com')) {
-      return <GithubOutlined />;
+      return <GithubOutlined className="text-slate-600" />;
     } else if (repository.address?.includes('gitee.com')) {
-      return <i className="text-red-500 font-bold">G</i>;
+      return <span className="text-red-500 font-bold text-sm">G</span>;
     } else {
-      return <FileOutlined />;
+      return <FileOutlined className="text-slate-600" />;
     }
   };
 
+  const formatNumber = (num: number) => {
+    if (num > 999) {
+      return `${(num / 1000).toFixed(1)}k`;
+    }
+    return num.toString();
+  };
+
+  const statusConfig = getStatusConfig(repository.status);
+
+  const handleCardClick = () => {
+    window.location.href = `/${repository.organizationName}/${repository.name}`;
+  };
+
   return (
-    <span
-      style={{
-        cursor: 'pointer',
-        color: 'inherit',
-        position: 'relative',
-        display: 'block',
-        overflow: 'hidden',
-      }}
-      onClick={() => {
-        window.location.href = `/${repository.organizationName}/${repository.name}`;
-      }}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-      className="block no-underline text-inherit">
-      <Badge.Ribbon
-        style={{
-          display: repository.isRecommended ? 'block' : 'none',
-        }}
-        placement="start"
-        text={<Heart size={14} />}
-        color="pink">
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow h-[180px] transition-shadow">
-          {/* 发光效果元素 */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: isHovering ? '100%' : '-100%',
-              width: '50%',
-              height: '100%',
-              background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%)',
-              transform: 'skewX(-20deg)',
-              transition: isHovering ? 'left 0.6s ease-in' : 'left 0.9s ease-out',
-              pointerEvents: 'none',
-              zIndex: 10,
-            }}
-          />
-          <div className="flex p-3 border-b border-gray-100">
-            <div className="flex-shrink-0 mr-3">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  loading="lazy"
-                  alt={repository.organizationName}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
-                  <FileOutlined />
+    <>
+      <style jsx>{`
+        .repo-card {
+          position: relative;
+          height: 100%;
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          overflow: hidden;
+        }
+
+        .repo-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, 
+            rgba(37, 99, 235, 0.08) 0%, 
+            rgba(59, 130, 246, 0.04) 50%, 
+            rgba(147, 197, 253, 0.02) 100%
+          );
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .repo-card::after {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: linear-gradient(45deg, 
+            rgba(37, 99, 235, 0.2), 
+            rgba(59, 130, 246, 0.15), 
+            rgba(147, 197, 253, 0.1),
+            rgba(37, 99, 235, 0.2)
+          );
+          background-size: 300% 300%;
+          border-radius: 12px;
+          opacity: 0;
+          animation: gradient-shift 3s ease infinite;
+          transition: opacity 0.4s ease;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        /* 鼠标跟随光晕效果 */
+        .mouse-glow {
+          position: absolute;
+          width: 200px;
+          height: 200px;
+          border-radius: 50%;
+          background: radial-gradient(circle, 
+            rgba(37, 99, 235, 0.15) 0%, 
+            rgba(59, 130, 246, 0.1) 30%, 
+            rgba(147, 197, 253, 0.05) 60%, 
+            transparent 100%
+          );
+          pointer-events: none;
+          z-index: 1;
+          transition: opacity 0.3s ease;
+          transform: translate(-50%, -50%);
+        }
+
+        .mouse-glow.active {
+          opacity: 1;
+        }
+
+        .mouse-glow.inactive {
+          opacity: 0;
+        }
+
+        /* 鼠标跟随光点 */
+        .mouse-spotlight {
+          position: absolute;
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          background: radial-gradient(circle, 
+            rgba(37, 99, 235, 0.2) 0%, 
+            rgba(59, 130, 246, 0.1) 40%, 
+            transparent 70%
+          );
+          pointer-events: none;
+          z-index: 2;
+          transition: opacity 0.2s ease;
+          transform: translate(-50%, -50%);
+          filter: blur(1px);
+        }
+
+        .mouse-spotlight.active {
+          opacity: 1;
+        }
+
+        .mouse-spotlight.inactive {
+          opacity: 0;
+        }
+
+        @keyframes gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+
+        .repo-card:hover::before {
+          opacity: 1;
+        }
+
+        .repo-card:hover::after {
+          opacity: 1;
+        }
+
+        .repo-card:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 
+            0 0 30px rgba(37, 99, 235, 0.2),
+            0 20px 40px rgba(0, 0, 0, 0.1),
+            0 0 60px rgba(37, 99, 235, 0.1);
+          border-color: rgba(37, 99, 235, 0.3);
+        }
+
+        .repo-card-content {
+          position: relative;
+          z-index: 3;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .repo-header {
+          padding: 16px;
+          border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+          background: rgba(248, 250, 252, 0.5);
+        }
+
+        .repo-body {
+          padding: 16px;
+          flex: 1;
+          display: flex;
+          align-items: center;
+        }
+
+        .repo-footer {
+          padding: 12px 16px;
+          background: rgba(248, 250, 252, 0.8);
+          border-top: 1px solid rgba(226, 232, 240, 0.6);
+          backdrop-filter: blur(5px);
+        }
+
+        .avatar-glow {
+          position: relative;
+          transition: all 0.3s ease;
+        }
+
+        .avatar-glow::before {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: linear-gradient(45deg, rgba(37, 99, 235, 0.3), rgba(59, 130, 246, 0.2));
+          border-radius: 50%;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          z-index: -1;
+        }
+
+        .repo-card:hover .avatar-glow::before {
+          opacity: 1;
+        }
+
+        .status-tag {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .status-tag::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          transition: left 0.6s ease;
+        }
+
+        .repo-card:hover .status-tag::before {
+          left: 100%;
+        }
+
+        .stat-item {
+          transition: all 0.3s ease;
+        }
+
+        .repo-card:hover .stat-item {
+          transform: scale(1.05);
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+          .repo-card:hover {
+            transform: translateY(-2px) scale(1.01);
+          }
+          
+          .mouse-glow,
+          .mouse-spotlight {
+            display: none;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .repo-card,
+          .avatar-glow,
+          .status-tag,
+          .stat-item,
+          .mouse-glow,
+          .mouse-spotlight {
+            transition: none;
+          }
+          
+          .repo-card::after {
+            animation: none;
+          }
+        }
+      `}</style>
+
+      <div
+        ref={cardRef}
+        className="repo-card"
+        onClick={handleCardClick}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* 鼠标跟随光晕 */}
+        <div
+          className={`mouse-glow ${isHovered ? 'active' : 'inactive'}`}
+          style={{
+            left: mousePosition.x,
+            top: mousePosition.y,
+          }}
+        />
+        
+        {/* 鼠标跟随光点 */}
+        <div
+          className={`mouse-spotlight ${isHovered ? 'active' : 'inactive'}`}
+          style={{
+            left: mousePosition.x,
+            top: mousePosition.y,
+          }}
+        />
+
+        <Card
+          bodyStyle={{ padding: 0 }}
+          style={{ height: '100%', border: 'none', background: 'transparent' }}
+        >
+          <div className="repo-card-content">
+            {/* 卡片头部 */}
+            <div className="repo-header">
+              <div className="flex items-start space-x-3">
+                <div className="avatar-glow">
+                  <Avatar
+                    src={avatarUrl}
+                    icon={<FileOutlined />}
+                    size={40}
+                    className="flex-shrink-0 shadow-sm"
+                  />
                 </div>
-              )}
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <Title level={5} className="m-0 text-slate-800 truncate font-semibold" title={repository.name}>
+                      {repository.name}
+                    </Title>
+                    <div className="text-lg">
+                      {getRepoIcon()}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Tag color={statusConfig.color} className="status-tag text-xs px-2 py-0.5 font-medium">
+                      {statusConfig.text}
+                    </Tag>
+                    {repository.isRecommended && (
+                      <Tag color="pink" className="status-tag text-xs px-2 py-0.5 font-medium">
+                        推荐
+                      </Tag>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex-1 min-w-0">
+            {/* 卡片内容 */}
+            <div className="repo-body">
+              <Text className="text-slate-600 text-sm leading-relaxed line-clamp-3 block">
+                {repository.description || repoInfo?.description || '暂无描述'}
+              </Text>
+            </div>
+
+            {/* 卡片底部 */}
+            <div className="repo-footer">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-800 truncate" title={repository.name}>
-                  {repository.name}
-                </h3>
-                <div className="text-gray-400 ml-2">
-                  {getRepoIcon()}
+                <div className="flex items-center space-x-3 text-xs text-slate-500">
+                  <Tooltip title="创建时间">
+                    <div className="stat-item flex items-center space-x-1">
+                      <ClockCircleOutlined />
+                      <span>{formatDate(repository.createdAt)}</span>
+                    </div>
+                  </Tooltip>
+                </div>
+
+                <div className="flex items-center space-x-3 text-xs text-slate-500">
+                  {repoInfo?.stars > 0 && (
+                    <Tooltip title={`${repoInfo.stars} Stars`}>
+                      <div className="stat-item flex items-center space-x-1">
+                        <StarOutlined className="text-yellow-500" />
+                        <span>{formatNumber(repoInfo.stars)}</span>
+                      </div>
+                    </Tooltip>
+                  )}
+
+                  {repoInfo?.forks > 0 && (
+                    <Tooltip title={`${repoInfo.forks} Forks`}>
+                      <div className="stat-item flex items-center space-x-1">
+                        <ForkOutlined />
+                        <span>{formatNumber(repoInfo.forks)}</span>
+                      </div>
+                    </Tooltip>
+                  )}
+
+                  {repoInfo?.language && (
+                    <Tooltip title={`主要语言: ${repoInfo.language}`}>
+                      <div className="stat-item flex items-center space-x-1">
+                        <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                        <span className="max-w-16 truncate">{repoInfo.language}</span>
+                      </div>
+                    </Tooltip>
+                  )}
                 </div>
               </div>
-
-              <div className="flex items-center mt-1 text-xs">
-                <div className="flex items-center ml-2">
-                  {getStatusDot(repository.status)}
-                  <span className="ml-1 text-gray-500">{getStatusText(repository.status)}</span>
-                </div>
-              </div>
             </div>
           </div>
-
-          <div className="px-3 py-2 h-[80px]">
-            <p className="text-xs text-gray-600 line-clamp-3">
-              {repoInfo?.description || repository.description}
-            </p>
-          </div>
-
-          <div className="px-3 py-2 bg-gray-50 flex items-center justify-between mt-auto">
-            <div className="flex items-center text-xs text-gray-500 space-x-2">
-              <div className="flex items-center">
-                <ClockCircleOutlined className="mr-1" />
-                <span>{formatDate(repository.createdAt)}</span>
-              </div>
-
-              {repoInfo?.stars > 0 && (
-                <Tooltip title={`${repoInfo.stars} Stars`}>
-                  <div className="flex items-center">
-                    <StarOutlined className="mr-1 text-yellow-500" />
-                    <span>{repoInfo.stars > 999 ? `${(repoInfo.stars / 1000).toFixed(1)}k` : repoInfo.stars}</span>
-                  </div>
-                </Tooltip>
-              )}
-
-              {repoInfo?.forks > 0 && (
-                <Tooltip title={`${repoInfo.forks} Forks`}>
-                  <div className="flex items-center">
-                    <ForkOutlined className="mr-1" />
-                    <span>{repoInfo.forks > 999 ? `${(repoInfo.forks / 1000).toFixed(1)}k` : repoInfo.forks}</span>
-                  </div>
-                </Tooltip>
-              )}
-
-              {repoInfo?.language && (
-                <Tooltip title={`Language: ${repoInfo.language}`}>
-                  <div className="flex items-center">
-                    <span className="inline-block w-2 h-2 rounded-full bg-blue-400 mr-1"></span>
-                    <span>{repoInfo.language}</span>
-                  </div>
-                </Tooltip>
-              )}
-            </div>
-
-            <div className="text-gray-400">
-              <ChevronsRight className="w-4 h-4" />
-            </div>
-          </div>
-        </div>
-      </Badge.Ribbon>
-    </span>
+        </Card>
+      </div>
+    </>
   );
 };
 

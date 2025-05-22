@@ -16,9 +16,9 @@ const RepositoryList: React.FC<RepositoryListProps> = ({ repositories }) => {
 
   return (
     <div className="repository-grid">
-      <Row gutter={[16, 16]}>
+      <Row gutter={[32, 32]}>
         {repositories.map((repository) => (
-          <Col xs={24} sm={12} md={8} lg={6} key={repository.id}>
+          <Col xs={24} sm={12} lg={8} xl={6} key={repository.id}>
             <RepositoryCard repository={repository} />
           </Col>
         ))}
