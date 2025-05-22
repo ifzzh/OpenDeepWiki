@@ -124,7 +124,7 @@ public class AuthService(
                 Id = Guid.NewGuid().ToString("N"),
                 Name = username,
                 Email = email,
-                Password = BCrypt.Net.BCrypt.HashPassword(password),
+                Password = Guid.NewGuid().ToString(), // 随机密码
                 CreatedAt = DateTime.UtcNow,
                 Role = "user" // 默认角色
             };
@@ -187,7 +187,7 @@ public class AuthService(
                     Id = Guid.NewGuid().ToString("N"),
                     Name = githubUser.Login,
                     Email = githubUser.Email,
-                    Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // 随机密码
+                    Password = Guid.NewGuid().ToString(), // 随机密码
                     Avatar = githubUser.AvatarUrl,
                     CreatedAt = DateTime.UtcNow,
                     Role = "user" // 默认角色
@@ -263,7 +263,7 @@ public class AuthService(
                     Id = Guid.NewGuid().ToString("N"),
                     Name = username,
                     Email = email,
-                    Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // 随机密码
+                    Password = Guid.NewGuid().ToString(), // 随机密码
                     Avatar = payload.Picture,
                     CreatedAt = DateTime.UtcNow,
                     Role = "user" // 默认角色

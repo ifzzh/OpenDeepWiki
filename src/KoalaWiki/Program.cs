@@ -102,6 +102,7 @@ builder.Services.AddHostedService<WarehouseProcessingTask>();
 builder.Services.AddHostedService<DataMigrationTask>();
 builder.Services.AddHostedService<WarehouseDescriptionTask>();
 builder.Services.AddHostedService<BuildCodeIndex>();
+builder.Services.AddHostedService<WarehouseFunctionPromptTask>();
 
 builder.Services.AddDbContext(builder.Configuration);
 
