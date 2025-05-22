@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using CodeDependencyAnalyzer;
-using KoalaWiki.CodeMap.Language;
 using KoalaWiki.Options;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.KernelMemory;
@@ -204,24 +203,6 @@ public class EnhancedCodeIndexer
             ".swift" => "swift",
             ".rs" => "rust",
             _ => "unknown"
-        };
-    }
-
-    /// <summary>
-    /// 根据语言解析代码并进行智能切片
-    /// </summary>
-    private async Task<List<CodeSegment>> ParseAndSegmentCodeAsync(string code, string language, string filePath)
-    {
-        return language switch
-        {
-            // "csharp" => await ParseCSharp.ParseCSharpCodeWithRoslynAsync(code, filePath),
-            "python" => ParsePython.ParsePythonCode(code),
-            "javascript" => ParseJavaScript.ParseJavaScriptCode(code),
-            "typescript" => ParseJavaScript.ParseTypeScriptCode(code),
-            "java" => ParseJava.ParseJavaCode(code),
-            "go" => ParseGo.ParseGoCode(code),
-            "rust" => ParseRust.ParseRustCode(code),
-            _ => ParseCode.ParseGenericCode(code)
         };
     }
 }

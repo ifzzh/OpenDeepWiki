@@ -101,7 +101,7 @@ public class UserService(IKoalaWikiContext dbContext, ILogger<UserService> logge
                 Id = Guid.NewGuid().ToString("N"),
                 Name = createUserDto.Name,
                 Email = createUserDto.Email,
-                Password = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password),
+                Password = createUserDto.Password,
                 Role = createUserDto.Role,
                 Avatar = createUserDto.Avatar ?? string.Empty,
                 CreatedAt = DateTime.UtcNow
@@ -169,7 +169,7 @@ public class UserService(IKoalaWikiContext dbContext, ILogger<UserService> logge
             // 如果提供了新密码，则更新密码
             if (!string.IsNullOrEmpty(updateUserDto.Password))
             {
-                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(updateUserDto.Password);
+                existingUser.Password = updateUserDto.Password;
             }
 
             // 保存更改
@@ -215,4 +215,4 @@ public class UserService(IKoalaWikiContext dbContext, ILogger<UserService> logge
             return ResultDto<bool>.Fail("删除用户失败，请稍后再试");
         }
     }
-} 
+}
