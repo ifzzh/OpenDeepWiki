@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using CodeDependencyAnalyzer;
-using KoalaWiki.Options;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.Configuration;
@@ -8,6 +7,7 @@ using Microsoft.KernelMemory.DocumentStorage.DevTools;
 using Microsoft.KernelMemory.FileSystem.DevTools;
 using Microsoft.KernelMemory.MemoryStorage.DevTools;
 using Newtonsoft.Json;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 #pragma warning disable SKEXP0010
 
