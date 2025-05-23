@@ -138,7 +138,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.MapMcp("/api");
+app.MapMcp("/api/mcp");
 
 app.UseMiddleware<GlobalMiddleware>();
 

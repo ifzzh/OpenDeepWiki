@@ -150,7 +150,7 @@ export default function RepositoryLayoutClient({
   const mcpConfigJson = {
     mcpServers: {
       [name]: {
-        url: `${window.location.protocol}//${window.location.host}/api/sse?owner=${owner}&name=${name}`
+        url: `${window.location.protocol}//${window.location.host}/api/mcp?owner=${owner}&name=${name}`
       }
     }
   };

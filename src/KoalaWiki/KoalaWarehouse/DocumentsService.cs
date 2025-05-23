@@ -110,7 +110,7 @@ public partial class DocumentsService
             catalogue.Append($"{relativePath}\n");
         }
 
-        // 如果文件数量小于3000
+        // 如果文件数量小于800
         if (pathInfos.Count < 800)
         {
             // 直接返回
@@ -131,18 +131,44 @@ public partial class DocumentsService
         var codeDirSimplifier = analysisModel.Plugins["CodeAnalysis"]["CodeDirSimplifier"];
 
         var sb = new StringBuilder();
+        int retryCount = 0;
+        const int maxRetries = 5;
+        Exception? lastException = null;
 
-        await foreach (var item in analysisModel.InvokeStreamingAsync(codeDirSimplifier, new KernelArguments(
-                           new OpenAIPromptExecutionSettings()
-                           {
-                               MaxTokens = GetMaxTokens(OpenAIOptions.AnalysisModel)
-                           })
-                       {
-                           ["code_files"] = catalogue.ToString(),
-                           ["readme"] = readme
-                       }))
+        while (retryCount < maxRetries)
         {
-            sb.Append(item);
+            try
+            {
+                await foreach (var item in analysisModel.InvokeStreamingAsync(codeDirSimplifier, new KernelArguments(
+                                   new OpenAIPromptExecutionSettings()
+                                   {
+                                       MaxTokens = GetMaxTokens(OpenAIOptions.AnalysisModel)
+                                   })
+                               {
+                                   ["code_files"] = catalogue.ToString(),
+                                   ["readme"] = readme
+                               }))
+                {
+                    sb.Append(item);
+                }
+
+                // 成功则跳出循环
+                lastException = null;
+                break;
+            }
+            catch (Exception ex)
+            {
+                retryCount++;
+                lastException = ex;
+                Log.Logger.Error(ex, $"优化目录结构失败，重试第{retryCount}次");
+                if (retryCount >= maxRetries)
+                {
+                    throw new Exception($"优化目录结构失败，已重试{maxRetries}次", ex);
+                }
+
+                await Task.Delay(5000 * retryCount);
+                sb.Clear();
+            }
         }
 
         // 正则表达式提取response_file
@@ -176,6 +202,7 @@ public partial class DocumentsService
 
         return catalogue.ToString();
     }
+
 
     public static async Task<string> GenerateReadMe(Warehouse warehouse, string path,
         IKoalaWikiContext koalaWikiContext)

@@ -41,7 +41,7 @@ public class ChatService(IKoalaWikiContext koala) : FastApi
 
         if (document == null)
         {
-            throw new Exception("空异常 Document");
+            throw new Exception("当前仓库的文档并没有生成，请先生成文档在使用对话功能");
         }
 
         var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,

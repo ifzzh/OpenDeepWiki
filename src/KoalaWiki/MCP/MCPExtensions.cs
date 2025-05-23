@@ -18,16 +18,10 @@ public static class MCPExtensions
         service.AddMcpServer()
             .WithListToolsHandler((async (context, token) =>
             {
-                var httpContext = context.Services!.GetService<IHttpContextAccessor>()?.HttpContext;
-                if (httpContext == null)
-                {
-                    throw new Exception("HttpContext is null");
-                }
+                var name = context.Server.ServerOptions.Capabilities.Experimental["name"].ToString();
+                var owner = context.Server.ServerOptions.Capabilities.Experimental["owner"].ToString();
 
                 var dbContext = context.Services.GetService<IKoalaWikiContext>();
-
-                var owner = httpContext.Request.Query["owner"].ToString();
-                var name = httpContext.Request.Query["name"].ToString();
 
                 var prompt = await dbContext.Warehouses
                     .AsNoTracking()
@@ -80,46 +74,47 @@ public static class MCPExtensions
                     ],
                 });
             }))
-            .WithListResourcesHandler(((context, token) =>
-            {
-                return new ValueTask<ListResourcesResult>(new ListResourcesResult()
-                {
-                
-                });
-            }))
+            .WithListResourcesHandler(
+                ((context, token) => new ValueTask<ListResourcesResult>(new ListResourcesResult())))
             .WithCallToolHandler((async (context, token) =>
             {
-                if (context.Params?.Name.EndsWith("Analyzer",
-                        StringComparison.CurrentCultureIgnoreCase) == true)
+                var warehouse = context.Services!.GetService<WarehouseTool>();
+
+                var question = context.Params?.Arguments["question"].ToString();
+                var sw = Stopwatch.StartNew();
+
+                var response = await warehouse.GenerateDocumentAsync(question);
+
+                sw.Stop();
+
+                Log.Logger.Information("functionName {functionName} Execution Time: {ExecutionTime}ms",
+                    context.Params.Name, sw.ElapsedMilliseconds);
+
+                return new CallToolResponse()
                 {
-                    var warehouse = context.Services!.GetService<WarehouseTool>();
-
-                    var question = context.Params.Arguments["question"].ToString();
-                    var sw = Stopwatch.StartNew();
-
-                    var response = await warehouse.GenerateDocumentAsync(question);
-
-                    sw.Stop();
-
-                    Log.Logger.Information("functionName {functionName} Execution Time: {ExecutionTime}ms",
-                        context.Params.Name, sw.ElapsedMilliseconds);
-
-                    return new CallToolResponse()
-                    {
-                        Content =
-                        [
-                            new Content()
-                            {
-                                Type = "text",
-                                Text = response
-                            }
-                        ]
-                    };
-                }
-
-                throw new Exception("Tool not found");
+                    Content =
+                    [
+                        new Content()
+                        {
+                            Type = "text",
+                            Text = response
+                        }
+                    ]
+                };
             }))
-            .WithHttpTransport();
+            .WithHttpTransport(options =>
+            {
+                options.ConfigureSessionOptions += async (context, serverOptions, token) =>
+                {
+                    var owner = context.Request.Query["owner"].ToString();
+                    var name = context.Request.Query["name"].ToString();
+
+                    serverOptions.Capabilities!.Experimental = new Dictionary<string, object>();
+                    serverOptions.Capabilities.Experimental.Add("owner", owner);
+                    serverOptions.Capabilities.Experimental.Add("name", name);
+                    await Task.CompletedTask;
+                };
+            });
 
         return service;
     }
