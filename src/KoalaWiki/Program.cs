@@ -33,6 +33,9 @@ var jwtOptions = JwtOptions.InitConfig(builder.Configuration);
 builder.Services.AddSingleton(jwtOptions);
 
 OpenAIOptions.InitConfig(builder.Configuration);
+
+GithubOptions.InitConfig(builder.Configuration);
+
 #endregion
 
 // 设置文件上传大小
@@ -128,7 +131,6 @@ app.UseSerilogRequestLogging();
 
 app.UseCors("AllowAll");
 
-// 添加认证和授权中间件
 app.UseAuthentication();
 app.UseAuthorization();
 

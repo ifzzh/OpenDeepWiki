@@ -5,6 +5,7 @@ using KoalaWiki.Dto;
 using KoalaWiki.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KoalaWiki.Services;
 
@@ -13,6 +14,7 @@ namespace KoalaWiki.Services;
 /// </summary>
 [Tags("User")]
 [Filter(typeof(ResultFilter))]
+[Authorize(Roles = "admin")]
 public class UserService(IKoalaWikiContext dbContext, ILogger<UserService> logger) : FastApi
 {
     /// <summary>

@@ -2,6 +2,7 @@
 using FastService;
 using KoalaWiki.Dto;
 using KoalaWiki.Infrastructure;
+using KoalaWiki.Options;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace KoalaWiki.Services;
@@ -22,6 +23,10 @@ public class GitRepositoryService(
         {
             return cached;
         }
+
+        // 随机分配5-8小时的缓存时间
+        var random = new Random();
+        var cacheDuration = TimeSpan.FromHours(random.Next(5, 8));
 
         var httpClient = httpClientFactory.CreateClient("KoalaWiki");
 
@@ -72,7 +77,7 @@ public class GitRepositoryService(
                         RepoUrl = repoUrl,
                         Error = "无效的仓库地址"
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromHours(5));
+                    memoryCache.Set(cacheKey, result, cacheDuration);
                     return result;
                 }
             }
@@ -89,7 +94,7 @@ public class GitRepositoryService(
                     RepoUrl = repoUrl,
                     Error = "无法解析仓库所有者或名称"
                 };
-                memoryCache.Set(cacheKey, result, TimeSpan.FromHours(5));
+                memoryCache.Set(cacheKey, result, cacheDuration);
                 return result;
             }
 
@@ -98,6 +103,11 @@ public class GitRepositoryService(
                 var apiUrl = $"https://api.github.com/repos/{owner}/{repo}";
                 var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
                 request.Headers.Add("User-Agent", "KoalaWiki-Agent");
+
+                if (!string.IsNullOrEmpty(GithubOptions.Token))
+                {
+                    request.Headers.Add("Authorization", "Bearer " + GithubOptions.Token);
+                }
 
                 var response = await httpClient.SendAsync(request);
                 if (response.IsSuccessStatusCode)
@@ -117,7 +127,7 @@ public class GitRepositoryService(
                         License = json.license.name,
                         Description = json.description
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromHours(5));
+                    memoryCache.Set(cacheKey, result, cacheDuration);
                     return result;
                 }
                 else
@@ -132,7 +142,7 @@ public class GitRepositoryService(
                         RepoUrl = repoUrl,
                         Error = $"GitHub API 请求失败: {response.StatusCode}"
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromHours(5));
+                    memoryCache.Set(cacheKey, result, cacheDuration);
                     return result;
                 }
             }
@@ -157,7 +167,7 @@ public class GitRepositoryService(
                         License = json.license,
                         Description = json.description
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromHours(5));
+                    memoryCache.Set(cacheKey, result, cacheDuration);
                     return result;
                 }
                 else
@@ -172,7 +182,7 @@ public class GitRepositoryService(
                         RepoUrl = repoUrl,
                         Error = $"Gitee API 请求失败: {response.StatusCode}"
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromHours(5));
+                    memoryCache.Set(cacheKey, result, cacheDuration);
                     return result;
                 }
             }
@@ -188,7 +198,7 @@ public class GitRepositoryService(
                     RepoUrl = repoUrl,
                     Error = "不支持的代码托管平台"
                 };
-                memoryCache.Set(cacheKey, result, TimeSpan.FromHours(5));
+                memoryCache.Set(cacheKey, result, cacheDuration);
                 return result;
             }
         }
@@ -205,7 +215,7 @@ public class GitRepositoryService(
                 RepoUrl = repoUrl,
                 Error = $"获取仓库信息失败: {ex.Message}"
             };
-            memoryCache.Set(cacheKey, result, TimeSpan.FromHours(5));
+            memoryCache.Set(cacheKey, result, cacheDuration);
             return result;
         }
     }
