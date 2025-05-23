@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using KoalaWiki.Domains;
 using KoalaWiki.Domains.FineTuning;
+using KoalaWiki.Domains.MCP;
 using KoalaWiki.Domains.Users;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
@@ -38,6 +39,8 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
     public DbSet<FineTuningTask> FineTuningTasks { get; set; }
 
     public DbSet<User> Users { get; set; }
+
+    public DbSet<MCPHistory> MCPHistories { get; set; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
     {
@@ -276,11 +279,25 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasIndex(x => x.Status);
             options.HasIndex(x => x.WarehouseId);
             options.HasIndex(x => x.DocumentCatalogId);
-            
+
             options.HasOne(x => x.DocumentCatalog)
                 .WithMany()
                 .HasForeignKey(x => x.DocumentCatalogId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MCPHistory>(options =>
+        {
+            options.HasComment("MCP历史记录");
+
+            options.Property(x => x.Id).HasComment("主键Id");
+            options.HasKey(x => x.Id);
+
+            options.HasIndex(x => x.CreatedAt);
+
+            options.HasIndex(x => x.WarehouseId);
+
+            options.HasIndex(x => x.UserId);
         });
     }
 }

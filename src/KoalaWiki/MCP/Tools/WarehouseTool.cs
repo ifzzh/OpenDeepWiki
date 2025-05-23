@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Domains.MCP;
 using KoalaWiki.Functions;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.Options;
@@ -8,17 +9,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using ModelContextProtocol.Server;
 using OpenAI.Chat;
 
 namespace KoalaWiki.MCP.Tools;
 
-public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoalaWikiContext koala)
+public sealed class WarehouseTool(IKoalaWikiContext koala)
 {
-    public async Task<string> GenerateDocumentAsync(string question)
+    public async Task<string> GenerateDocumentAsync(
+        IMcpServer server,
+        string question)
     {
-        var context = httpContextAccessor.HttpContext;
-        var owner = context.Request.Query["owner"].ToString();
-        var name = context.Request.Query["name"].ToString();
+        var name = server.ServerOptions.Capabilities!.Experimental["name"].ToString();
+        var owner = server.ServerOptions.Capabilities!.Experimental["owner"].ToString();
 
         var warehouse = await koala.Warehouses
             .AsNoTracking()
@@ -36,8 +39,22 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
 
         if (document == null)
         {
-            throw new Exception("空异常 Document");
+            throw new Exception("抱歉，您的仓库没有文档，请先生成仓库文档。");
         }
+
+        // 找到是否有相似的提问
+        var similarQuestion = await koala.MCPHistories
+            .AsNoTracking()
+            .Where(x => x.WarehouseId == warehouse.Id && x.Question == question)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync();
+        
+        // 如果是3天内的提问，直接返回
+        if (similarQuestion != null && (DateTime.Now - similarQuestion.CreatedAt).TotalDays < 3)
+        {
+            return similarQuestion.Answer;
+        }
+
 
         var kernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
             OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.DeepResearchModel, false);
@@ -110,6 +127,23 @@ public sealed class WarehouseTool(IHttpContextAccessor httpContextAccessor, IKoa
             }
 
             sw.Stop();
+
+
+            var mcpHistory = new MCPHistory()
+            {
+                Id = Guid.NewGuid().ToString(),
+                CostTime = (int)sw.ElapsedMilliseconds,
+                CreatedAt = DateTime.Now,
+                Question = question,
+                Answer = sb.ToString(),
+                WarehouseId = warehouse.Id,
+                UserAgent = string.Empty,
+                Ip = string.Empty,
+                UserId = string.Empty
+            };
+
+            await koala.MCPHistories.AddAsync(mcpHistory);
+            await koala.SaveChangesAsync();
 
             return sb.ToString();
         }

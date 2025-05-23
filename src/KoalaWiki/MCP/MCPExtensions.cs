@@ -80,10 +80,10 @@ public static class MCPExtensions
             {
                 var warehouse = context.Services!.GetService<WarehouseTool>();
 
-                var question = context.Params?.Arguments["question"].ToString();
+                var question = context.Params?.Arguments?["question"].ToString();
                 var sw = Stopwatch.StartNew();
 
-                var response = await warehouse.GenerateDocumentAsync(question);
+                var response = await warehouse.GenerateDocumentAsync(context.Server, question);
 
                 sw.Stop();
 
@@ -109,6 +109,7 @@ public static class MCPExtensions
                     var owner = context.Request.Query["owner"].ToString();
                     var name = context.Request.Query["name"].ToString();
 
+                    serverOptions.InitializationTimeout = TimeSpan.FromSeconds(300);
                     serverOptions.Capabilities!.Experimental = new Dictionary<string, object>();
                     serverOptions.Capabilities.Experimental.Add("owner", owner);
                     serverOptions.Capabilities.Experimental.Add("name", name);

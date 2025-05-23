@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using KoalaWiki.Domains;
 using KoalaWiki.Domains.FineTuning;
+using KoalaWiki.Domains.MCP;
 using KoalaWiki.Domains.Users;
 using KoalaWiki.Entities;
 using KoalaWiki.Entities.DocumentFile;
@@ -37,6 +38,8 @@ public interface IKoalaWikiContext
     public DbSet<FineTuningTask> FineTuningTasks { get; set; }
     
     public DbSet<User> Users { get; set; }
+    
+    public DbSet<MCPHistory> MCPHistories { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken());
 

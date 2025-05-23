@@ -375,6 +375,54 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                     b.ToTable("TrainingDatasets");
                 });
 
+            modelBuilder.Entity("KoalaWiki.Domains.MCP.MCPHistory", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasComment("主键Id");
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CostTime")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Ip")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserAgent")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("MCPHistories", t =>
+                        {
+                            t.HasComment("MCP历史记录");
+                        });
+                });
+
             modelBuilder.Entity("KoalaWiki.Domains.Users.User", b =>
                 {
                     b.Property<string>("Id")
