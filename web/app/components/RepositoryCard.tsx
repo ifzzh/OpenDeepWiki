@@ -156,7 +156,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
       <style jsx>{`
         .repo-card {
           position: relative;
-          height: 100%;
+          height: 280px; /* 设置卡片固定高度 */
           border: 1px solid rgba(226, 232, 240, 0.8);
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(10px);
@@ -289,22 +289,36 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
 
         .repo-header {
           padding: 16px;
+          height: 80px; /* 设置固定高度 */
           border-bottom: 1px solid rgba(226, 232, 240, 0.6);
           background: rgba(248, 250, 252, 0.5);
         }
 
         .repo-body {
           padding: 16px;
-          flex: 1;
+          height: 140px; /* 调整描述区域高度 */
           display: flex;
           align-items: center;
+          overflow: hidden;
+        }
+
+        .description-container {
+          width: 100%;
+          max-height: 100%;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
         }
 
         .repo-footer {
           padding: 12px 16px;
+          height: 60px; /* 设置固定高度 */
           background: rgba(248, 250, 252, 0.8);
           border-top: 1px solid rgba(226, 232, 240, 0.6);
           backdrop-filter: blur(5px);
+          display: flex;
+          align-items: center;
         }
 
         .avatar-glow {
@@ -455,14 +469,16 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
 
             {/* 卡片内容 */}
             <div className="repo-body">
-              <Text className="text-slate-600 text-sm leading-relaxed line-clamp-3 block">
-                {repository.description || repoInfo?.description || '暂无描述'}
-              </Text>
+              <div className="description-container">
+                <Text className="text-slate-600 text-sm leading-relaxed block w-full">
+                  {repository.description || repoInfo?.description || '暂无描述'}
+                </Text>
+              </div>
             </div>
 
             {/* 卡片底部 */}
             <div className="repo-footer">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3 text-xs text-slate-500">
                   <Tooltip title="创建时间">
                     <div className="stat-item flex items-center space-x-1">
