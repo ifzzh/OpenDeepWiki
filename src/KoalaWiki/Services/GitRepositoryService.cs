@@ -14,6 +14,7 @@ public class GitRepositoryService(
     IMemoryCache memoryCache)
     : FastApi
 {
+    [EndpointSummary("获取仓库信息")]
     public async Task<RepoExtendedInfo> GetRepoInfoAsync(string repoUrl)
     {
         string cacheKey = $"repo_info:{repoUrl}";
