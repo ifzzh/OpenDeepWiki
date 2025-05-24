@@ -358,7 +358,6 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
 
         /* 英雄区域光晕背景 */
         .hero-glow {
-          position: relative;
           overflow: hidden;
         }
 
@@ -569,7 +568,10 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 size={40}
                 className="shadow-sm"
               />
-              <Title level={4} className="m-0 text-slate-800 font-semibold">
+              <Title style={{
+                marginTop: 8,
+                fontWeight: 600,
+              }} level={3} className="m-0 text-slate-800 font-semibold">
                 OpenDeepWiki
               </Title>
             </div>
@@ -590,29 +592,16 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
 
         <Content className="flex-1">
           <div className="max-w-7xl mx-auto px-6 py-12">
-            {/* 英雄区域 - 带光晕背景 */}
-            <div className="hero-glow text-center mb-20">
+            <div  className="hero-glow text-center mb-20">
               <div className="hero-content max-w-4xl mx-auto">
-                <div className="mb-8">
-                  <Badge.Ribbon text={t('home.badge.ai_powered')} color="blue" className="text-sm font-medium">
-                    <div className="inline-block">
-                      <Avatar
-                        src="/logo.png"
-                        size={80}
-                        className="shadow-lg mb-6"
-                      />
-                    </div>
-                  </Badge.Ribbon>
-                </div>
-                
                 <Title level={1} className="text-slate-900 mb-6 font-bold text-4xl lg:text-5xl">
                   {t('home.title')}
                 </Title>
-                
+
                 <Paragraph className="text-xl lg:text-2xl text-slate-600 mb-8 leading-relaxed max-w-3xl mx-auto">
                   {t('home.subtitle')}
                 </Paragraph>
-                
+
                 <div className="mb-12">
                   <Space size="large" wrap className="justify-center">
                     <Button
@@ -633,78 +622,9 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                     </Button>
                   </Space>
                 </div>
-
-                {/* 特性展示 */}
-                <Row gutter={[24, 24]} className="mt-16">
-                  {features.map((feature, index) => (
-                    <Col xs={24} sm={12} lg={6} key={index}>
-                      <Card 
-                        className="text-center border-0 bg-white/60 backdrop-blur-sm hover:bg-white/80 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-                        bodyStyle={{ padding: '24px 16px' }}
-                      >
-                        <div className="mb-4">
-                          {feature.icon}
-                        </div>
-                        <Title level={5} className="mb-2 text-slate-800">
-                          {t(feature.titleKey)}
-                        </Title>
-                        <Text className="text-slate-600 text-sm">
-                          {t(feature.descriptionKey)}
-                        </Text>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
               </div>
             </div>
 
-            {/* 统计卡片 - 带光晕效果 */}
-            <Row gutter={[24, 24]} className="mb-20">
-              <Col xs={24} sm={12} lg={8}>
-                <Card className="stat-card text-center border-0">
-                  <Statistic
-                    title={
-                      <div className="flex items-center justify-center space-x-2 mb-2">
-                        <BookOutlined className="text-blue-500" />
-                        <Text className="text-slate-600">{t('home.stats.total_repos')}</Text>
-                      </div>
-                    }
-                    value={stats.totalRepositories}
-                    valueStyle={{ color: designSystem.colors.neutral[800], fontWeight: 600 }}
-                  />
-                </Card>
-              </Col>
-              
-              <Col xs={24} sm={12} lg={8}>
-                <Card className="stat-card text-center border-0">
-                  <Statistic
-                    title={
-                      <div className="flex items-center justify-center space-x-2 mb-2">
-                        <RocketOutlined className="text-green-500" />
-                        <Text className="text-slate-600">{t('home.stats.processing_tasks')}</Text>
-                      </div>
-                    }
-                    value={repositories.filter(repo => repo.status === 1).length}
-                    valueStyle={{ color: designSystem.colors.success, fontWeight: 600 }}
-                  />
-                </Card>
-              </Col>
-              
-              <Col xs={24} sm={12} lg={8}>
-                <Card className="stat-card text-center border-0">
-                  <Statistic
-                    title={
-                      <div className="flex items-center justify-center space-x-2 mb-2">
-                        <TrophyOutlined className="text-purple-500" />
-                        <Text className="text-slate-600">{t('home.stats.completed_tasks')}</Text>
-                      </div>
-                    }
-                    value={repositories.filter(repo => repo.status === 2).length}
-                    valueStyle={{ color: '#722ed1', fontWeight: 600 }}
-                  />
-                </Card>
-              </Col>
-            </Row>
 
             {/* 仓库列表区域 */}
             <Card className="border-0 shadow-sm bg-white/90 backdrop-blur-md">
@@ -718,7 +638,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                     {t('home.repo_list.total', { count: stats.totalRepositories })}
                   </Text>
                 </div>
-                
+
                 <Space size="middle" wrap>
                   <div className="search-glow">
                     <Search
@@ -809,15 +729,15 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               <Row gutter={[32, 16]} justify="center">
                 {sponsors.map((sponsor, index) => (
                   <Col key={index}>
-                    <a 
-                      href={sponsor.url} 
-                      target="_blank" 
+                    <a
+                      href={sponsor.url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="block p-4 rounded-lg hover:bg-slate-50 transition-colors duration-300"
                     >
                       <Space direction="vertical" align="center" size="small">
-                        <Avatar 
-                          src={sponsor.logo} 
+                        <Avatar
+                          src={sponsor.logo}
                           size={48}
                           className="shadow-sm"
                         />
@@ -835,9 +755,9 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 ))}
               </Row>
             </div>
-            
+
             <Divider className="my-8 border-slate-200" />
-            
+
             <Row gutter={[48, 32]}>
               <Col xs={24} lg={8}>
                 <div className="mb-6">
@@ -867,7 +787,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   </Space>
                 </div>
               </Col>
-              
+
               <Col xs={24} lg={16}>
                 <Row gutter={[32, 24]}>
                   <Col xs={12} sm={8}>
@@ -882,7 +802,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       ))}
                     </Space>
                   </Col>
-                  
+
                   <Col xs={12} sm={8}>
                     <Title level={5} className="text-slate-800 mb-4">
                       {t('footer.resources')}
@@ -895,7 +815,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       ))}
                     </Space>
                   </Col>
-                  
+
                   <Col xs={12} sm={8}>
                     <Title level={5} className="text-slate-800 mb-4">
                       {t('footer.company')}
@@ -911,9 +831,9 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 </Row>
               </Col>
             </Row>
-            
+
             <Divider className="my-8 border-slate-200" />
-            
+
             <Row justify="space-between" align="middle" gutter={[16, 16]}>
               <Col xs={24} sm={12}>
                 <Space direction="vertical" size={2}>
@@ -925,7 +845,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   </Text>
                 </Space>
               </Col>
-              
+
               <Col xs={24} sm={12} className="text-left sm:text-right">
                 <Space split={<Divider type="vertical" className="border-slate-300" />}>
                   <a href="/privacy" className="footer-link text-slate-500 text-sm">

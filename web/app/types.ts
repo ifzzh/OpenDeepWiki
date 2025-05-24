@@ -22,6 +22,14 @@ export interface Repository {
   updatedAt?: string;
   error?:string;
   organizationName: string;
+  success: boolean;
+  stars: number;
+  forks: number;
+  avatarUrl: string;
+  ownerUrl: string;
+  repoUrl: string;
+  language?: string;
+  license?: string;
 }
 
 export interface RepositoryFormValues {

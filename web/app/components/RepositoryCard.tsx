@@ -10,7 +10,6 @@ import {
 } from '@ant-design/icons';
 import { Card, Tag, Tooltip, Avatar, Typography, Space } from 'antd';
 import { useTranslation } from '../i18n/client';
-import { getRepositoryExtendedInfo, RepoExtendedInfo } from '../services/repositoryService';
 
 const { Text, Title } = Typography;
 
@@ -19,27 +18,21 @@ interface RepositoryCardProps {
 }
 
 const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
+
   const { t, i18n } = useTranslation();
   const currentLocale = i18n.language;
-  const [repoInfo, setRepoInfo] = useState<RepoExtendedInfo | null>(null);
-  const [loading, setLoading] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // 在组件挂载时获取仓库扩展信息
-  useEffect(() => {
-    fetchRepositoryInfo();
-  }, [repository.address]);
-
   // 鼠标移动事件处理
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
-    
+
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     setMousePosition({ x, y });
   };
 
@@ -51,25 +44,10 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
     setIsHovered(false);
   };
 
-  // 获取仓库的扩展信息
-  const fetchRepositoryInfo = async () => {
-    if (!repository.address) return;
-
-    setLoading(true);
-    try {
-      const { data } = await getRepositoryExtendedInfo(repository.address);
-      setRepoInfo(data);
-    } catch (error) {
-      console.error('获取仓库信息失败:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // 根据地址获取头像
   const getAvatarUrl = () => {
-    if (repoInfo?.avatarUrl) {
-      return repoInfo.avatarUrl;
+    if (repository?.avatarUrl) {
+      return repository.avatarUrl;
     }
 
     if (repository.address?.includes('github.com')) {
@@ -96,7 +74,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
     return null;
   };
 
-  const avatarUrl = useMemo(() => getAvatarUrl(), [repoInfo, repository.address, repository.organizationName]);
+  const avatarUrl = useMemo(() => getAvatarUrl(), [repository.address, repository.organizationName]);
 
   const getStatusNumber = (status: string | number): number => {
     if (typeof status === 'number') return status;
@@ -155,6 +133,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
     <>
       <style jsx>{`
         .repo-card {
+          border-radius: 12px;
           position: relative;
           height: 280px; /* 设置卡片固定高度 */
           border: 1px solid rgba(226, 232, 240, 0.8);
@@ -270,14 +249,6 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
           opacity: 1;
         }
 
-        .repo-card:hover {
-          transform: translateY(-4px) scale(1.02);
-          box-shadow: 
-            0 0 30px rgba(37, 99, 235, 0.2),
-            0 20px 40px rgba(0, 0, 0, 0.1),
-            0 0 60px rgba(37, 99, 235, 0.1);
-          border-color: rgba(37, 99, 235, 0.3);
-        }
 
         .repo-card-content {
           position: relative;
@@ -416,7 +387,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
             top: mousePosition.y,
           }}
         />
-        
+
         {/* 鼠标跟随光点 */}
         <div
           className={`mouse-spotlight ${isHovered ? 'active' : 'inactive'}`}
@@ -427,8 +398,11 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
         />
 
         <Card
+          style={{
+            height: '100%', 
+            border: 'none', background: 'transparent',
+          }}
           bodyStyle={{ padding: 0 }}
-          style={{ height: '100%', border: 'none', background: 'transparent' }}
         >
           <div className="repo-card-content">
             {/* 卡片头部 */}
@@ -442,7 +416,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
                     className="flex-shrink-0 shadow-sm"
                   />
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
                     <Title level={5} className="m-0 text-slate-800 truncate font-semibold" title={repository.name}>
@@ -452,7 +426,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
                       {getRepoIcon()}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Tag color={statusConfig.color} className="status-tag text-xs px-2 py-0.5 font-medium">
                       {statusConfig.text}
@@ -471,7 +445,7 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
             <div className="repo-body">
               <div className="description-container">
                 <Text className="text-slate-600 text-sm leading-relaxed block w-full">
-                  {repository.description || repoInfo?.description || '暂无描述'}
+                  {repository.description || '暂无描述'}
                 </Text>
               </div>
             </div>
@@ -489,29 +463,29 @@ const RepositoryCard: React.FC<RepositoryCardProps> = ({ repository }) => {
                 </div>
 
                 <div className="flex items-center space-x-3 text-xs text-slate-500">
-                  {repoInfo?.stars > 0 && (
-                    <Tooltip title={`${repoInfo.stars} Stars`}>
+                  {repository.stars > 0 && (
+                    <Tooltip title={`${repository.stars} Stars`}>
                       <div className="stat-item flex items-center space-x-1">
                         <StarOutlined className="text-yellow-500" />
-                        <span>{formatNumber(repoInfo.stars)}</span>
+                        <span>{formatNumber(repository.stars)}</span>
                       </div>
                     </Tooltip>
                   )}
 
-                  {repoInfo?.forks > 0 && (
-                    <Tooltip title={`${repoInfo.forks} Forks`}>
+                  {repository?.forks > 0 && (
+                    <Tooltip title={`${repository.forks} Forks`}>
                       <div className="stat-item flex items-center space-x-1">
                         <ForkOutlined />
-                        <span>{formatNumber(repoInfo.forks)}</span>
+                        <span>{formatNumber(repository.forks)}</span>
                       </div>
                     </Tooltip>
                   )}
 
-                  {repoInfo?.language && (
-                    <Tooltip title={`主要语言: ${repoInfo.language}`}>
+                  {repository?.language && (
+                    <Tooltip title={`主要语言: ${repository.language}`}>
                       <div className="stat-item flex items-center space-x-1">
                         <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-                        <span className="max-w-16 truncate">{repoInfo.language}</span>
+                        <span className="max-w-16 truncate">{repository.language}</span>
                       </div>
                     </Tooltip>
                   )}

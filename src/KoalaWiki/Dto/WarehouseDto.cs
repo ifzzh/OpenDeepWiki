@@ -1,9 +1,11 @@
-﻿using KoalaWiki.Domains;
+﻿using KoalaWiki.Entities;
 
-namespace KoalaWiki.Entities;
+namespace KoalaWiki.Dto;
 
-public class Warehouse : Entity<string>
+public class WarehouseDto 
 {
+    public string Id { get; set; } 
+    
     /// <summary>
     /// 组织名称
     /// </summary>
@@ -52,6 +54,11 @@ public class Warehouse : Entity<string>
     public string? Branch { get; set; }
 
     /// <summary>
+    /// 创建时间
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+    
+    /// <summary>
     /// 仓库状态
     /// </summary>
     public WarehouseStatus Status { get; set; }
@@ -93,4 +100,19 @@ public class Warehouse : Entity<string>
     /// </summary>
     public string? Readme { get; set; } 
     
+    public int Stars { get; set; }
+
+    public int Forks { get; set; }
+
+    public bool Success { get; set; }
+
+    public string AvatarUrl { get; set; } = string.Empty;
+
+    public string OwnerUrl { get; set; } = string.Empty;
+
+    public string RepoUrl { get; set; } = string.Empty;
+
+    public string? Language { get; set; }
+
+    public string? License { get; set; }
 }

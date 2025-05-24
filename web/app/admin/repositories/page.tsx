@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useState, useEffect } from 'react';
-import { getRepositoryList, createGitRepository, updateRepository, deleteRepository, reprocessRepository, RepositoryInfo, CreateGitRepositoryRequest, UpdateRepositoryRequest } from '../../services/repositoryService';
+import { getRepositoryList, createGitRepository, updateRepository, deleteRepository, resetRepository, RepositoryInfo, CreateGitRepositoryRequest, UpdateRepositoryRequest } from '../../services/repositoryService';
 import Link from 'next/link';
 
 // 仓库状态映射
@@ -119,7 +119,7 @@ export default function RepositoriesPage() {
         cancelText: '取消',
         onOk: async () => {
           try {
-            const response = await reprocessRepository(repository.id);
+            const response = await resetRepository(repository.id);
             if (response.code === 200 && response.data) {
               message.success('已提交重新处理请求');
               loadRepositories(); // 重新加载仓库列表

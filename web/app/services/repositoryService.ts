@@ -195,8 +195,8 @@ export async function deleteRepository(id: string): Promise<ApiResponse<boolean>
  * @param id 仓库ID
  * @returns 处理结果
  */
-export async function reprocessRepository(id: string): Promise<ApiResponse<boolean>> {
-  return fetchApi<boolean>(`${API_URL}/api/Repository/Repository?id=${id}`, {
+export async function resetRepository(id: string): Promise<ApiResponse<boolean>> {
+  return fetchApi<boolean>(`${API_URL}/api/Repository/ResetRepository?id=${id}`, {
     method: 'POST',
   });
 }
@@ -238,40 +238,6 @@ export async function saveRepositoryFileContent(
     body: JSON.stringify({ id, content }),
   });
 }
-
-/**
- * 获取仓库详细信息（包括stars、头像等）
- * @param repoUrl 仓库URL
- * @returns 仓库扩展信息
- */
-export interface RepoExtendedInfo {
-  success: boolean;
-  stars: number;
-  forks: number;
-  avatarUrl: string;
-  ownerUrl: string;
-  repoUrl: string;
-  language?: string;
-  license?: string;
-  description?: string;
-  error?: string;
-}
-
-/**
- * 根据仓库URL获取仓库的详细信息（如星数、头像等）
- * @param repoUrl 仓库URL
- * @param useCache 是否使用缓存（默认使用）
- * @param cacheExpiry 缓存过期时间（毫秒，默认10分钟）
- * @returns 仓库扩展信息
- */
-export async function getRepositoryExtendedInfo(
-  repoUrl: string, 
-  useCache: boolean = true,
-  cacheExpiry: number = DEFAULT_CACHE_EXPIRY
-): Promise<any> {
-  return fetchApi<any>(`${API_URL}/api/GitRepository/RepoInfo?repoUrl=${repoUrl}`);
-} 
-
 
 /**
  * /api/Repository/Catalog

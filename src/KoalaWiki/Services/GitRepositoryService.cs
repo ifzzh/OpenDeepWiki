@@ -16,56 +16,81 @@ public class GitRepositoryService(
     : FastApi
 {
     [EndpointSummary("获取仓库信息")]
-    public async Task<RepoExtendedInfo> GetRepoInfoAsync(string repoUrl)
+    public async Task<List<RepoExtendedInfo>> GetRepoInfoAsync(string[] repoUrls)
     {
-        string cacheKey = $"repo_info:{repoUrl}";
-        if (memoryCache.TryGetValue(cacheKey, out RepoExtendedInfo? cached) && cached != null)
+        var infoList = new List<RepoExtendedInfo>();
+
+        foreach (var repoUrl in repoUrls)
         {
-            return cached;
-        }
-
-        // 随机分配5-8小时的缓存时间
-        var random = new Random();
-        var cacheDuration = TimeSpan.FromHours(random.Next(5, 8));
-
-        var httpClient = httpClientFactory.CreateClient("KoalaWiki");
-
-        string owner = string.Empty;
-        string repo = string.Empty;
-        string platform = string.Empty;
-
-        try
-        {
-            if (repoUrl.Contains("github.com"))
+            string cacheKey = $"repo_info:{repoUrl}";
+            if (memoryCache.TryGetValue(cacheKey, out RepoExtendedInfo? cached) && cached != null)
             {
-                platform = "github";
-                var parts = repoUrl.Replace("https://github.com/", "").Split('/');
-                owner = parts[0];
-                repo = parts[1]?.Split('/')[0].Replace(".git", "");
+                infoList.Add(cached);
+
+                continue;
             }
-            else if (repoUrl.Contains("gitee.com"))
+
+            // 随机分配5-8小时的缓存时间
+            var random = new Random();
+            var cacheDuration = TimeSpan.FromHours(random.Next(5, 8));
+
+            var httpClient = httpClientFactory.CreateClient("KoalaWiki");
+
+            string owner = string.Empty;
+            string repo = string.Empty;
+            string platform = string.Empty;
+
+            try
             {
-                platform = "gitee";
-                var parts = repoUrl.Replace("https://gitee.com/", "").Split('/');
-                owner = parts[0];
-                repo = parts[1]?.Split('/')[0].Replace(".git", "");
-            }
-            else
-            {
-                try
+                if (repoUrl.Contains("github.com"))
                 {
-                    var url = new Uri(repoUrl);
-                    var segments = url.AbsolutePath.Trim('/').Split('/');
-                    owner = segments.Length > 0 ? segments[0] : string.Empty;
-                    repo = segments.Length > 1 ? segments[1].Replace(".git", "") : string.Empty;
-                    if (url.Host.Contains("github"))
-                        platform = "github";
-                    else if (url.Host.Contains("gitee"))
-                        platform = "gitee";
-                    else
-                        platform = "unknown";
+                    platform = "github";
+                    var parts = repoUrl.Replace("https://github.com/", "").Split('/');
+                    owner = parts[0];
+                    repo = parts[1]?.Split('/')[0].Replace(".git", "");
                 }
-                catch
+                else if (repoUrl.Contains("gitee.com"))
+                {
+                    platform = "gitee";
+                    var parts = repoUrl.Replace("https://gitee.com/", "").Split('/');
+                    owner = parts[0];
+                    repo = parts[1]?.Split('/')[0].Replace(".git", "");
+                }
+                else
+                {
+                    try
+                    {
+                        var url = new Uri(repoUrl);
+                        var segments = url.AbsolutePath.Trim('/').Split('/');
+                        owner = segments.Length > 0 ? segments[0] : string.Empty;
+                        repo = segments.Length > 1 ? segments[1].Replace(".git", "") : string.Empty;
+                        if (url.Host.Contains("github"))
+                            platform = "github";
+                        else if (url.Host.Contains("gitee"))
+                            platform = "gitee";
+                        else
+                            platform = "unknown";
+                    }
+                    catch
+                    {
+                        var result = new RepoExtendedInfo
+                        {
+                            Success = false,
+                            Stars = 0,
+                            Forks = 0,
+                            AvatarUrl = string.Empty,
+                            OwnerUrl = string.Empty,
+                            RepoUrl = repoUrl,
+                            Error = "无效的仓库地址"
+                        };
+                        memoryCache.Set(cacheKey, result, cacheDuration);
+
+                        infoList.Add(result);
+                        continue;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo))
                 {
                     var result = new RepoExtendedInfo
                     {
@@ -75,60 +100,104 @@ public class GitRepositoryService(
                         AvatarUrl = string.Empty,
                         OwnerUrl = string.Empty,
                         RepoUrl = repoUrl,
-                        Error = "无效的仓库地址"
+                        Error = "无法解析仓库所有者或名称"
                     };
                     memoryCache.Set(cacheKey, result, cacheDuration);
-                    return result;
-                }
-            }
-
-            if (string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo))
-            {
-                var result = new RepoExtendedInfo
-                {
-                    Success = false,
-                    Stars = 0,
-                    Forks = 0,
-                    AvatarUrl = string.Empty,
-                    OwnerUrl = string.Empty,
-                    RepoUrl = repoUrl,
-                    Error = "无法解析仓库所有者或名称"
-                };
-                memoryCache.Set(cacheKey, result, cacheDuration);
-                return result;
-            }
-
-            if (platform == "github")
-            {
-                var apiUrl = $"https://api.github.com/repos/{owner}/{repo}";
-                var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
-                request.Headers.Add("User-Agent", "KoalaWiki-Agent");
-
-                if (!string.IsNullOrEmpty(GithubOptions.Token))
-                {
-                    request.Headers.Add("Authorization", "Bearer " + GithubOptions.Token);
+                    infoList.Add(result);
+                    continue;
                 }
 
-                var response = await httpClient.SendAsync(request);
-                if (response.IsSuccessStatusCode)
+                if (platform == "github")
                 {
-                    var json = await response.Content.ReadFromJsonAsync<RepoGitHubRepoDto>();
-                    var result = new RepoExtendedInfo
+                    var apiUrl = $"https://api.github.com/repos/{owner}/{repo}";
+                    var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
+                    request.Headers.Add("User-Agent", "KoalaWiki-Agent");
+
+                    if (!string.IsNullOrEmpty(GithubOptions.Token))
                     {
-                        Success = true,
-                        Stars = json.stargazers_count,
-                        Forks = json.forks_count,
-                        AvatarUrl = json.owner.avatar_url ??
-                                    $"https://github.com/{owner}.png",
-                        OwnerUrl = json.owner.html_url ??
-                                   $"https://github.com/{owner}",
-                        RepoUrl = json.html_url ?? repoUrl,
-                        Language = json.language,
-                        License = json.license.name,
-                        Description = json.description
-                    };
-                    memoryCache.Set(cacheKey, result, cacheDuration);
-                    return result;
+                        request.Headers.Add("Authorization", "Bearer " + GithubOptions.Token);
+                    }
+
+                    var response = await httpClient.SendAsync(request);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadFromJsonAsync<RepoGitHubRepoDto>();
+                        var result = new RepoExtendedInfo
+                        {
+                            Success = true,
+                            Stars = json.stargazers_count,
+                            Forks = json.forks_count,
+                            AvatarUrl = json.owner.avatar_url ??
+                                        $"https://github.com/{owner}.png",
+                            OwnerUrl = json.owner.html_url ??
+                                       $"https://github.com/{owner}",
+                            RepoUrl = json.html_url ?? repoUrl,
+                            Language = json.language,
+                            License = json.license.name,
+                            Description = json.description
+                        };
+                        memoryCache.Set(cacheKey, result, cacheDuration);
+                        infoList.Add(result);
+                        continue;
+                    }
+                    else
+                    {
+                        var result = new RepoExtendedInfo
+                        {
+                            Success = false,
+                            Stars = 0,
+                            Forks = 0,
+                            AvatarUrl = $"https://github.com/{owner}.png",
+                            OwnerUrl = $"https://github.com/{owner}",
+                            RepoUrl = repoUrl,
+                            Error = $"GitHub API 请求失败: {response.StatusCode}"
+                        };
+                        memoryCache.Set(cacheKey, result, cacheDuration);
+                        infoList.Add(result);
+                        continue;
+                    }
+                }
+                else if (platform == "gitee")
+                {
+                    var apiUrl = $"https://gitee.com/api/v5/repos/{owner}/{repo}";
+                    var response = await httpClient.GetAsync(apiUrl);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadFromJsonAsync<RepoGiteeRepoDto>();
+                        var result = new RepoExtendedInfo
+                        {
+                            Success = true,
+                            Stars = json.stargazers_count,
+                            Forks = json.forks_count,
+                            AvatarUrl = json.owner.avatar_url ??
+                                        $"https://gitee.com/{owner}.png",
+                            OwnerUrl = json.owner.html_url ??
+                                       $"https://gitee.com/{owner}",
+                            RepoUrl = json.html_url ?? repoUrl,
+                            Language = json.language,
+                            License = json.license,
+                            Description = json.description
+                        };
+                        memoryCache.Set(cacheKey, result, cacheDuration);
+                        infoList.Add(result);
+                        continue;
+                    }
+                    else
+                    {
+                        var result = new RepoExtendedInfo
+                        {
+                            Success = false,
+                            Stars = 0,
+                            Forks = 0,
+                            AvatarUrl = $"https://gitee.com/{owner}.png",
+                            OwnerUrl = $"https://gitee.com/{owner}",
+                            RepoUrl = repoUrl,
+                            Error = $"Gitee API 请求失败: {response.StatusCode}"
+                        };
+                        memoryCache.Set(cacheKey, result, cacheDuration);
+                        infoList.Add(result);
+                        continue;
+                    }
                 }
                 else
                 {
@@ -137,57 +206,19 @@ public class GitRepositoryService(
                         Success = false,
                         Stars = 0,
                         Forks = 0,
-                        AvatarUrl = $"https://github.com/{owner}.png",
-                        OwnerUrl = $"https://github.com/{owner}",
+                        AvatarUrl = string.Empty,
+                        OwnerUrl = string.Empty,
                         RepoUrl = repoUrl,
-                        Error = $"GitHub API 请求失败: {response.StatusCode}"
+                        Error = "不支持的代码托管平台"
                     };
                     memoryCache.Set(cacheKey, result, cacheDuration);
-                    return result;
+                    infoList.Add(result);
+                    continue;
                 }
             }
-            else if (platform == "gitee")
+            catch (Exception ex)
             {
-                var apiUrl = $"https://gitee.com/api/v5/repos/{owner}/{repo}";
-                var response = await httpClient.GetAsync(apiUrl);
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadFromJsonAsync<RepoGiteeRepoDto>();
-                    var result = new RepoExtendedInfo
-                    {
-                        Success = true,
-                        Stars = json.stargazers_count,
-                        Forks = json.forks_count,
-                        AvatarUrl = json.owner.avatar_url ??
-                                    $"https://gitee.com/{owner}.png",
-                        OwnerUrl = json.owner.html_url ??
-                                   $"https://gitee.com/{owner}",
-                        RepoUrl = json.html_url ?? repoUrl,
-                        Language = json.language,
-                        License = json.license,
-                        Description = json.description
-                    };
-                    memoryCache.Set(cacheKey, result, cacheDuration);
-                    return result;
-                }
-                else
-                {
-                    var result = new RepoExtendedInfo
-                    {
-                        Success = false,
-                        Stars = 0,
-                        Forks = 0,
-                        AvatarUrl = $"https://gitee.com/{owner}.png",
-                        OwnerUrl = $"https://gitee.com/{owner}",
-                        RepoUrl = repoUrl,
-                        Error = $"Gitee API 请求失败: {response.StatusCode}"
-                    };
-                    memoryCache.Set(cacheKey, result, cacheDuration);
-                    return result;
-                }
-            }
-            else
-            {
+                logger.LogError(ex, "获取仓库信息失败");
                 var result = new RepoExtendedInfo
                 {
                     Success = false,
@@ -196,27 +227,15 @@ public class GitRepositoryService(
                     AvatarUrl = string.Empty,
                     OwnerUrl = string.Empty,
                     RepoUrl = repoUrl,
-                    Error = "不支持的代码托管平台"
+                    Error = $"获取仓库信息失败: {ex.Message}"
                 };
                 memoryCache.Set(cacheKey, result, cacheDuration);
-                return result;
+                infoList.Add(result);
+                continue;
             }
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "获取仓库信息失败");
-            var result = new RepoExtendedInfo
-            {
-                Success = false,
-                Stars = 0,
-                Forks = 0,
-                AvatarUrl = string.Empty,
-                OwnerUrl = string.Empty,
-                RepoUrl = repoUrl,
-                Error = $"获取仓库信息失败: {ex.Message}"
-            };
-            memoryCache.Set(cacheKey, result, cacheDuration);
-            return result;
-        }
+
+
+        return infoList;
     }
 }

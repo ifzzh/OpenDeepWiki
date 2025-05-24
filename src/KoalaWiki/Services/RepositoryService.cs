@@ -23,6 +23,7 @@ namespace KoalaWiki.Services;
 [Authorize(Roles = "admin")]
 public class RepositoryService(
     IKoalaWikiContext dbContext,
+    GitRepositoryService gitRepositoryService,
     ILogger<RepositoryService> logger) : FastApi
 {
     /// <summary>
@@ -275,8 +276,15 @@ public class RepositoryService(
             .Where(x => x.WarehouseId.ToLower() == id.ToLower())
             .FirstOrDefaultAsync();
 
-        if (document != null)
-            Directory.Delete(document.GitPath);
+        try
+        {
+            if (document != null)
+                Directory.Delete(document.GitPath, true);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "删除仓库失败");
+        }
 
         await dbContext.Documents
             .Where(x => x.WarehouseId.ToLower() == id.ToLower())
@@ -296,7 +304,7 @@ public class RepositoryService(
     /// <param name="id">仓库ID</param>
     /// <returns>处理结果</returns>
     [EndpointSummary("仓库管理：重新处理仓库")]
-    public async Task<bool> ReprocessRepositoryAsync(string id)
+    public async Task<bool> ResetRepositoryAsync(string id)
     {
         // 更新仓库状态为待处理
         await dbContext.Warehouses

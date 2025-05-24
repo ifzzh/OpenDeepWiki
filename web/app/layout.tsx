@@ -29,10 +29,10 @@ import { fallbackLng } from './i18n/settings';
 export async function generateMetadata(): Promise<Metadata> {
   // 使用默认语言
   const locale = fallbackLng;
-    
+
   // 获取翻译函数
   const { t } = await getTranslation(locale, 'common');
-    
+
   return {
     title: {
       template: '%s | OpenDeekWiki',
@@ -124,7 +124,9 @@ export default async function RootLayout({
   const antdLocale = getAntdLocale(locale);
 
   return (
-    <html lang={locale}>
+    <html style={{
+      overflowX: 'hidden'
+    }} lang={locale}>
       <head>
         <meta name="msvalidate.01" content="61D1D1BFCB7FDB548E411C30FC69B058" />
         <meta name="baidu-site-verification" content="44a79feb3bf1e77660bdbc00e1808896" />
