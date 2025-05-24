@@ -125,16 +125,16 @@ public class GitRepositoryService(
                         var result = new RepoExtendedInfo
                         {
                             Success = true,
-                            Stars = json.stargazers_count,
-                            Forks = json.forks_count,
-                            AvatarUrl = json.owner.avatar_url ??
+                            Stars = json?.stargazers_count ?? 0,
+                            Forks = json?.forks_count ?? 0,
+                            AvatarUrl = json?.owner?.avatar_url ??
                                         $"https://github.com/{owner}.png",
-                            OwnerUrl = json.owner.html_url ??
+                            OwnerUrl = json?.owner?.html_url ??
                                        $"https://github.com/{owner}",
-                            RepoUrl = json.html_url ?? repoUrl,
-                            Language = json.language,
-                            License = json.license.name,
-                            Description = json.description
+                            RepoUrl = json?.html_url ?? repoUrl,
+                            Language = json?.language,
+                            License = json?.license.name,
+                            Description = json?.description
                         };
                         memoryCache.Set(cacheKey, result, cacheDuration);
                         infoList.Add(result);
@@ -167,16 +167,16 @@ public class GitRepositoryService(
                         var result = new RepoExtendedInfo
                         {
                             Success = true,
-                            Stars = json.stargazers_count,
-                            Forks = json.forks_count,
-                            AvatarUrl = json.owner.avatar_url ??
+                            Stars = json?.stargazers_count ?? 0,
+                            Forks = json?.forks_count?? 0,
+                            AvatarUrl = json?.owner?.avatar_url ??
                                         $"https://gitee.com/{owner}.png",
-                            OwnerUrl = json.owner.html_url ??
+                            OwnerUrl = json?.owner?.html_url ??
                                        $"https://gitee.com/{owner}",
-                            RepoUrl = json.html_url ?? repoUrl,
-                            Language = json.language,
-                            License = json.license,
-                            Description = json.description
+                            RepoUrl = json?.html_url ?? repoUrl,
+                            Language = json?.language,
+                            License = json?.license,
+                            Description = json?.description
                         };
                         memoryCache.Set(cacheKey, result, cacheDuration);
                         infoList.Add(result);
