@@ -405,7 +405,23 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
 
         var total = await groupedQuery.CountAsync();
 
-        var queryList = await groupedQuery.ToListAsync();
+        var queryList = (await groupedQuery
+                .ToListAsync())
+            .Select(x => new Warehouse()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Address = x.Address,
+                Description = x.Description,
+                CreatedAt = x.CreatedAt,
+                Status = x.Status,
+                IsRecommended = x.IsRecommended,
+                OrganizationName = x.OrganizationName,
+                Type = x.Type,
+                Branch = x.Branch,
+                Email = x.Email,
+                Version = x.Version,
+            });
 
         var list = queryList
             .OrderByDescending(x => x.IsRecommended)
@@ -423,7 +439,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
 
         foreach (var repository in dto)
         {
-            var info = repositoryInfo.FirstOrDefault(x => x.RepoUrl.Replace(".git", "") == repository.Address);
+            var info = repositoryInfo.FirstOrDefault(x => x.RepoUrl.Replace(".git", "") == repository.Address.Replace(".git", ""));
             if (info != null)
             {
                 repository.Stars = info.Stars;
