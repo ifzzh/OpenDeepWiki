@@ -34,14 +34,14 @@ public class GitRepositoryService(
             var random = new Random();
             var cacheDuration = TimeSpan.FromHours(random.Next(5, 8));
 
-            var httpClient = httpClientFactory.CreateClient("KoalaWiki");
-
-            string owner = string.Empty;
-            string repo = string.Empty;
-            string platform = string.Empty;
-
             try
             {
+                var httpClient = httpClientFactory.CreateClient("KoalaWiki");
+
+                string owner = string.Empty;
+                string repo = string.Empty;
+                string platform = string.Empty;
+
                 if (repoUrl.Contains("github.com"))
                 {
                     platform = "github";
@@ -168,7 +168,7 @@ public class GitRepositoryService(
                         {
                             Success = true,
                             Stars = json?.stargazers_count ?? 0,
-                            Forks = json?.forks_count?? 0,
+                            Forks = json?.forks_count ?? 0,
                             AvatarUrl = json?.owner?.avatar_url ??
                                         $"https://gitee.com/{owner}.png",
                             OwnerUrl = json?.owner?.html_url ??
