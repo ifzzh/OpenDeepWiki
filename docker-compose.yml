@@ -40,4 +40,3 @@
     depends_on:
       - koalawiki
       - koalawiki-web
-
