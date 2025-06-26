@@ -2,11 +2,13 @@
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using KoalaWiki.Domains;
+using KoalaWiki.Dto;
 using KoalaWiki.Prompts;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Newtonsoft.Json;
 using OpenAI.Chat;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace KoalaWiki.KoalaWarehouse;
 
@@ -20,30 +22,53 @@ public class WarehouseClassify
         var prompt = await PromptContext.Warehouse(nameof(PromptConstant.Warehouse.RepositoryClassification),
             new KernelArguments(new OpenAIPromptExecutionSettings()
             {
+                Temperature = 0.1,
                 MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.ChatModel)
             })
             {
                 ["category"] = catalog,
                 ["readme"] = readme
-            });
+            }, OpenAIOptions.ChatModel);
 
-        var result = await kernel.InvokePromptAsync(prompt);
-        var promptResult = string.Empty;
+        var result = string.Empty;
+        var isDeep = false;
 
-        var jsonContent =
-            JsonNode.Parse(ModelReaderWriter.Write(result.GetValue<OpenAIChatMessageContent>().InnerContent));
-
-        // 如果存在reasoning_content则说明是推理
-        if (jsonContent!["choices"]![0]!["message"]!["reasoning_content"] != null)
+        await foreach (var i in kernel.InvokePromptStreamingAsync(prompt))
         {
-            promptResult += jsonContent!["choices"]![0]!["message"]!["reasoning_content"];
-        }
+            var jsonContent = JsonSerializer.Deserialize<OpenAIResponse>(ModelReaderWriter.Write(i.InnerContent));
 
-        promptResult += result.ToString();
+            if (jsonContent?.choices.Length > 0)
+            {
+                if (string.IsNullOrEmpty(jsonContent.choices[0].message?.reasoning_content) &&
+                    string.IsNullOrEmpty(jsonContent.choices[0].delta?.reasoning_content))
+                {
+                    if (isDeep)
+                    {
+                        result += "</think>";
+                        isDeep = false;
+                    }
+
+                    result += i.ToString();
+                    continue;
+                }
+
+                if (isDeep == false)
+                {
+                    result += "<think>";
+
+                    isDeep = true;
+                }
+
+                // 提取分类结果
+                result += jsonContent.choices[0].message?.reasoning_content ??
+                          jsonContent.choices[0].delta?.reasoning_content;
+            }
+        }
 
         // 提取分类结果正则表达式<classify>(.*?)</classify>
         var regex = new Regex(@"<classify>(.*?)</classify>", RegexOptions.Singleline);
-        var match = regex.Match(promptResult);
+
+        var match = regex.Match(result);
         if (match.Success)
         {
             // 提取到的内容
@@ -59,6 +84,7 @@ public class WarehouseClassify
                 return null;
             }
         }
+
         else
         {
             return null;

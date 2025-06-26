@@ -1,6 +1,4 @@
-﻿using KoalaWiki.Domains;
-
-namespace KoalaWiki.Entities.DocumentFile;
+﻿namespace KoalaWiki.Domains.DocumentFile;
 
 public class DocumentFileItemSource : Entity<string>
 {

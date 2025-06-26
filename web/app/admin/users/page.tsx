@@ -11,17 +11,34 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { useState, useEffect } from 'react';
 import { getUserList, createUser, updateUser, deleteUser, UserInfo, CreateUserRequest, UpdateUserRequest } from '../../services/userService';
+import { roleService, Role } from '../../services/roleService';
 
 export default function UsersPage() {
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<UserInfo[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   const [form] = Form.useForm();
+
+  // 加载角色数据
+  const loadRoles = async () => {
+    try {
+      setRolesLoading(true);
+      const response = await roleService.getRoleList(1, 100, '', true); // 只获取激活的角色
+      setRoles(response.items);
+    } catch (error) {
+      console.error('加载角色数据失败:', error);
+      message.error('加载角色数据失败');
+    } finally {
+      setRolesLoading(false);
+    }
+  };
 
   // 加载用户数据
   const loadUsers = async (page = currentPage, size = pageSize, keyword = searchText) => {
@@ -45,6 +62,7 @@ export default function UsersPage() {
   // 初始加载
   useEffect(() => {
     loadUsers();
+    loadRoles();
   }, []);
 
   // 处理搜索
@@ -126,7 +144,7 @@ export default function UsersPage() {
             role: values.role,
           };
 
-          const { data } = await createUser(createData);
+          const { data } = await createUser(createData) as any;
           if (data.code === 200) {
             message.success('用户创建成功');
             setIsModalOpen(false);
@@ -167,18 +185,18 @@ export default function UsersPage() {
       dataIndex: 'role',
       key: 'role',
       render: (role) => {
+        // 根据角色名称匹配显示
+        const roleInfo = roles.find(r => r.name === role);
+        const displayName = roleInfo ? roleInfo.name : role;
+        
         let color = 'blue';
-        let text = '用户';
-
-        if (role === 'admin') {
+        if (role === 'admin' || role === '管理员') {
           color = 'red';
-          text = '管理员';
-        } else if (role === 'editor') {
+        } else if (role === 'editor' || role === '编辑者') {
           color = 'green';
-          text = '编辑者';
         }
 
-        return <Tag color={color}>{text}</Tag>;
+        return <Tag color={color}>{displayName}</Tag>;
       },
     },
     {
@@ -326,10 +344,17 @@ export default function UsersPage() {
             rules={[{ required: true, message: '请选择角色' }]}
             initialValue="user"
           >
-            <Select>
-              <Select.Option value="admin">管理员</Select.Option>
-              <Select.Option value="editor">编辑者</Select.Option>
-              <Select.Option value="user">普通用户</Select.Option>
+            <Select 
+              placeholder="请选择角色"
+              loading={rolesLoading}
+              disabled={rolesLoading}
+            >
+              {roles.map(role => (
+                <Select.Option key={role.id} value={role.name}>
+                  {role.name}
+                  {role.description && ` - ${role.description}`}
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
         </Form>

@@ -1,14 +1,12 @@
-﻿using System.Text.Json;
-using FastService;
+﻿using FastService;
 using KoalaWiki.Dto;
-using KoalaWiki.Infrastructure;
-using KoalaWiki.Options;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace KoalaWiki.Services;
 
 [Filter(typeof(ResultFilter))]
-[Tags("Git")]
+[Tags("代码仓库信息")]
+[Route("/api/gitrepository")]
 public class GitRepositoryService(
     IHttpClientFactory httpClientFactory,
     ILogger<GitRepositoryService> logger,

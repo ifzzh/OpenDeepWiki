@@ -54,7 +54,7 @@ export function RepositoryView({ owner, name, document }: RepositoryViewProps) {
         <Col xs={0} sm={0} md={6} lg={6} xl={6}>
           <DocumentSidebar
             anchorItems={anchorItems}
-            document={document}
+            documentData={document}
           />
         </Col>
       </Row>

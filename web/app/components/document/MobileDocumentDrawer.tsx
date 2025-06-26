@@ -1,3 +1,4 @@
+'use client'
 import React, { useState } from 'react';
 import { Typography, Divider, Anchor, Button, Space, Tooltip } from 'antd';
 import { BookOutlined, ExpandOutlined, ShareAltOutlined, CloseOutlined } from '@ant-design/icons';

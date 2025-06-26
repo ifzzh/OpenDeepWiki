@@ -41,9 +41,13 @@ public class OpenAIOptions
     public static string DeepResearchModel { get; set; } = string.Empty;
 
     /// <summary>
-    /// 嵌入模型
+    /// 启用Mem0
     /// </summary>
-    public static string EmbeddingsModel { get; set; } = string.Empty;
+    public static bool EnableMem0 { get; set; } = false;
+
+    public static string Mem0ApiKey { get; set; } = string.Empty;
+
+    public static string Mem0Endpoint { get; set; } = string.Empty;
 
     public static void InitConfig(IConfiguration configuration)
     {
@@ -65,12 +69,21 @@ public class OpenAIOptions
             ? configuration.GetValue<int>("MAX_FILE_LIMIT")
             : 10;
 
-        EmbeddingsModel = (configuration.GetValue<string>("EMBEDDINGS_MODEL") ??
-                           configuration.GetValue<string>("EmbeddingsModel")).GetTrimmedValueOrEmpty();
+        EnableMem0 = configuration.GetValue<bool?>("ENABLE_MEM0") ?? false;
 
-        // EnableIncrementalUpdate
-        var enableIncrementalUpdate = configuration.GetValue<bool>("ENABLE_INCREMENTAL_UPDATE");
-        DocumentOptions.EnableIncrementalUpdate = enableIncrementalUpdate;
+        if (EnableMem0)
+        {
+            Mem0ApiKey = (configuration.GetValue<string>("MEM0_API_KEY") ??
+                          configuration.GetValue<string>("Mem0ApiKey") ?? string.Empty).GetTrimmedValueOrEmpty();
+
+            Mem0Endpoint = (configuration.GetValue<string>("MEM0_ENDPOINT") ??
+                            configuration.GetValue<string>("Mem0Endpoint") ?? string.Empty).GetTrimmedValueOrEmpty();
+
+            if (string.IsNullOrEmpty(Mem0Endpoint))
+            {
+                throw new Exception("Mem0Endpoint is empty or not set");
+            }
+        }
 
         if (string.IsNullOrEmpty(ModelProvider))
         {

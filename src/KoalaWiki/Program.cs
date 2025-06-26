@@ -1,3 +1,11 @@
+using KoalaWiki.Mem0;
+using KoalaWiki.Infrastructure;
+using KoalaWiki.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Microsoft.AspNetCore.Http.Features;
+
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
@@ -7,9 +15,6 @@ Log.Logger = new LoggerConfiguration()
 
 #region Options
 
-builder.Configuration.GetSection(DocumentOptions.Name)
-    .Get<DocumentOptions>();
-
 // 初始化JWT配置
 var jwtOptions = JwtOptions.InitConfig(builder.Configuration);
 builder.Services.AddSingleton(jwtOptions);
@@ -17,6 +22,8 @@ builder.Services.AddSingleton(jwtOptions);
 OpenAIOptions.InitConfig(builder.Configuration);
 
 GithubOptions.InitConfig(builder.Configuration);
+
+DocumentOptions.InitConfig(builder.Configuration);
 
 #endregion
 
@@ -36,13 +43,18 @@ builder.Services.AddKoalaMcp();
 builder.Services.AddSerilog(Log.Logger);
 
 builder.Services.AddOpenApi();
-builder.Services.WithFast();
+builder.Services.AddFastApis();
 builder.Services.AddSingleton<GitService>();
 builder.Services.AddSingleton<DocumentsService>();
 builder.Services.AddTransient<GlobalMiddleware>();
-builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddMemoryCache();
+
+builder.Services.AddHostedService<StatisticsBackgroundService>();
+
+// 添加访问日志队列和后台处理服务
+builder.Services.AddSingleton<AccessLogQueue>();
+builder.Services.AddHostedService<AccessLogBackgroundService>();
 
 // 添加JWT认证
 builder.Services.AddAuthentication(options =>
@@ -63,7 +75,33 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = jwtOptions.GetSymmetricSecurityKey(),
         ClockSkew = TimeSpan.Zero
     };
+    
+    // 添加事件处理器以支持从cookie中读取token
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            // 首先检查Authorization header
+            var token = context.Request.Headers["Authorization"]
+                .FirstOrDefault()?.Split(" ").Last();
+            
+            // 如果Authorization header中没有token，则检查cookie
+            if (string.IsNullOrEmpty(token))
+            {
+                token = context.Request.Cookies["token"];
+            }
+            
+            // 如果找到token，则设置到context中
+            if (!string.IsNullOrEmpty(token))
+            {
+                context.Token = token;
+            }
+            
+            return Task.CompletedTask;
+        }
+    };
 });
+
 
 // 添加授权策略
 builder.Services.AddAuthorization(options =>
@@ -86,7 +124,7 @@ builder.Services.AddHostedService<WarehouseTask>();
 builder.Services.AddHostedService<WarehouseProcessingTask>();
 builder.Services.AddHostedService<DataMigrationTask>();
 builder.Services.AddHostedService<WarehouseDescriptionTask>();
-builder.Services.AddHostedService<BuildCodeIndex>();
+builder.Services.AddHostedService<Mem0Rag>();
 builder.Services.AddHostedService<WarehouseFunctionPromptTask>();
 
 builder.Services.AddDbContext(builder.Configuration);
@@ -113,8 +151,14 @@ app.UseSerilogRequestLogging();
 
 app.UseCors("AllowAll");
 
+// 添加静态文件服务
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+// 添加访问记录中间件（在认证授权之后，业务逻辑之前）
+app.UseAccessRecord();
 
 if (app.Environment.IsDevelopment())
 {
@@ -124,10 +168,14 @@ if (app.Environment.IsDevelopment())
 
 app.MapMcp("/api/mcp");
 
+
 app.UseMiddleware<GlobalMiddleware>();
+
+// 添加权限中间件
+app.UseMiddleware<PermissionMiddleware>();
 
 app.MapSitemap();
 
-app.MapFast();
+app.MapFastApis();
 
 app.Run();

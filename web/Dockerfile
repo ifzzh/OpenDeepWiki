@@ -53,4 +53,7 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # 使用启动脚本而不是直接启动 server.js
-CMD ["node","server.js"]
+# CMD ["node","server.js"]
+CMD ["/app/start.sh"]
+
+# CMD ["node","server.js"]

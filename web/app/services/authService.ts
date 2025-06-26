@@ -157,3 +157,37 @@ export const refreshToken = async (refreshToken: string): Promise<RefreshTokenRe
     };
   }
 }; 
+
+/**
+ * 获取支持的第三方登录方式
+ * /api/Auth/SupportedThirdPartyLogins
+ */
+interface ThirdPartyLoginProvider {
+  name: string;
+  icon: string;
+  clientId: string;
+  redirectUri: string;
+}
+
+interface SupportedThirdPartyLoginsResponse {
+  code: number;
+  data: ThirdPartyLoginProvider[];
+}
+
+export const getSupportedThirdPartyLogins = async (): Promise<SupportedThirdPartyLoginsResponse> => {
+  try {
+    const response = await fetch(`${API_URL}/api/Auth/SupportedThirdPartyLogins`, {
+      method: 'GET',
+    });
+    if (!response.ok) {
+      throw new Error('获取支持的第三方登录方式请求失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取支持的第三方登录方式错误:', error);
+    return {
+      code: 500,
+      data: []
+    };
+  }
+};

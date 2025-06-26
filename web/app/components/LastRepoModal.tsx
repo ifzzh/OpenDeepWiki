@@ -145,7 +145,6 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
         >
           <div style={{ 
             padding: `${token.paddingMD}px ${token.paddingLG}px`,
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center'
@@ -164,7 +163,6 @@ const LastRepoModal: React.FC<LastRepoModalProps> = ({ open, onCancel }) => {
           </div>
           
           <Descriptions
-            bordered
             size="middle"
             column={1}
             labelStyle={{ 

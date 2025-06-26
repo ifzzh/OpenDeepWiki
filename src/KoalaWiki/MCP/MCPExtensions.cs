@@ -90,14 +90,14 @@ public static class MCPExtensions
                 Log.Logger.Information("functionName {functionName} Execution Time: {ExecutionTime}ms",
                     context.Params.Name, sw.ElapsedMilliseconds);
 
-                return new CallToolResponse()
+                return new CallToolResult()
                 {
                     Content =
                     [
-                        new Content()
+                        new TextContentBlock
                         {
-                            Type = "text",
-                            Text = response
+                            Text = response,
+                            Type = "text"
                         }
                     ]
                 };
@@ -109,12 +109,15 @@ public static class MCPExtensions
                     var owner = context.Request.Query["owner"].ToString();
                     var name = context.Request.Query["name"].ToString();
 
-                    serverOptions.InitializationTimeout = TimeSpan.FromSeconds(300);
+                    serverOptions.InitializationTimeout = TimeSpan.FromSeconds(600);
                     serverOptions.Capabilities!.Experimental = new Dictionary<string, object>();
                     serverOptions.Capabilities.Experimental.Add("owner", owner);
                     serverOptions.Capabilities.Experimental.Add("name", name);
                     await Task.CompletedTask;
                 };
+
+                options.Stateless = true;
+                
             });
 
         return service;

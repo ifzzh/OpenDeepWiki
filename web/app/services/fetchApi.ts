@@ -18,7 +18,7 @@ export async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   // 设置默认请求头
-  const headers = {
+  const headers = options.body instanceof FormData ? {} : {
     'Content-Type': 'application/json',
     ...options.headers,
   };

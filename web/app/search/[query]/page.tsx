@@ -2,47 +2,47 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Layout, Row, Col, Button, Typography, theme, Spin, Empty, List, message as messageApi, Tooltip, ConfigProvider, Skeleton, Card, Divider } from 'antd';
-import { FileTextOutlined, GithubFilled, CopyOutlined, FileOutlined, FileMarkdownOutlined, FileImageOutlined, FileExcelOutlined, FileWordOutlined, FilePdfOutlined, FileUnknownOutlined, CodeOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { message as messageApi } from 'antd';
 import { getChatShareMessageList } from '../../services/chatShareMessageServce';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { homepage } from '../../const/urlconst';
 import { API_URL, fetchSSE, getFileContent } from '../../services';
 import { DocumentContent } from '../../components/document';
-
-const { Text, Title } = Typography;
-const { useToken } = theme;
+import styles from './search.module.css';
+import RenderThinking from '../../components/document/Component';
 
 // 定义消息类型
 interface ChatMessage {
   content: string;
+  think?: string;
   sender: 'user' | 'ai';
   loading?: boolean;
 }
 
-export default function SearchPage({ }: any) {
-  const { token } = useToken();
+// 文件类型接口
+interface ReferenceFile {
+  path: string;
+  title: string;
+  content?: string;
+}
+
+export default function SearchPage() {
   const params = useParams();
   const chatShareMessageId = params.query as string;
-  // 添加消息容器引用
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [warehouseId, setWarehouseId] = useState('')
-
-  // 模拟引用文件列表
-  const [referenceFiles, setReferenceFiles] = useState<Array<{
-    path: string;
-    title: string;
-    content?: string;
-  }>>([]);
+  const [warehouseId, setWarehouseId] = useState('');
+  const [referenceFiles, setReferenceFiles] = useState<ReferenceFile[]>([]);
   const [fileListLoading, setFileListLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState('');
   const [fileContentLoading, setFileContentLoading] = useState(false);
   const [showFileContent, setShowFileContent] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+
+  const [isInput, setIsInput] = useState(false);
 
   // 初始化页面时，如果有初始消息，自动发送
   useEffect(() => {
@@ -51,10 +51,16 @@ export default function SearchPage({ }: any) {
     }
   }, [chatShareMessageId]);
 
+  // 页面加载完成后隐藏加载状态
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const loadInitMessage = async () => {
     const { data } = await getChatShareMessageList(chatShareMessageId, 1, 10);
-    console.log(data.data.items);
-
     if (data.data.items.length === 0) {
       if (data.data.info && data.data.info.question) {
         messages.push({
@@ -63,6 +69,18 @@ export default function SearchPage({ }: any) {
         })
         setWarehouseId(data.data.info.warehouseId)
         setMessages([...messages]);
+      }
+
+      if (data.data.info.userId) {
+        const userInfo = localStorage.getItem('userInfo');
+        if (userInfo) {
+          const userInfoObj = JSON.parse(userInfo);
+          if (userInfoObj.id === data.data.info.userId) {
+            setIsInput(true);
+          }
+        }
+      } else {
+        setIsInput(false);
       }
       handleSendMessage('', true);
     } else {
@@ -79,6 +97,7 @@ export default function SearchPage({ }: any) {
         if (item.answer) {
           newMessages.push({
             content: item.answer,
+            think: item.think,
             sender: 'ai'
           });
         }
@@ -102,70 +121,35 @@ export default function SearchPage({ }: any) {
         setWarehouseId(data.data.info.warehouseId);
       }
 
+      if (data.data.info.userId) {
+        const userInfo = localStorage.getItem('userInfo');
+        if (userInfo) {
+          const userInfoObj = JSON.parse(userInfo);
+          if (userInfoObj.id === data.data.info.userId) {
+            setIsInput(true);
+          }
+        }
+      } else {
+        setIsInput(false);
+      }
       setMessages(newMessages);
     }
   }
 
-  // 渲染消息气泡
-  const renderMessage = (msg: ChatMessage, index: number) => {
-    const isUser = msg.sender === 'user';
-
-    return (
-      <div
-        key={index}
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: isUser ? 'flex-end' : 'flex-start',
-          marginBottom: token.marginMD,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '85%',
-            padding: `${token.paddingMD}px ${token.paddingLG}px`,
-            borderRadius: token.borderRadiusLG,
-            backgroundColor: isUser ? token.colorPrimaryBg : token.colorBgContainer,
-            color: token.colorText,
-            boxShadow: `0 1px 2px rgba(0, 0, 0, 0.03)`,
-          }}
-        >
-          {msg.loading ? (
-            <Spin size="small" />
-          ) : (
-            isUser ? (
-              <Text style={{ fontSize: token.fontSizeSM }}>
-                {msg.content}
-              </Text>
-            ) : (
-              <div className="markdown-content">
-                <DocumentContent
-                  document={{ content: msg.content }}
-                  owner=''
-                  name=''
-                  token={token}
-                />
-              </div>
-            )
-          )}
-        </div>
-      </div>
-    );
-  };
-
   // 发送消息的处理函数
   const handleSendMessage = async (content: string = message, init: boolean = false) => {
     if (!content.trim() && init == false) return;
+
+    // 添加打字动画效果
     if (!init) {
-      // 使用函数式更新确保获取最新状态
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          content,
-          sender: 'user'
-        }
-      ]);
-      // 清空输入框
+      messages.push({
+        content,
+        sender: 'user'
+      });
+      setIsTyping(true);
+      setTimeout(() => setIsTyping(false), 300);
+
+      setMessages([...messages]);
       setMessage('');
     }
 
@@ -173,20 +157,20 @@ export default function SearchPage({ }: any) {
       return;
     }
 
-    // 创建AI消息对象
-    const aiMessage = {
+    const aiMessage: ChatMessage = {
       content: '',
       sender: 'ai' as const,
       loading: true
     };
 
-    // 添加AI消息到消息列表
-    setMessages(prevMessages => [...prevMessages, aiMessage]);
+    messages.push(aiMessage);
+
+    setMessages([...messages]);
     setLoading(true);
-    setFileListLoading(true); // 开始文件列表加载
+    setFileListLoading(true);
 
     let aiResponseContent = '';
-
+    let aiResponseThink = '';
     try {
       const stream = fetchSSE(API_URL + '/api/Chat/Completions', {
         chatShareMessageId,
@@ -196,21 +180,15 @@ export default function SearchPage({ }: any) {
       for await (const chunk of stream) {
         if (chunk.type === 'message') {
           aiResponseContent += chunk?.content ?? '';
-          // 使用函数式更新获取最新状态，创建新的消息数组
-          setMessages(prevMessages => {
-            // 创建新的消息数组
-            const newMessages = [...prevMessages];
-            // 更新最后一条AI消息
-            const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessage && lastMessage.sender === 'ai') {
-              newMessages[newMessages.length - 1] = {
-                ...lastMessage,
-                content: aiResponseContent,
-                loading: false
-              };
-            }
-            return newMessages;
-          });
+          aiMessage.content = aiResponseContent;
+          aiMessage.loading = false;
+          setMessages([...messages]);
+        }
+        else if (chunk.type === 'reasoning') {
+          aiResponseThink += chunk.content;
+          aiMessage.loading = false;
+          aiMessage.think = aiResponseThink;
+          setMessages([...messages]);
         } else if (chunk.type === 'tool') {
           const files = chunk.content.map((x: string) => {
             const value = x.split('/');
@@ -220,19 +198,19 @@ export default function SearchPage({ }: any) {
               title,
             }
           });
-          setReferenceFiles([...files]);
+          referenceFiles.push(...files);
+          setReferenceFiles([...referenceFiles]);
         }
       }
     } catch (error) {
-      console.error('流式响应出错:', error);
       messageApi.error('获取回复时发生错误');
     } finally {
       setLoading(false);
-      setFileListLoading(false); // 结束文件列表加载
+      setFileListLoading(false);
     }
   };
 
-  // 添加自动滚动到底部的函数
+  // 自动滚动到底部
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       const container = messagesContainerRef.current;
@@ -240,7 +218,6 @@ export default function SearchPage({ }: any) {
     }
   };
 
-  // 监听消息变化，自动滚动到底部
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -248,76 +225,17 @@ export default function SearchPage({ }: any) {
   // 根据文件扩展名获取对应的图标
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
-
-    switch (extension) {
-      case 'md':
-      case 'markdown':
-        return <FileMarkdownOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-      case 'svg':
-        return <FileImageOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
-      case 'xlsx':
-      case 'xls':
-      case 'csv':
-        return <FileExcelOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
-      case 'doc':
-      case 'docx':
-        return <FileWordOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
-      case 'pdf':
-        return <FilePdfOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
-      case 'json':
-        return <CodeOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
-      case 'js':
-      case 'ts':
-      case 'tsx':
-      case 'jsx':
-      case 'py':
-      case 'java':
-      case 'c':
-      case 'cpp':
-      case 'cc':
-      case 'cs':
-      case 'go':
-      case 'rb':
-      case 'php':
-      case 'html':
-      case 'css':
-      case 'scss':
-      case 'less':
-        return <FileOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
-      default:
-        return <FileUnknownOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />;
-    }
-  };
-
-  // 根据文件扩展名获取对应的语言名称
-  const getLanguageFromExtension = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-
-    switch (extension) {
-      case 'js': return 'javascript';
-      case 'ts': return 'typescript';
-      case 'tsx': return 'tsx';
-      case 'jsx': return 'jsx';
-      case 'py': return 'python';
-      case 'java': return 'java';
-      case 'c': return 'c';
-      case 'cpp': return 'cpp';
-      case 'cs': return 'csharp';
-      case 'go': return 'go';
-      case 'rb': return 'ruby';
-      case 'php': return 'php';
-      case 'html': return 'html';
-      case 'css': return 'css';
-      case 'scss': return 'scss';
-      case 'less': return 'less';
-      case 'json': return 'json';
-      case 'md': return 'markdown';
-      default: return 'text';
-    }
+    const iconMap: { [key: string]: string } = {
+      'md': '📝', 'markdown': '📝',
+      'js': '🟨', 'ts': '🔷', 'tsx': '⚛️', 'jsx': '⚛️',
+      'py': '🐍', 'java': '☕', 'go': '🐹',
+      'json': '📋', 'xml': '📄', 'yaml': '⚙️', 'yml': '⚙️',
+      'css': '🎨', 'scss': '🎨', 'less': '🎨',
+      'html': '🌐', 'htm': '🌐',
+      'png': '🖼️', 'jpg': '🖼️', 'jpeg': '🖼️', 'gif': '🖼️', 'svg': '🖼️',
+      'pdf': '📕', 'doc': '📘', 'docx': '📘', 'txt': '📄'
+    };
+    return iconMap[extension || ''] || '📄';
   };
 
   // 文件点击处理
@@ -325,7 +243,7 @@ export default function SearchPage({ }: any) {
     setSelectedFile(path);
     setShowFileContent(true);
     setFileContentLoading(true);
-    
+
     try {
       const { data } = await getFileContent(warehouseId, path);
       setFileContent(data.data);
@@ -336,278 +254,215 @@ export default function SearchPage({ }: any) {
     }
   };
 
-  // 渲染文件骨架屏
-  const renderFileSkeleton = () => {
-    return Array(3).fill(null).map((_, index) => (
-      <div key={index} style={{ padding: token.paddingSM, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
-        <Skeleton 
-          active 
-          avatar={{ shape: 'square', size: 'default' }} 
-          paragraph={{ rows: 1, width: ['80%'] }} 
-          title={{ width: '40%' }}
-        />
-      </div>
-    ));
+  // 复制文本到剪贴板
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    messageApi.success('已复制到剪贴板');
   };
 
+  // 页面加载状态
+  if (pageLoading) {
+    return (
+      <div className={styles.pageLoader}>
+        <div className={styles.loaderContent}>
+          <div className={styles.loaderIcon}>🧠</div>
+          <div className={styles.loaderText}>OpenDeepWiki</div>
+          <div className={styles.loaderSubtext}>正在加载智能对话...</div>
+          <div className={styles.loaderSpinner}>
+            <div className={styles.spinnerRing}></div>
+            <div className={styles.spinnerRing}></div>
+            <div className={styles.spinnerRing}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorBgLayout: '#f0f2f5',
-          colorBgContainer: '#ffffff',
-          colorBgElevated: '#ffffff',
-          colorPrimaryBg: 'rgba(22, 119, 255, 0.08)',
-          colorBorderSecondary: '#f0f0f0',
-          borderRadius: 8,
-        },
-        components: {
-          Card: {
-            colorBorderSecondary: 'transparent',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-          }
-        }
-      }}
-    >
-      <Layout style={{ minHeight: '100vh', backgroundColor: token.colorBgLayout }}>
-        <Row gutter={16} style={{ height: '100vh', padding: '16px' }}>
-          {/* 聊天区域 */}
-          <Col xs={24} sm={24} md={14} lg={16} xl={16} style={{ height: '100%' }}>
-            <Card 
-              bodyStyle={{ 
-                padding: 0, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column' 
-              }}
-              style={{ height: '100%', borderRadius: '12px' }}
-              bordered={false}
-            >
-              <div style={{
-                padding: '16px 24px',
-                borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                backgroundColor: token.colorBgContainer,
-                borderTopLeftRadius: '12px',
-                borderTopRightRadius: '12px',
-              }}>
-                <a href="/" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: token.fontSizeLG,
-                  fontWeight: 600,
-                  color: token.colorPrimary,
-                  textDecoration: 'none',
-                }}>
-                  <Title level={4} style={{ margin: 0, color: token.colorPrimary }}>OpenDeepWiki</Title>
-                </a>
-              </div>
+    <div className={styles.container} style={{ colorScheme: 'light' }}>
+      {/* 主聊天区域 */}
+      <div className={styles.chatSection}>
+        {/* 头部 */}
+        <div className={styles.header}>
+          <a href="/" className={styles.logo}>
+            <span className={styles.logoIcon}>🧠</span>
+            <span className={styles.logoText}>OpenDeepWiki</span>
+          </a>
+        </div>
 
+        {/* 消息区域 */}
+        <div className={styles.messagesContainer} ref={messagesContainerRef}>
+          {messages.length === 0 ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>💬</div>
+              <div className={styles.emptyText}>开始一个新的对话</div>
+              <div className={styles.emptySubtext}>我可以帮助您分析文档和回答问题</div>
+            </div>
+          ) : (
+            messages.map((msg, index) => (
               <div
-                ref={messagesContainerRef}
-                style={{
-                  flex: 1,
-                  overflowY: 'auto',
-                  padding: '24px',
-                  backgroundColor: token.colorBgContainer,
-                  borderBottomLeftRadius: '12px',
-                  borderBottomRightRadius: '12px',
-                }}
+                key={index}
+                className={`${styles.messageWrapper} ${msg.sender === 'user' ? styles.userMessage : styles.aiMessage
+                  }`}
               >
-                {messages.length === 0 ? (
-                  <Empty
-                    description={<Text type="secondary">开始一个新的对话</Text>}
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    style={{ marginTop: '20%' }}
-                  />
-                ) : (
-                  messages.map((msg, index) => renderMessage(msg, index))
-                )}
-              </div>
-            </Card>
-          </Col>
-
-          {/* 文件资源区域 */}
-          <Col xs={24} sm={24} md={10} lg={8} xl={8} style={{ height: '100%' }}>
-            <Card 
-              bodyStyle={{ 
-                padding: 0, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column' 
-              }}
-              style={{ height: '100%', borderRadius: '12px' }}
-              bordered={false}
-            >
-              {showFileContent && selectedFile ? (
-                // 文件内容视图
-                <div style={{ 
-                  height: '100%', 
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  <div style={{
-                    padding: '16px',
-                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <Button 
-                        type="text" 
-                        icon={<ArrowLeftOutlined />} 
-                        onClick={() => setShowFileContent(false)}
-                        style={{ marginRight: '8px' }}
-                      />
-                      <Text strong>{selectedFile.split('/').pop()}</Text>
+                <div className={styles.messageContent}>
+                  {msg.loading ? (
+                    <div className={styles.loadingDots}>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
-                    <Tooltip title="复制路径">
-                      <Button
-                        type="text"
-                        icon={<CopyOutlined />}
-                        onClick={() => {
-                          navigator.clipboard.writeText(selectedFile);
-                          messageApi.success('路径已复制');
+                  ) : msg.sender === 'user' ? (
+                    <div className={`${styles.userText} ${isTyping && index === messages.length - 1 ? styles.typing : ''}`}>
+                      {msg.content}
+                    </div>
+                  ) : (
+                    <div className={styles.aiText}>
+                      {msg.think && (
+                        <RenderThinking think={msg.think}>
+                          {msg.think}
+                        </RenderThinking>
+                      )}
+                      <DocumentContent
+                        document={{ content: msg.content }}
+                        owner=''
+                        name=''
+                        token={{
+                          colorBgContainer: 'transparent',
+                          colorText: '#334155',
+                          colorTextHeading: '#1e293b',
+                          colorPrimary: '#3b82f6',
+                          colorPrimaryHover: '#2563eb',
+                          colorPrimaryBorder: '#3b82f6',
+                          colorBorderSecondary: '#e2e8f0',
+                          colorFillSecondary: '#f1f5f9',
+                          colorFillQuaternary: '#f8fafc'
                         }}
                       />
-                    </Tooltip>
-                  </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
 
-                  <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
-                    {fileContentLoading ? (
-                      <div style={{ padding: '16px' }}>
-                        <Skeleton active paragraph={{ rows: 10 }} />
-                      </div>
-                    ) : (
-                      <SyntaxHighlighter
-                        language={getLanguageFromExtension(selectedFile.split('/').pop() || '')}
-                        PreTag="div"
-                        customStyle={{
-                          margin: 0,
-                          padding: '16px',
-                          fontSize: token.fontSizeSM,
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          height: '100%',
-                          overflow: 'auto',
-                        }}
-                      >
-                        {fileContent}
-                      </SyntaxHighlighter>
-                    )}
-                  </div>
+        {isInput && 
+        <div className={styles.inputSection}>
+          <div className={styles.inputContainer}>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder="输入您的问题..."
+              className={styles.messageInput}
+              disabled={loading}
+              rows={1}
+            />
+            <button
+              onClick={() => handleSendMessage()}
+              disabled={loading || !message.trim()}
+              className={`${styles.sendButton} ${loading ? styles.sending : ''}`}
+            >
+              {loading ? '⏳' : '➤'}
+            </button>
+          </div>
+        </div>}
+      </div>
+
+      {/* 文件侧边栏 */}
+      <div className={styles.sidebar}>
+        {showFileContent && selectedFile ? (
+          // 文件内容视图
+          <div className={styles.fileContentView}>
+            <div className={styles.fileHeader}>
+              <button
+                onClick={() => setShowFileContent(false)}
+                className={styles.backButton}
+              >
+                ← 返回
+              </button>
+              <div className={styles.fileName}>
+                {selectedFile.split('/').pop()}
+              </div>
+              <button
+                onClick={() => copyToClipboard(selectedFile)}
+                className={styles.copyButton}
+              >
+                📋
+              </button>
+            </div>
+            <div className={styles.fileContentContainer}>
+              {fileContentLoading ? (
+                <div className={styles.fileLoading}>
+                  <div className={styles.loadingSpinner}></div>
+                  <div>加载中...</div>
                 </div>
               ) : (
-                // 文件列表视图
-                <>
-                  <div style={{
-                    padding: '16px 24px',
-                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderTopLeftRadius: '12px',
-                    borderTopRightRadius: '12px',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <FileTextOutlined style={{ marginRight: '8px', color: token.colorPrimary }} />
-                      <Text strong>引用文件</Text>
-                    </div>
-                    {fileListLoading && <Spin size="small" />}
-                  </div>
-
-                  <div style={{ 
-                    flex: 1, 
-                    overflowY: 'auto',
-                    backgroundColor: token.colorBgContainer,
-                    borderBottomLeftRadius: '12px',
-                    borderBottomRightRadius: '12px',
-                  }}>
-                    {fileListLoading ? (
-                      // 骨架屏加载
-                      renderFileSkeleton()
-                    ) : referenceFiles.length > 0 ? (
-                      <List
-                        itemLayout="horizontal"
-                        dataSource={referenceFiles}
-                        renderItem={(item) => (
-                          <List.Item
-                            style={{
-                              padding: '12px 16px',
-                              cursor: 'pointer',
-                              borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                              transition: 'all 0.2s',
-                            }}
-                            onClick={() => handleFileClick(item.path)}
-                            className="file-item-hover"
-                          >
-                            <List.Item.Meta
-                              avatar={
-                                <div style={{
-                                  width: 40,
-                                  height: 40,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  backgroundColor: token.colorPrimaryBg,
-                                  borderRadius: '8px'
-                                }}>
-                                  {getFileIcon(item.title)}
-                                </div>
-                              }
-                              title={<Text strong>{item.title}</Text>}
-                              description={
-                                <Text
-                                  type="secondary"
-                                  ellipsis={{ tooltip: item.path }}
-                                  style={{ fontSize: token.fontSizeSM }}
-                                >
-                                  {item.path}
-                                </Text>
-                              }
-                            />
-                          </List.Item>
-                        )}
-                      />
-                    ) : (
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={
-                          <div style={{ 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            alignItems: 'center', 
-                            gap: '4px' 
-                          }}>
-                            <Text type="secondary">暂无引用文件</Text>
-                            <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                              系统会在回答过程中自动识别相关文件
-                            </Text>
-                          </div>
-                        }
-                        style={{
-                          margin: 0,
-                          padding: '48px 24px',
-                          height: '100%',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center',
-                        }}
-                      />
-                    )}
-                  </div>
-                </>
+                <pre className={styles.fileContent}>
+                  <code>{fileContent}</code>
+                </pre>
               )}
-            </Card>
-          </Col>
-        </Row>
-      </Layout>
-
-      <style jsx global>{`
-        .file-item-hover:hover {
-          background-color: ${token.colorPrimaryBg};
-        }
-      `}</style>
-    </ConfigProvider>
+            </div>
+          </div>
+        ) : (
+          // 文件列表视图
+          <div className={styles.fileListView}>
+            <div className={styles.sidebarHeader}>
+              <div className={styles.sidebarTitle}>
+                <span className={styles.sidebarIcon}>📁</span>
+                引用文件
+              </div>
+              {fileListLoading && (
+                <div className={styles.loadingSpinner}></div>
+              )}
+            </div>
+            <div className={styles.fileList}>
+              {fileListLoading ? (
+                // 骨架屏
+                Array(3).fill(null).map((_, index) => (
+                  <div key={index} className={styles.fileSkeleton}>
+                    <div className={styles.skeletonIcon}></div>
+                    <div className={styles.skeletonContent}>
+                      <div className={styles.skeletonTitle}></div>
+                      <div className={styles.skeletonPath}></div>
+                    </div>
+                  </div>
+                ))
+              ) : referenceFiles.length > 0 ? (
+                referenceFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className={styles.fileItem}
+                    onClick={() => handleFileClick(file.path)}
+                  >
+                    <div className={styles.fileIcon}>
+                      {getFileIcon(file.title)}
+                    </div>
+                    <div className={styles.fileInfo}>
+                      <div className={styles.fileTitle}>{file.title}</div>
+                      <div className={styles.filePath}>{file.path}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className={styles.emptyFiles}>
+                  <div className={styles.emptyFilesIcon}>📂</div>
+                  <div className={styles.emptyFilesText}>暂无引用文件</div>
+                  <div className={styles.emptyFilesSubtext}>
+                    系统会在回答过程中自动识别相关文件
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 } 

@@ -5,13 +5,37 @@ import { UserOutlined, LockOutlined, GithubOutlined, GoogleOutlined } from '@ant
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './auth.module.css';
-import { login } from '../services/authService';
-import { useState } from 'react';
+import { login, getSupportedThirdPartyLogins } from '../services/authService';
+import { useState, useEffect } from 'react';
 import { API_URL } from '../services/api';
+
+interface ThirdPartyLoginProvider {
+  name: string;
+  icon: string;
+  clientId: string;
+  redirectUri: string;
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [thirdPartyProviders, setThirdPartyProviders] = useState<ThirdPartyLoginProvider[]>([]);
+
+  // 获取支持的第三方登录方式
+  useEffect(() => {
+    const fetchThirdPartyProviders = async () => {
+      try {
+        const response = await getSupportedThirdPartyLogins();
+        if (response.code === 200 && response.data) {
+          setThirdPartyProviders(response.data);
+        }
+      } catch (error) {
+        console.error('获取第三方登录方式失败:', error);
+      }
+    };
+
+    fetchThirdPartyProviders();
+  }, []);
 
   // 处理登录
   const onFinish = async (values: any) => {
@@ -50,16 +74,45 @@ export default function LoginPage() {
     }
   };
 
-  // GitHub OAuth处理
-  const handleGithubLogin = () => {
-    // 直接重定向到后端的GitHub OAuth授权URL
-    window.location.href = `${API_URL}/api/Auth/GitHubOAuth`;
+  // 处理第三方登录
+  const handleThirdPartyLogin = (providerName: string) => {
+    // 记录登录类型
+    localStorage.setItem('oauthProvider', providerName.toLowerCase());
+    
+    // 根据提供商名称构建OAuth URL
+    if (providerName.toLowerCase() === 'github') {
+      const provider = thirdPartyProviders.find(p => p.name === 'GitHub');
+      if (provider) {
+        window.location.href = `https://github.com/login/oauth/authorize?client_id=${provider.clientId}&redirect_uri=${window.location.origin}/auth/callback`;
+      }
+    } else if (providerName.toLowerCase() === 'google') {
+      const provider = thirdPartyProviders.find(p => p.name === 'Google');
+      if (provider) {
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${provider.clientId}&redirect_uri=${window.location.origin}/auth/callback`;
+      }
+    }
   };
 
-  // Google OAuth处理
+  // 获取第三方登录按钮图标
+  const getProviderIcon = (providerName: string) => {
+    switch (providerName.toLowerCase()) {
+      case 'github':
+        return <GithubOutlined />;
+      case 'google':
+        return <GoogleOutlined />;
+      default:
+        return null;
+    }
+  };
+
+  // GitHub OAuth处理（保持向后兼容）
+  const handleGithubLogin = () => {
+    handleThirdPartyLogin('github');
+  };
+
+  // Google OAuth处理（保持向后兼容）
   const handleGoogleLogin = () => {
-    // 直接重定向到后端的Google OAuth授权URL
-    window.location.href = `${API_URL}/api/Auth/GoogleOAuth`;
+    handleThirdPartyLogin('google');
   };
 
   return (
@@ -130,26 +183,25 @@ export default function LoginPage() {
               还没有账户? <Link href="/register">立即注册</Link>
             </div>
 
-            <Divider plain>其他登录方式</Divider>
+            {thirdPartyProviders.length > 0 && (
+              <>
+                <Divider plain>其他登录方式</Divider>
 
-            <div className={styles.socialLogin}>
-              <Button
-                icon={<GithubOutlined />}
-                size="large"
-                className={styles.socialButton}
-                onClick={handleGithubLogin}
-              >
-                Github
-              </Button>
-              <Button
-                icon={<GoogleOutlined />}
-                size="large"
-                className={styles.socialButton}
-                onClick={handleGoogleLogin}
-              >
-                Google
-              </Button>
-            </div>
+                <div className={styles.socialLogin}>
+                  {thirdPartyProviders.map((provider) => (
+                    <Button
+                      key={provider.name}
+                      icon={getProviderIcon(provider.name)}
+                      size="large"
+                      className={styles.socialButton}
+                      onClick={() => handleThirdPartyLogin(provider.name)}
+                    >
+                      {provider.name}
+                    </Button>
+                  ))}
+                </div>
+              </>
+            )}
           </Form>
         </Card>
       </div>

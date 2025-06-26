@@ -5,9 +5,12 @@ using KoalaWiki.Entities;
 using LibGit2Sharp;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using KoalaWiki.Domains.Warehouse;
 
 namespace KoalaWiki.Services;
 
+[Tags("文档目录")]
+[Route("/api/DocumentCatalog")]
 public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
 {
     /// <summary>
@@ -22,7 +25,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
         var warehouse = await dbAccess.Warehouses
             .AsNoTracking()
             .Where(x => x.Name == name && x.OrganizationName == organizationName &&
-                        (string.IsNullOrEmpty(branch) || x.Branch == branch))
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch) && x.Status == WarehouseStatus.Completed)
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
@@ -60,7 +63,9 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
 
         var branchs =
             (await dbAccess.Warehouses
-                .Where(x => x.Name == name && x.OrganizationName == organizationName && x.Type == "git")
+                .Where(x => x.Name == name && x.OrganizationName == organizationName && x.Type == "git" &&
+                            x.Status == WarehouseStatus.Completed)
+                .OrderByDescending(x => x.Status == WarehouseStatus.Completed)
                 .Select(x => x.Branch)
                 .ToArrayAsync());
 
@@ -83,14 +88,14 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
     /// 根据目录id获取文件
     /// </summary>
     /// <returns></returns>
-    public async Task GetDocumentByIdAsync(HttpContext httpContext, string owner, string name, string? branch,
-        string path)
+    public async Task GetDocumentByIdAsync(string owner, string name, string? branch,
+        string path, HttpContext httpContext)
     {
         // 先根据仓库名称和组织名称找到仓库
         var query = await dbAccess.Warehouses
             .AsNoTracking()
             .Where(x => x.Name == name && x.OrganizationName == owner &&
-                        (string.IsNullOrEmpty(branch) || x.Branch == branch))
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch) && x.Status == WarehouseStatus.Completed)
             .FirstOrDefaultAsync();
 
         if (query == null)
@@ -146,7 +151,7 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
 
             catalog.Name = request.Name;
             catalog.Prompt = request.Prompt;
-            
+
             await dbAccess.SaveChangesAsync();
             return true;
         }
@@ -291,12 +296,12 @@ public class UpdateCatalogRequest
     /// 目录ID
     /// </summary>
     public string Id { get; set; } = string.Empty;
-    
+
     /// <summary>
     /// 目录名称
     /// </summary>
     public string Name { get; set; } = string.Empty;
-    
+
     /// <summary>
     /// 提示词
     /// </summary>
@@ -312,7 +317,7 @@ public class UpdateDocumentContentRequest
     /// 文档目录ID
     /// </summary>
     public string Id { get; set; } = string.Empty;
-    
+
     /// <summary>
     /// 文档内容
     /// </summary>

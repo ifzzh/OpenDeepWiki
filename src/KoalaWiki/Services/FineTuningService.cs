@@ -19,7 +19,8 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace KoalaWiki.Services;
 
-[Tags("FineTuning")]
+[Tags("微调管理")]
+[Route("/api/FineTuning")]
 [Authorize]
 public class FineTuningService(IKoalaWikiContext koala, IUserContext userContext) : FastApi
 {

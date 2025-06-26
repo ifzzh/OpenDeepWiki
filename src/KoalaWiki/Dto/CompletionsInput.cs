@@ -7,6 +7,9 @@ public class CompletionsInput
     /// </summary>
     public string ChatShareMessageId { get; set; }
     
+    /// <summary>
+    /// 当前提问
+    /// </summary>
     public string Question { get; set; }
 
     public List<CompletionsMessageInput> Messages { get; set; } = [];

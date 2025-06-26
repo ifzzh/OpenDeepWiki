@@ -11,6 +11,8 @@ export interface RepositoryFormValues {
   submitType?: 'git' | 'upload'; // 提交方式：Git仓库或上传压缩包
   organization?: string;     // 组织名称 (上传压缩包时)
   repositoryName?: string;   // 仓库名称 (上传压缩包时)
+  uploadMethod?: 'file' | 'url'; // 上传方式：文件上传或URL下载
+  fileUrl?: string;          // 压缩包URL地址 (URL下载时)
 }
 
 /**

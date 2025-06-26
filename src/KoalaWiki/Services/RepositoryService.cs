@@ -1,15 +1,12 @@
+using System.Text.Json;
 using FastService;
-using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.DocumentFile;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Dto;
-using KoalaWiki.Entities;
-using KoalaWiki.Entities.DocumentFile;
-using KoalaWiki.Git;
-using KoalaWiki.Infrastructure;
-using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.KoalaWarehouse.DocumentPending;
-using KoalaWiki.Options;
-using Mapster;
+using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,13 +16,92 @@ namespace KoalaWiki.Services;
 /// <summary>
 /// 仓库管理服务
 /// </summary>
-[Tags("Repository")]
+[Tags("仓库管理服务")]
+[FastService.Route("/api/Repository")]
 [Filter(typeof(ResultFilter))]
 public class RepositoryService(
     IKoalaWikiContext dbContext,
     GitRepositoryService gitRepositoryService,
-    ILogger<RepositoryService> logger) : FastApi
+    ILogger<RepositoryService> logger,
+    IUserContext userContext,
+    IHttpContextAccessor httpContextAccessor) : FastApi
 {
+    /// <summary>
+    /// 检查用户对指定仓库的访问权限
+    /// </summary>
+    /// <param name="warehouseId">仓库ID</param>
+    /// <returns>是否有访问权限</returns>
+    private async Task<bool> CheckWarehouseAccessAsync(string warehouseId)
+    {
+        var currentUserId = userContext.CurrentUserId;
+        var isAdmin = httpContextAccessor.HttpContext?.User?.IsInRole("admin") ?? false;
+
+        // 管理员有所有权限
+        if (isAdmin) return true;
+
+        // 检查仓库是否存在WarehouseInRole分配
+        var hasPermissionAssignment = await dbContext.WarehouseInRoles
+            .AnyAsync(wr => wr.WarehouseId == warehouseId);
+
+        // 如果仓库没有权限分配，则是公共仓库，所有人都可以访问
+        if (!hasPermissionAssignment) return true;
+
+        // 如果用户未登录，无法访问有权限分配的仓库
+        if (string.IsNullOrEmpty(currentUserId)) return false;
+
+        // 获取用户的角色ID列表
+        var userRoleIds = await dbContext.UserInRoles
+            .Where(ur => ur.UserId == currentUserId)
+            .Select(ur => ur.RoleId)
+            .ToListAsync();
+
+        // 如果用户没有任何角色，无法访问有权限分配的仓库
+        if (!userRoleIds.Any()) return false;
+
+        // 检查用户角色是否有该仓库的权限
+        return await dbContext.WarehouseInRoles
+            .AnyAsync(wr => userRoleIds.Contains(wr.RoleId) && wr.WarehouseId == warehouseId);
+    }
+
+    /// <summary>
+    /// 检查用户对指定仓库的管理权限
+    /// </summary>
+    /// <param name="warehouseId">仓库ID</param>
+    /// <returns>是否有管理权限</returns>
+    private async Task<bool> CheckWarehouseManageAccessAsync(string warehouseId)
+    {
+        var currentUserId = userContext.CurrentUserId;
+        var isAdmin = httpContextAccessor.HttpContext?.User?.IsInRole("admin") ?? false;
+
+        // 管理员有所有权限
+        if (isAdmin) return true;
+
+        // 如果用户未登录，无管理权限
+        if (string.IsNullOrEmpty(currentUserId)) return false;
+
+        // 检查仓库是否存在权限分配
+        var hasPermissionAssignment = await dbContext.WarehouseInRoles
+            .AnyAsync(wr => wr.WarehouseId == warehouseId);
+
+        // 如果仓库没有权限分配，只有管理员可以管理
+        if (!hasPermissionAssignment) return false;
+
+        // 获取用户的角色ID列表
+        var userRoleIds = await dbContext.UserInRoles
+            .Where(ur => ur.UserId == currentUserId)
+            .Select(ur => ur.RoleId)
+            .ToListAsync();
+
+        // 如果用户没有任何角色，无管理权限
+        if (!userRoleIds.Any()) return false;
+
+        // 检查用户角色是否有该仓库的写入或删除权限（管理权限）
+        return await dbContext.WarehouseInRoles
+            .AnyAsync(wr => userRoleIds.Contains(wr.RoleId) && 
+                           wr.WarehouseId == warehouseId && 
+                           (wr.IsWrite || wr.IsDelete));
+    }
+
     /// <summary>
     /// 获取仓库列表
     /// </summary>
@@ -44,6 +120,60 @@ public class RepositoryService(
                                      r.Address.Contains(keyword) ||
                                      r.OrganizationName.Contains(keyword));
         }
+
+        // 权限过滤：如果仓库存在WarehouseInRole分配，则只有拥有相应角色的用户才能访问
+        var currentUserId = userContext.CurrentUserId;
+        var isAdmin = httpContextAccessor.HttpContext?.User?.IsInRole("admin") ?? false;
+
+        if (!isAdmin && !string.IsNullOrEmpty(currentUserId))
+        {
+            // 获取用户的角色ID列表
+            var userRoleIds = await dbContext.UserInRoles
+                .Where(ur => ur.UserId == currentUserId)
+                .Select(ur => ur.RoleId)
+                .ToListAsync();
+
+            // 如果用户没有任何角色，只能看到公共仓库（没有权限分配的仓库）
+            if (!userRoleIds.Any())
+            {
+                var publicWarehouseIds = await dbContext.Warehouses
+                    .Where(w => !dbContext.WarehouseInRoles.Any(wr => wr.WarehouseId == w.Id))
+                    .Select(w => w.Id)
+                    .ToListAsync();
+
+                query = query.Where(x => publicWarehouseIds.Contains(x.Id));
+            }
+            else
+            {
+                // 用户可以访问的仓库：
+                // 1. 通过角色权限可以访问的仓库
+                // 2. 没有任何权限分配的公共仓库
+                var accessibleWarehouseIds = await dbContext.WarehouseInRoles
+                    .Where(wr => userRoleIds.Contains(wr.RoleId))
+                    .Select(wr => wr.WarehouseId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var publicWarehouseIds = await dbContext.Warehouses
+                    .Where(w => !dbContext.WarehouseInRoles.Any(wr => wr.WarehouseId == w.Id))
+                    .Select(w => w.Id)
+                    .ToListAsync();
+
+                var allAccessibleIds = accessibleWarehouseIds.Concat(publicWarehouseIds).Distinct().ToList();
+                query = query.Where(x => allAccessibleIds.Contains(x.Id));
+            }
+        }
+        else if (string.IsNullOrEmpty(currentUserId))
+        {
+            // 未登录用户只能看到公共仓库
+            var publicWarehouseIds = await dbContext.Warehouses
+                .Where(w => !dbContext.WarehouseInRoles.Any(wr => wr.WarehouseId == w.Id))
+                .Select(w => w.Id)
+                .ToListAsync();
+
+            query = query.Where(x => publicWarehouseIds.Contains(x.Id));
+        }
+        // 管理员可以看到所有仓库，不需要额外过滤
 
         // 排序：先按推荐状态，再按完成状态，最后按创建时间
         query = query
@@ -70,7 +200,7 @@ public class RepositoryService(
 
         // 将实体映射为DTO
         var repositoryDtos = repositories.Select(r => r.Adapt<RepositoryInfoDto>()).ToList();
-        
+
         return new PageDto<RepositoryInfoDto>(total, repositoryDtos);
     }
 
@@ -87,7 +217,13 @@ public class RepositoryService(
 
         if (repository == null)
         {
-            return ResultDto<RepositoryInfoDto>.Fail("仓库不存在");
+            return ResultDto<RepositoryInfoDto>.Error("仓库不存在");
+        }
+
+        // 检查用户权限
+        if (!await CheckWarehouseAccessAsync(id))
+        {
+            return ResultDto<RepositoryInfoDto>.Error("您没有权限访问此仓库");
         }
 
         // 将实体映射为DTO
@@ -107,7 +243,7 @@ public class RepositoryService(
     {
         var query = dbContext.Warehouses
             .AsNoTracking()
-            .Where(r => r.OrganizationName == owner && r.Name == name);
+            .Where(r => r.OrganizationName == owner && r.Name == name && r.Status == WarehouseStatus.Completed);
 
         // 如果指定了分支，则按分支筛选
         if (!string.IsNullOrEmpty(branch))
@@ -122,6 +258,12 @@ public class RepositoryService(
             throw new Exception($"仓库不存在: {owner}/{name}{(branch != null ? $"/{branch}" : "")}");
         }
 
+        // 检查用户权限
+        if (!await CheckWarehouseAccessAsync(repository.Id))
+        {
+            throw new UnauthorizedAccessException("您没有权限访问此仓库");
+        }
+
         // 将实体映射为DTO
         var repositoryDto = repository.Adapt<RepositoryInfoDto>();
 
@@ -133,9 +275,15 @@ public class RepositoryService(
     /// </summary>
     /// <param name="createDto">仓库信息</param>
     /// <returns>创建结果</returns>
-    [Authorize(Roles = "admin")]
     public async Task<RepositoryInfoDto> CreateGitRepositoryAsync(CreateGitRepositoryDto createDto)
     {
+        // 只有管理员可以创建新仓库
+        var isAdmin = httpContextAccessor.HttpContext?.User?.IsInRole("admin") ?? false;
+        if (!isAdmin)
+        {
+            throw new UnauthorizedAccessException("只有管理员可以创建新仓库");
+        }
+
         // 处理Git地址
         if (!createDto.Address.EndsWith(".git"))
         {
@@ -225,9 +373,14 @@ public class RepositoryService(
     /// <param name="id">仓库ID</param>
     /// <param name="updateDto">更新信息</param>
     /// <returns>更新结果</returns>
-    [Authorize(Roles = "admin")]
     public async Task<RepositoryInfoDto> UpdateRepositoryAsync(string id, UpdateRepositoryDto updateDto)
     {
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(id))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
         var repository = await dbContext.Warehouses.FindAsync(id);
         if (repository == null)
         {
@@ -266,9 +419,14 @@ public class RepositoryService(
     /// <param name="id">仓库ID</param>
     /// <returns>删除结果</returns>
     [EndpointSummary("仓库管理：删除仓库")]
-    [Authorize(Roles = "admin")]
     public async Task<bool> DeleteRepositoryAsync(string id)
     {
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(id))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
         await dbContext.Warehouses
             .Where(x => x.Id.ToLower() == id.ToLower())
             .ExecuteDeleteAsync();
@@ -306,9 +464,14 @@ public class RepositoryService(
     /// <param name="id">仓库ID</param>
     /// <returns>处理结果</returns>
     [EndpointSummary("仓库管理：重新处理仓库")]
-    [Authorize(Roles = "admin")]
     public async Task<bool> ResetRepositoryAsync(string id)
     {
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(id))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
         // 更新仓库状态为待处理
         await dbContext.Warehouses
             .Where(x => x.Id == id)
@@ -335,33 +498,40 @@ public class RepositoryService(
     [EndpointSummary("仓库管理：获取仓库文件目录结构")]
     public async Task<List<TreeNode>> GetFilesAsync(string id)
     {
-        // 获取仓库信息
-        var repository = await dbContext.Warehouses
-            .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.Id == id);
-
-        if (repository == null)
+        // 检查用户权限
+        if (!await CheckWarehouseAccessAsync(id))
         {
-            throw new Exception("仓库不存在");
+            throw new UnauthorizedAccessException("您没有权限访问此仓库");
         }
 
-        // 获取文档目录
-        var documentCatalogs = await dbContext.DocumentCatalogs
+        var catalogs = await dbContext.DocumentCatalogs
             .AsNoTracking()
             .Where(x => x.WarehouseId == id && x.IsDeleted == false)
             .ToListAsync();
 
-        // 使用DocumentCatalog构建树形结构
-        return BuildDocumentCatalogTree(documentCatalogs);
+        var result = BuildDocumentCatalogTree(catalogs);
+
+        return result;
     }
 
     /// <summary>
     /// 重命名目录
     /// </summary>
     [EndpointSummary("仓库管理：重命名目录")]
-    [Authorize(Roles = "admin")]
     public async Task<bool> RenameCatalogAsync(string id, string newName)
     {
+        var catalog = await dbContext.DocumentCatalogs.FirstOrDefaultAsync(x => x.Id == id);
+        if (catalog == null)
+        {
+            throw new ArgumentException("目录不存在");
+        }
+
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(catalog.WarehouseId))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
         await dbContext.DocumentCatalogs
             .Where(x => x.Id == id)
             .ExecuteUpdateAsync(x => x.SetProperty(y => y.Name, newName));
@@ -371,9 +541,20 @@ public class RepositoryService(
 
     [EndpointSummary("仓库管理：删除目录")]
     [HttpDelete("{id}")]
-    [Authorize(Roles = "admin")]
     public async Task<bool> DeleteCatalogAsync(string id)
     {
+        var catalog = await dbContext.DocumentCatalogs.FirstOrDefaultAsync(x => x.Id == id);
+        if (catalog == null)
+        {
+            throw new ArgumentException("目录不存在");
+        }
+
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(catalog.WarehouseId))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
         // 逻辑删除目录
         await dbContext.DocumentCatalogs
             .Where(x => x.Id == id)
@@ -401,6 +582,12 @@ public class RepositoryService(
     [EndpointSummary("仓库管理：新建目录，并且实时生成文档")]
     public async Task<bool> CreateCatalogAsync(CreateCatalogInput input)
     {
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(input.WarehouseId))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
         // 先判断是否存在仓库
         if (await dbContext.Warehouses
                 .AsNoTracking()
@@ -502,9 +689,23 @@ public class RepositoryService(
     /// AI智能生成文件内容
     /// </summary>
     /// <returns></returns>
-    [Authorize(Roles = "admin")]
     public async Task<bool> GenerateFileContentAsync(GenerateFileContentInput input)
     {
+        var catalog = await dbContext.DocumentCatalogs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == input.Id);
+
+        if (catalog == null)
+        {
+            throw new ArgumentException("目录不存在");
+        }
+
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(catalog.WarehouseId))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
         if (!string.IsNullOrEmpty(input.Prompt))
         {
             await dbContext.DocumentCatalogs
@@ -512,19 +713,25 @@ public class RepositoryService(
                 .ExecuteUpdateAsync(x => x.SetProperty(y => y.Prompt, input.Prompt));
         }
 
-        var catalog = await dbContext.DocumentCatalogs
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == input.Id);
-
         var warehouse = await dbContext.Warehouses
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == catalog.WarehouseId);
+
+        Log.Logger.Information("开始处理目录：{CatalogName}", JsonSerializer.Serialize(catalog, JsonSerializerOptions.Web));
+        Log.Logger.Information("仓库信息：{WarehouseInfo}", JsonSerializer.Serialize(warehouse, JsonSerializerOptions.Web));
+
         var document = await dbContext.Documents
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.WarehouseId == catalog.WarehouseId);
 
+        if (document == null)
+        {
+            throw new Exception("文档不存在");
+        }
+
         var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
             OpenAIOptions.ChatApiKey, document.GitPath, OpenAIOptions.ChatModel, false);
+
         // 对当前单目录进行分析
         var (catalogs, fileItem, files)
             = await DocumentPendingService.ProcessDocumentAsync(catalog, fileKernel,
@@ -566,34 +773,69 @@ public class RepositoryService(
     [EndpointSummary("仓库管理：获取文件内容")]
     public async Task<string> GetFileContentAsync(string id)
     {
-        var fileItem = await dbContext.DocumentFileItems
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.DocumentCatalogId == id);
+        var catalog = await dbContext.DocumentCatalogs.FirstOrDefaultAsync(x => x.Id == id);
+
+        if (catalog == null)
+        {
+            throw new ArgumentException("目录不存在");
+        }
+
+        // 检查用户权限
+        if (!await CheckWarehouseAccessAsync(catalog.WarehouseId))
+        {
+            throw new UnauthorizedAccessException("您没有权限访问此仓库");
+        }
+
+        var fileItem = await dbContext.DocumentFileItems.FirstOrDefaultAsync(x => x.DocumentCatalogId == id);
 
         if (fileItem == null)
         {
-            throw new Exception("文件不存在");
+            return "";
         }
 
         return fileItem.Content;
     }
 
+    /// <summary>
+    /// 仓库管理：保存文件内容
+    /// </summary>
     [EndpointSummary("仓库管理：保存文件内容")]
-    [Authorize(Roles = "admin")]
     public async Task<bool> FileContentAsync(SaveFileContentInput input)
     {
-        var fileItem = await dbContext.DocumentFileItems
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.DocumentCatalogId == input.Id);
+        var catalog = await dbContext.DocumentCatalogs.FirstOrDefaultAsync(x => x.Id == input.Id);
+
+        if (catalog == null)
+        {
+            throw new ArgumentException("目录不存在");
+        }
+
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(catalog.WarehouseId))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
+        var fileItem = await dbContext.DocumentFileItems.FirstOrDefaultAsync(x => x.DocumentCatalogId == input.Id);
 
         if (fileItem == null)
         {
-            throw new Exception("文件不存在");
+            fileItem = new DocumentFileItem()
+            {
+                Id = Guid.NewGuid().ToString(),
+                DocumentCatalogId = input.Id,
+                Content = input.Content,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await dbContext.DocumentFileItems.AddAsync(fileItem);
+        }
+        else
+        {
+            fileItem.Content = input.Content;
+
+            dbContext.DocumentFileItems.Update(fileItem);
         }
 
-        fileItem.Content = input.Content;
-
-        dbContext.DocumentFileItems.Update(fileItem);
         await dbContext.SaveChangesAsync();
 
         return true;

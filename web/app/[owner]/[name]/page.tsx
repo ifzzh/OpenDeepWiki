@@ -1,5 +1,4 @@
 import { getWarehouseOverview } from '../../services';
-import { ServerLoadingErrorState } from '../../components/document/ServerComponents';
 import ClientRepositoryPage from './ClientRepositoryPage';
 import RepositoryInfo from './RepositoryInfo';
 import { checkGitHubRepoExists } from '../../services/githubService';
@@ -57,8 +56,6 @@ export default async function RepositoryPage({ params, searchParams }: any) {
     const owner = params?.owner || "";
     const name = params?.name || "";
     const branch = searchParams?.branch as string | undefined;
-    
-    // 出现错误时也展示GitHub仓库信息（如果有）
     return (
       <RepositoryInfo
         owner={owner}

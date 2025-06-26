@@ -14,4 +14,18 @@ public class PromptConstant
 
         AnalyzeCatalogue = 50,
     }
+
+    public enum Chat
+    {
+        FirstChat = 10,
+
+        FirstDeepChat = 20
+    }
+
+    public enum Mem0
+    {
+        DocsSystem = 10,
+
+        CodeSystem = 20,
+    }
 }

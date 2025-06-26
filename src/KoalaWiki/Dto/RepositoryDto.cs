@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Entities;
 
 namespace KoalaWiki.Dto;

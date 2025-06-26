@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Entities;
 using KoalaWiki.Prompts;
 using Microsoft.SemanticKernel;
@@ -10,9 +11,10 @@ using Newtonsoft.Json;
 
 namespace KoalaWiki.KoalaWarehouse.GenerateThinkCatalogue;
 
-public class GenerateThinkCatalogueService
+public static class GenerateThinkCatalogueService
 {
-    public static async Task<(DocumentResultCatalogue catalogue, Exception? exception)> GenerateThinkCatalogue(string path,
+    public static async Task<(DocumentResultCatalogue catalogue, Exception? exception)> GenerateThinkCatalogue(
+        string path,
         string catalogue, string gitRepository,
         Warehouse warehouse, ClassifyType? classify)
     {
@@ -25,7 +27,7 @@ public class GenerateThinkCatalogueService
                     ["code_files"] = catalogue,
                     ["git_repository_url"] = gitRepository.Replace(".git", ""),
                     ["repository_name"] = warehouse.Name
-                });
+                }, OpenAIOptions.AnalysisModel);
         }
         else
         {
@@ -35,12 +37,13 @@ public class GenerateThinkCatalogueService
                     ["code_files"] = catalogue,
                     ["git_repository_url"] = gitRepository.Replace(".git", ""),
                     ["repository_name"] = warehouse.Name
-                });
+                }, OpenAIOptions.AnalysisModel);
         }
 
         DocumentResultCatalogue? result = null;
 
         var retryCount = 0;
+        var assistantRetryCount = 0;
         const int maxRetries = 5;
         Exception? exception = null;
 
@@ -48,30 +51,75 @@ public class GenerateThinkCatalogueService
         {
             try
             {
+                StringBuilder str = new StringBuilder();
+                var history = new ChatHistory();
+                history.AddUserMessage(prompt);
+                history.AddAssistantMessage(
+                    "Ok. Now I will start analyzing the core file. And I won't ask you questions or notify you. I will directly provide you with the required content. Please confirm");
+                history.AddUserMessage(
+                    "Ok, I confirm that you can start analyzing the core file. Please proceed with the analysis and provide the required content without asking questions or notifying me.");
+
                 var analysisModel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
                     OpenAIOptions.ChatApiKey, path, OpenAIOptions.AnalysisModel, false);
 
                 var chat = analysisModel.Services.GetService<IChatCompletionService>();
-
-                StringBuilder str = new StringBuilder();
-                var history = new ChatHistory();
-                history.AddUserMessage(prompt);
+                var settings = new OpenAIPromptExecutionSettings()
+                {
+                    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                    Temperature = 0.3,
+                    // 这里使用分析模型的最大token
+                    MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.AnalysisModel)
+                };
 
                 await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history,
-                                   new OpenAIPromptExecutionSettings()
-                                   {
-                                       ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-                                       Temperature = 0.3,
-                                       // 这里使用分析模型的最大token
-                                       MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.AnalysisModel)
-                                   }, analysisModel))
+                                   settings, analysisModel))
                 {
                     // 将推理内容输出
                     str.Append(item);
                 }
 
+                if (DocumentOptions.RefineAndEnhanceQuality)
+                {
+                    history.AddAssistantMessage(str.ToString());
+                    history.AddUserMessage(
+                        "You need to generate more detailed new content and ensure the completeness of the content. Please do your best and spare no effort.");
+
+                    str.Clear();
+                    await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings,
+                                       analysisModel))
+                    {
+                        if (!string.IsNullOrEmpty(item.Content))
+                        {
+                            str.Append(item.Content);
+                        }
+                    }
+                }
+
+                var regex = new Regex(@"<output-think>(.*?)</output-think>",
+                    RegexOptions.Singleline);
+                var match = regex.Match(str.ToString());
+                if (match.Success)
+                {
+                    // 提取到的内容
+                    var extractedContent = match.Groups[1].Value;
+                    str.Clear();
+                    str.Append(extractedContent);
+                }
+                else
+                {
+                    assistantRetryCount++;
+
+                    if (assistantRetryCount < maxRetries)
+                    {
+                        history.AddUserMessage(
+                            "The content you generated does not meet the expected result. Please generate it again. Make sure the output contains the <output-think> tag and the content is formatted correctly.");
+                        str.Clear();
+                        continue;
+                    }
+                }
+
                 result =
-                    await GenerateCatalogue(str.ToString(), path, gitRepository, catalogue, warehouse,classify);
+                    await GenerateCatalogue(str.ToString(), path, gitRepository, catalogue, warehouse, classify);
 
                 break;
             }
@@ -100,7 +148,6 @@ public class GenerateThinkCatalogueService
         string path, string gitRepository, string catalogue,
         Warehouse warehouse, ClassifyType? classify)
     {
-        
         string prompt = string.Empty;
         if (classify.HasValue)
         {
@@ -111,7 +158,7 @@ public class GenerateThinkCatalogueService
                     ["think"] = think,
                     ["git_repository_url"] = gitRepository.Replace(".git", ""),
                     ["repository_name"] = warehouse.Name
-                });
+                }, OpenAIOptions.AnalysisModel);
         }
         else
         {
@@ -122,10 +169,10 @@ public class GenerateThinkCatalogueService
                     ["think"] = think,
                     ["git_repository_url"] = gitRepository.Replace(".git", ""),
                     ["repository_name"] = warehouse.Name
-                });
+                }, OpenAIOptions.AnalysisModel);
         }
 
-        
+
         DocumentResultCatalogue? result = null;
 
         var retryCount = 0;
@@ -136,26 +183,47 @@ public class GenerateThinkCatalogueService
         {
             try
             {
-                var analysisModel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
-                    OpenAIOptions.ChatApiKey, path, OpenAIOptions.AnalysisModel, false);
-
-                var chat = analysisModel.Services.GetService<IChatCompletionService>();
-
                 StringBuilder str = new StringBuilder();
                 var history = new ChatHistory();
                 history.AddUserMessage(prompt);
 
+                history.AddAssistantMessage(
+                    "Ok. Now I will start analyzing the core file. And I won't ask you questions or notify you. I will directly provide you with the required content. Please confirm");
+                history.AddUserMessage(
+                    "Ok, I confirm that you can start analyzing the core file. Please proceed with the analysis and provide the required content without asking questions or notifying me.");
+
+                var analysisModel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+                    OpenAIOptions.ChatApiKey, path, OpenAIOptions.AnalysisModel, false);
+
+                var chat = analysisModel.Services.GetService<IChatCompletionService>();
+                var settings = new OpenAIPromptExecutionSettings()
+                {
+                    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                    Temperature = 0.5,
+                    MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.AnalysisModel)
+                };
+
                 await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history,
-                                   new OpenAIPromptExecutionSettings()
-                                   {
-                                       ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-                                       Temperature = 0.5,
-                                       MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.AnalysisModel)
-                                   }, analysisModel))
+                                   settings, analysisModel))
                 {
                     str.Append(item);
                 }
 
+                if(DocumentOptions.RefineAndEnhanceQuality)
+                {
+                    history.AddAssistantMessage(str.ToString());
+                    history.AddUserMessage("Generate comprehensive, well-structured documentation with clear hierarchical organization. Focus on creating detailed, complete content that covers all essential aspects while maintaining logical flow and professional quality. Please do your best and spare no effort.");
+
+                    str.Clear();
+                    await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, analysisModel))
+                    {
+                        if (!string.IsNullOrEmpty(item.Content))
+                        {
+                            str.Append(item.Content);
+                        }
+                    }
+                }
+                
                 // 可能需要先处理一下documentation_structure 有些模型不支持json
                 var regex = new Regex(@"<documentation_structure>(.*?)</documentation_structure>",
                     RegexOptions.Singleline);
@@ -168,21 +236,39 @@ public class GenerateThinkCatalogueService
                     str.Clear();
                     str.Append(extractedContent);
                 }
-
-                // 尝试使用```json
-                var jsonRegex = new Regex(@"```json(.*?)```", RegexOptions.Singleline);
-                var jsonMatch = jsonRegex.Match(str.ToString());
-                if (jsonMatch.Success)
+                else
                 {
-                    // 提取到的内容
-                    var extractedContent = jsonMatch.Groups[1].Value;
-                    str.Clear();
-                    str.Append(extractedContent);
+                    // 尝试使用```json
+                    var jsonRegex = new Regex(@"```json(.*?)```", RegexOptions.Singleline);
+                    var jsonMatch = jsonRegex.Match(str.ToString());
+                    if (jsonMatch.Success)
+                    {
+                        // 提取到的内容
+                        var extractedContent = jsonMatch.Groups[1].Value;
+                        str.Clear();
+                        str.Append(extractedContent);
+                    }
+                    else
+                    {
+                        var jsonContentRegex = new Regex(@"\{(?:[^{}]|(?<open>{)|(?<-open>}))*(?(open)(?!))\}",
+                            RegexOptions.Singleline);
+                        var jsonContentMatch = jsonContentRegex.Match(str.ToString());
+
+                        if (jsonContentMatch.Success)
+                        {
+                            // 提取到的内容
+                            var extractedContent = jsonMatch.Groups[1].Value;
+                            str.Clear();
+                            str.Append(extractedContent);
+                        }
+                    }
                 }
+
 
                 try
                 {
-                    result = JsonConvert.DeserializeObject<DocumentResultCatalogue>(str.ToString().Trim());
+                    result = JsonConvert.DeserializeObject<DocumentResultCatalogue>(str.ToString().Trim()
+                        .TrimStart("json"));
                 }
                 catch (Exception ex)
                 {

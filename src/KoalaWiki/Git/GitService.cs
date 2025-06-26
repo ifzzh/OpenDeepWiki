@@ -44,8 +44,8 @@ public class GitService
         {
             throw new Exception("仓库不存在，请先克隆仓库");
         }
-        
-        if(!Directory.Exists(repositoryUrl))
+
+        if (!Directory.Exists(repositoryUrl))
         {
             throw new Exception("克隆失败");
         }
@@ -130,7 +130,27 @@ public class GitService
             {
                 // 删除目录以后在尝试一次
                 Directory.Delete(localPath, true);
-                var str = Repository.Clone(repositoryUrl, localPath, cloneOptions);
+                
+                cloneOptions = new CloneOptions
+                {
+                    BranchName = branch,
+                    FetchOptions =
+                    {
+                        Depth = 0,
+                        CertificateCheck = (_, _, _) => true,
+                        CredentialsProvider = (_url, _user, _cred) =>
+                        {
+                            return new UsernamePasswordCredentials
+                            {
+                                Username = userName, // 对于Token认证，Username可以随便填
+                                Password = password
+                            };
+                        }
+                    }
+                };
+
+                Repository.Clone(repositoryUrl, localPath, cloneOptions);
+                // 获取当前仓库的git分支
                 using var repo = new Repository(localPath);
 
                 var branchName = repo.Head.FriendlyName;
@@ -165,11 +185,13 @@ public class GitService
                         Depth = 0,
                         CertificateCheck = (_, _, _) => true,
                         CredentialsProvider = (_url, _user, _cred) =>
-                            new UsernamePasswordCredentials
+                        {
+                            return new UsernamePasswordCredentials
                             {
                                 Username = userName, // 对于Token认证，Username可以随便填
                                 Password = password
-                            }
+                            };
+                        }
                     }
                 };
 

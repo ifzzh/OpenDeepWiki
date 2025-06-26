@@ -1,305 +1,643 @@
 'use client'
 
 import { useState, useEffect } from 'react';
+import { Avatar } from '@lobehub/ui';
+import {
+  UserOutlined,
+  DatabaseOutlined,
+  FileTextOutlined,
+  EyeOutlined,
+  ArrowUpOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  ArrowDownOutlined,
+} from '@ant-design/icons';
+import { 
+  getDetailedStatistics, 
+  DetailedStatistics,
+  SystemStats,
+  RecentRepository,
+  RecentUser
+} from '../../services/dashboardService';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
-    users: 0,
-    repositories: 0,
-    documents: 0,
-    views: 0
-  });
-  
+  const [stats, setStats] = useState<DetailedStatistics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 模拟从API获取统计数据
-    const fetchStats = async () => {
-      try {
-        // 这里替换为实际的API调用
-        // const response = await fetch('/api/admin/stats');
-        // const data = await response.json();
-        
-        // 模拟数据
-        const mockData = {
-          users: 256,
-          repositories: 89,
-          documents: 3742,
-          views: 25689
-        };
-        
-        setTimeout(() => {
-          setStats(mockData);
-          setLoading(false);
-        }, 500);
-        
-      } catch (error) {
-        console.error('获取统计数据失败:', error);
-        setLoading(false);
-      }
-    };
-    
-    fetchStats();
+    fetchStatistics();
   }, []);
-  
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">数据统计</h1>
+
+  const fetchStatistics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* 用户统计 */}
-        <div className="card bg-gradient-to-br from-blue-50 to-blue-100 border-none">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-600 text-sm font-medium">总用户数</p>
-                <h3 className="text-3xl font-bold text-gray-800 mt-2">
-                  {loading ? (
-                    <div className="h-8 w-16 bg-blue-200 animate-pulse rounded"></div>
-                  ) : (
-                    stats.users.toLocaleString()
-                  )}
-                </h3>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-4 text-sm text-blue-600">
-              <span className="font-medium">+12%</span> 本月增长
-            </div>
-          </div>
+      const {data} = await getDetailedStatistics();
+
+      if (data) {
+        setStats(data.data);
+      } else {
+        throw new Error(data.message || data.error || '获取统计数据失败');
+      }
+    } catch (error) {
+      console.error('获取统计数据失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '获取统计数据失败，请稍后重试';
+      setError(errorMessage);
+      
+      // 不使用模拟数据，保持stats为null以显示错误状态
+      setStats(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('zh-CN');
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Completed':
+        return '#56d364';
+      case 'Pending':
+        return '#f7cc48';
+      case 'Processing':
+        return '#58a6ff';
+      default:
+        return '#8b949e';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'Completed':
+        return '已完成';
+      case 'Pending':
+        return '待处理';
+      case 'Processing':
+        return '处理中';
+      default:
+        return '未知';
+    }
+  };
+
+  const getGrowthIcon = (rate: number) => {
+    return rate >= 0 ? (
+      <ArrowUpOutlined style={{ marginRight: '4px', fontSize: '12px' }} />
+    ) : (
+      <ArrowDownOutlined style={{ marginRight: '4px', fontSize: '12px' }} />
+    );
+  };
+
+  const getGrowthColor = (rate: number) => {
+    return rate >= 0 ? '#56d364' : '#f85149';
+  };
+
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '400px',
+        color: '#8b949e'
+      }}>
+        加载中...
+      </div>
+    );
+  }
+
+  if (!stats && error) {
+    return (
+      <div style={{ color: '#f0f6fc' }}>
+        <div style={{ 
+          marginBottom: '32px',
+          paddingBottom: '24px',
+          borderBottom: '1px solid #30363d'
+        }}>
+          <h1 style={{ 
+            fontSize: '32px', 
+            fontWeight: '700', 
+            margin: 0,
+            color: '#f0f6fc'
+          }}>
+            数据统计
+          </h1>
+          <p style={{ 
+            fontSize: '16px', 
+            color: '#8b949e',
+            margin: '8px 0 0 0'
+          }}>
+            系统运行概况与数据分析
+          </p>
         </div>
         
-        {/* 仓库统计 */}
-        <div className="card bg-gradient-to-br from-green-50 to-green-100 border-none">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-600 text-sm font-medium">仓库数量</p>
-                <h3 className="text-3xl font-bold text-gray-800 mt-2">
-                  {loading ? (
-                    <div className="h-8 w-16 bg-green-200 animate-pulse rounded"></div>
-                  ) : (
-                    stats.repositories.toLocaleString()
-                  )}
-                </h3>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-4 text-sm text-green-600">
-              <span className="font-medium">+8%</span> 本月增长
-            </div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '400px',
+          background: '#0e1117',
+          border: '1px solid #30363d',
+          borderRadius: '12px',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '48px',
+            color: '#f85149',
+            marginBottom: '16px'
+          }}>
+            ⚠️
           </div>
-        </div>
-        
-        {/* 文档统计 */}
-        <div className="card bg-gradient-to-br from-purple-50 to-purple-100 border-none">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-600 text-sm font-medium">文档数量</p>
-                <h3 className="text-3xl font-bold text-gray-800 mt-2">
-                  {loading ? (
-                    <div className="h-8 w-16 bg-purple-200 animate-pulse rounded"></div>
-                  ) : (
-                    stats.documents.toLocaleString()
-                  )}
-                </h3>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-4 text-sm text-purple-600">
-              <span className="font-medium">+25%</span> 本月增长
-            </div>
-          </div>
-        </div>
-        
-        {/* 访问量统计 */}
-        <div className="card bg-gradient-to-br from-amber-50 to-amber-100 border-none">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-amber-600 text-sm font-medium">总访问量</p>
-                <h3 className="text-3xl font-bold text-gray-800 mt-2">
-                  {loading ? (
-                    <div className="h-8 w-16 bg-amber-200 animate-pulse rounded"></div>
-                  ) : (
-                    stats.views.toLocaleString()
-                  )}
-                </h3>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-4 text-sm text-amber-600">
-              <span className="font-medium">+18%</span> 本月增长
-            </div>
-          </div>
+          <h3 style={{
+            fontSize: '20px',
+            color: '#f0f6fc',
+            margin: '0 0 12px 0'
+          }}>
+            数据加载失败
+          </h3>
+          <p style={{
+            color: '#8b949e',
+            margin: '0 0 24px 0',
+            maxWidth: '400px'
+          }}>
+            {error}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '12px 24px',
+              background: '#238636',
+              color: '#f0f6fc',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'background 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2ea043';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#238636';
+            }}
+          >
+            重新加载
+          </button>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        {/* 最近的仓库 */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-800">最近创建的仓库</h2>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '400px',
+        color: '#8b949e'
+      }}>
+        暂无数据
+      </div>
+    );
+  }
+
+  // 统计卡片数据
+  const statCards = [
+    {
+      title: '总用户数',
+      value: stats.systemStats.totalUsers,
+      icon: <UserOutlined style={{ fontSize: '24px' }} />,
+      color: '#58a6ff',
+      bgColor: 'rgba(88, 166, 255, 0.1)',
+      growth: `${stats.systemStats.userGrowthRate >= 0 ? '+' : ''}${stats.systemStats.userGrowthRate}%`,
+      growthRate: stats.systemStats.userGrowthRate,
+    },
+    {
+      title: '仓库数量',
+      value: stats.systemStats.totalRepositories,
+      icon: <DatabaseOutlined style={{ fontSize: '24px' }} />,
+      color: '#56d364',
+      bgColor: 'rgba(86, 211, 100, 0.1)',
+      growth: `${stats.systemStats.repositoryGrowthRate >= 0 ? '+' : ''}${stats.systemStats.repositoryGrowthRate}%`,
+      growthRate: stats.systemStats.repositoryGrowthRate,
+    },
+    {
+      title: '文档数量',
+      value: stats.systemStats.totalDocuments,
+      icon: <FileTextOutlined style={{ fontSize: '24px' }} />,
+      color: '#a5a5fc',
+      bgColor: 'rgba(165, 165, 252, 0.1)',
+      growth: `${stats.systemStats.documentGrowthRate >= 0 ? '+' : ''}${stats.systemStats.documentGrowthRate}%`,
+      growthRate: stats.systemStats.documentGrowthRate,
+    },
+    {
+      title: '总访问量',
+      value: stats.systemStats.totalViews,
+      icon: <EyeOutlined style={{ fontSize: '24px' }} />,
+      color: '#f7cc48',
+      bgColor: 'rgba(247, 204, 72, 0.1)',
+      growth: `${stats.systemStats.viewGrowthRate >= 0 ? '+' : ''}${stats.systemStats.viewGrowthRate}%`,
+      growthRate: stats.systemStats.viewGrowthRate,
+    },
+  ];
+
+  return (
+    <div style={{ color: '#f0f6fc' }}>
+      <div style={{ 
+        marginBottom: '32px',
+        paddingBottom: '24px',
+        borderBottom: '1px solid #30363d'
+      }}>
+        <h1 style={{ 
+          fontSize: '32px', 
+          fontWeight: '700', 
+          margin: 0,
+          color: '#f0f6fc'
+        }}>
+          数据统计
+        </h1>
+        <p style={{ 
+          fontSize: '16px', 
+          color: '#8b949e',
+          margin: '8px 0 0 0'
+        }}>
+          系统运行概况与数据分析
+        </p>
+        {error && (
+          <div style={{
+            marginTop: '16px',
+            padding: '12px 16px',
+            backgroundColor: 'rgba(248, 81, 73, 0.1)',
+            border: '1px solid rgba(248, 81, 73, 0.3)',
+            borderRadius: '8px',
+            color: '#f85149',
+            fontSize: '14px'
+          }}>
+            {error}
           </div>
-          <div className="card-body p-0">
-            <div className="divide-y divide-gray-100">
-              {loading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <div key={i} className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
-                    <div className="h-3 bg-gray-100 rounded w-1/2 animate-pulse"></div>
-                  </div>
-                ))
-              ) : (
-                <>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">API文档中心</h3>
-                        <p className="text-xs text-gray-500 mt-1">由 张三 创建于 2023-05-20</p>
-                      </div>
-                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">活跃</span>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">技术知识库</h3>
-                        <p className="text-xs text-gray-500 mt-1">由 李四 创建于 2023-05-18</p>
-                      </div>
-                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">活跃</span>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">产品使用手册</h3>
-                        <p className="text-xs text-gray-500 mt-1">由 王五 创建于 2023-05-15</p>
-                      </div>
-                      <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">待审核</span>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">开发规范文档</h3>
-                        <p className="text-xs text-gray-500 mt-1">由 赵六 创建于 2023-05-10</p>
-                      </div>
-                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">活跃</span>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">项目方案设计</h3>
-                        <p className="text-xs text-gray-500 mt-1">由 钱七 创建于 2023-05-05</p>
-                      </div>
-                      <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">已归档</span>
-                    </div>
-                  </div>
-                </>
-              )}
+        )}
+      </div>
+      
+      {/* 统计卡片 */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+        gap: '24px',
+        marginBottom: '32px'
+      }}>
+        {statCards.map((card, index) => (
+          <div
+            key={index}
+            style={{
+              background: '#0e1117',
+              border: '1px solid #30363d',
+              borderRadius: '12px',
+              padding: '24px',
+              transition: 'all 0.2s ease',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = card.color;
+              e.currentTarget.style.boxShadow = `0 0 0 1px ${card.color}20`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#30363d';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ 
+                  color: '#8b949e', 
+                  fontSize: '14px', 
+                  margin: '0 0 8px 0',
+                  fontWeight: '500'
+                }}>
+                  {card.title}
+                </p>
+                <h3 style={{ 
+                  fontSize: '36px', 
+                  fontWeight: '700', 
+                  color: '#f0f6fc',
+                  margin: '0 0 16px 0',
+                  lineHeight: '1'
+                }}>
+                  {loading ? (
+                    <div style={{
+                      height: '36px',
+                      width: '80px',
+                      background: card.bgColor,
+                      borderRadius: '6px',
+                      animation: 'pulse 1.5s ease-in-out infinite'
+                    }} />
+                  ) : (
+                    card.value.toLocaleString()
+                  )}
+                </h3>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  color: getGrowthColor(card.growthRate),
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}>
+                  {getGrowthIcon(card.growthRate)}
+                  <span>{card.growth}</span>
+                  <span style={{ color: '#8b949e', marginLeft: '8px' }}>本月增长</span>
+                </div>
+              </div>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: card.bgColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: card.color,
+                marginLeft: '16px'
+              }}>
+                {card.icon}
+              </div>
             </div>
+          </div>
+        ))}
+      </div>
+      
+      {/* 详细信息卡片 */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+        gap: '24px'
+      }}>
+        {/* 最近创建的仓库 */}
+        <div style={{
+          background: '#0e1117',
+          border: '1px solid #30363d',
+          borderRadius: '12px',
+          overflow: 'hidden'
+        }}>
+          <div style={{ 
+            padding: '24px 24px 16px 24px',
+            borderBottom: '1px solid #30363d'
+          }}>
+            <h2 style={{ 
+              fontSize: '18px', 
+              fontWeight: '600', 
+              color: '#f0f6fc',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <DatabaseOutlined style={{ marginRight: '8px', color: '#56d364' }} />
+              最近创建的仓库
+            </h2>
+          </div>
+          <div>
+            {loading ? (
+              Array(4).fill(0).map((_, i) => (
+                <div key={i} style={{ padding: '16px 24px' }}>
+                  <div style={{
+                    height: '16px',
+                    background: 'rgba(177, 186, 196, 0.1)',
+                    borderRadius: '4px',
+                    marginBottom: '8px',
+                    width: '75%'
+                  }} />
+                  <div style={{
+                    height: '12px',
+                    background: 'rgba(177, 186, 196, 0.05)',
+                    borderRadius: '4px',
+                    width: '50%'
+                  }} />
+                </div>
+              ))
+            ) : (
+              stats.recentRepositories.map((repo, index) => (
+                <div
+                  key={index}
+                  style={{
+                    padding: '16px 24px',
+                    borderBottom: index < stats.recentRepositories.length - 1 ? '1px solid #30363d' : 'none',
+                    transition: 'background-color 0.2s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(177, 186, 196, 0.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '500', 
+                        color: '#f0f6fc',
+                        margin: '0 0 4px 0'
+                      }}>
+                        {repo.organizationName}/{repo.name}
+                      </h3>
+                      <p style={{ 
+                        fontSize: '12px', 
+                        color: '#8b949e',
+                        margin: '0 0 4px 0'
+                      }}>
+                        {repo.description || '暂无描述'}
+                      </p>
+                      <p style={{ 
+                        fontSize: '12px', 
+                        color: '#8b949e',
+                        margin: 0,
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>
+                        <span>创建于 {formatDate(repo.createdAt)}</span>
+                        <span style={{ margin: '0 8px' }}>•</span>
+                        <span>{repo.documentCount} 个文档</span>
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                      <span style={{
+                        padding: '4px 8px',
+                        fontSize: '12px',
+                        borderRadius: '12px',
+                        background: `${getStatusColor(repo.status)}20`,
+                        color: getStatusColor(repo.status),
+                        border: `1px solid ${getStatusColor(repo.status)}40`,
+                        fontWeight: '500'
+                      }}>
+                        {repo.status === 'Completed' ? <CheckCircleOutlined style={{ marginRight: '4px' }} /> : <ClockCircleOutlined style={{ marginRight: '4px' }} />}
+                        {getStatusText(repo.status)}
+                      </span>
+                      {repo.isRecommended && (
+                        <span style={{
+                          padding: '2px 6px',
+                          fontSize: '11px',
+                          borderRadius: '8px',
+                          background: 'rgba(245, 204, 72, 0.1)',
+                          color: '#f7cc48',
+                          border: '1px solid rgba(245, 204, 72, 0.3)',
+                          fontWeight: '500'
+                        }}>
+                          推荐
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
         
-        {/* 最近的用户活动 */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-800">最近用户活动</h2>
+        {/* 最近注册的用户 */}
+        <div style={{
+          background: '#0e1117',
+          border: '1px solid #30363d',
+          borderRadius: '12px',
+          overflow: 'hidden'
+        }}>
+          <div style={{ 
+            padding: '24px 24px 16px 24px',
+            borderBottom: '1px solid #30363d'
+          }}>
+            <h2 style={{ 
+              fontSize: '18px', 
+              fontWeight: '600', 
+              color: '#f0f6fc',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <UserOutlined style={{ marginRight: '8px', color: '#58a6ff' }} />
+              最近注册的用户
+            </h2>
           </div>
-          <div className="card-body p-0">
-            <div className="divide-y divide-gray-100">
-              {loading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <div key={i} className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse mr-3"></div>
-                      <div className="flex-1">
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
-                        <div className="h-3 bg-gray-100 rounded w-1/2 animate-pulse"></div>
+          <div>
+            {loading ? (
+              Array(4).fill(0).map((_, i) => (
+                <div key={i} style={{ padding: '16px 24px', display: 'flex', alignItems: 'center' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'rgba(177, 186, 196, 0.1)',
+                    marginRight: '12px'
+                  }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      height: '14px',
+                      background: 'rgba(177, 186, 196, 0.1)',
+                      borderRadius: '4px',
+                      marginBottom: '6px',
+                      width: '60%'
+                    }} />
+                    <div style={{
+                      height: '12px',
+                      background: 'rgba(177, 186, 196, 0.05)',
+                      borderRadius: '4px',
+                      width: '40%'
+                    }} />
+                  </div>
+                </div>
+              ))
+            ) : (
+              stats.recentUsers.map((user, index) => (
+                <div
+                  key={index}
+                  style={{
+                    padding: '16px 24px',
+                    borderBottom: index < stats.recentUsers.length - 1 ? '1px solid #30363d' : 'none',
+                    transition: 'background-color 0.2s ease',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(177, 186, 196, 0.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <Avatar
+                    size={32}
+                    style={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      marginRight: '12px',
+                      position: 'relative'
+                    }}
+                  >
+                    {user.name.slice(0, 1)}
+                    {user.isOnline && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '-2px',
+                        right: '-2px',
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: '#56d364',
+                        border: '2px solid #0e1117'
+                      }} />
+                    )}
+                  </Avatar>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <h3 style={{ 
+                          fontSize: '14px', 
+                          fontWeight: '500', 
+                          color: '#f0f6fc',
+                          margin: '0 0 2px 0'
+                        }}>
+                          {user.name}
+                        </h3>
+                        <p style={{ 
+                          fontSize: '12px', 
+                          color: '#8b949e',
+                          margin: 0
+                        }}>
+                          {user.email}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                          {user.roles.map((role, roleIndex) => (
+                            <span key={roleIndex} style={{
+                              padding: '2px 6px',
+                              fontSize: '11px',
+                              borderRadius: '8px',
+                              background: role === 'admin' ? 'rgba(245, 101, 101, 0.1)' : 'rgba(177, 186, 196, 0.1)',
+                              color: role === 'admin' ? '#f56565' : '#8b949e',
+                              border: `1px solid ${role === 'admin' ? '#f5656540' : '#8b949e40'}`,
+                              fontWeight: '500'
+                            }}>
+                              {role === 'admin' ? '管理员' : '用户'}
+                            </span>
+                          ))}
+                        </div>
+                        <span style={{ 
+                          fontSize: '11px', 
+                          color: '#8b949e'
+                        }}>
+                          {formatDate(user.createdAt)}
+                        </span>
                       </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-xs font-medium">ZS</span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">张三 编辑了文档</h3>
-                        <p className="text-xs text-gray-500 mt-1">API文档中心 / 接口规范 · 10分钟前</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-xs font-medium">LS</span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">李四 创建了新仓库</h3>
-                        <p className="text-xs text-gray-500 mt-1">移动端开发指南 · 1小时前</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-xs font-medium">WW</span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">王五 评论了文档</h3>
-                        <p className="text-xs text-gray-500 mt-1">技术知识库 / 架构设计 · 2小时前</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-xs font-medium">ZL</span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">赵六 更新了仓库设置</h3>
-                        <p className="text-xs text-gray-500 mt-1">开发规范文档 · 3小时前</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-xs font-medium">QQ</span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-800">钱七 删除了文档</h3>
-                        <p className="text-xs text-gray-500 mt-1">项目方案设计 / 旧版设计 · 4小时前</p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -121,4 +121,62 @@ public class UserInfoDto
     /// 最后登录IP
     /// </summary>
     public string? LastLoginIp { get; set; }
+}
+
+/// <summary>
+/// 更新用户资料DTO
+/// </summary>
+public class UpdateProfileDto
+{
+    /// <summary>
+    /// 用户名
+    /// </summary>
+    [Required(ErrorMessage = "用户名不能为空")]
+    [StringLength(50, MinimumLength = 2, ErrorMessage = "用户名长度必须在2-50个字符之间")]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 邮箱
+    /// </summary>
+    [Required(ErrorMessage = "邮箱不能为空")]
+    [EmailAddress(ErrorMessage = "邮箱格式不正确")]
+    public string Email { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 头像
+    /// </summary>
+    public string? Avatar { get; set; }
+}
+
+/// <summary>
+/// 验证密码DTO
+/// </summary>
+public class VerifyPasswordDto
+{
+    /// <summary>
+    /// 密码
+    /// </summary>
+    [Required(ErrorMessage = "密码不能为空")]
+    public string Password { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 修改密码DTO
+/// </summary>
+public class ChangePasswordDto
+{
+    /// <summary>
+    /// 当前密码
+    /// </summary>
+    [Required(ErrorMessage = "当前密码不能为空")]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 新密码
+    /// </summary>
+    [Required(ErrorMessage = "新密码不能为空")]
+    [MinLength(8, ErrorMessage = "新密码长度不能小于8位")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$", 
+        ErrorMessage = "新密码必须包含大小写字母和数字")]
+    public string NewPassword { get; set; } = string.Empty;
 } 

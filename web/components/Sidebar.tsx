@@ -80,7 +80,7 @@ export default function Sidebar({ isSidebarOpen, selectedKey }: SidebarProps) {
           {isSidebarOpen ? (
             <span style={{ fontSize: '1.25rem' }}>OpenDeepWiki 管理</span>
           ) : (
-            <span style={{ fontSize: '1.25rem' }}>ODW</span>
+            <></>
           )}
         </Link>
       </div>

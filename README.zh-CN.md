@@ -43,11 +43,11 @@ OpenDeepWiki 是参考[DeepWiki](https://deepwiki.com/) 作为灵感，基于 .N
 - [x] 支持多种语言（中文，英文，法文等）
 - [x] 支持上传ZIP文件，支持上传本地文件
 - [x] 提供数据微调平台生成微调数据集
-- [ ] 支持仓库目录级别管理，支持自定义目录动态生成文档
-- [ ] 支持仓库目录管理，支持修改仓库目录
-- [ ] 支持用户级别管理，提供用户管理功能支持增删改查用户
-- [ ] 支持用户权限管理，提供用户权限管理功能支持增删改查用户权限
-- [ ] 支持对仓库级别的生成不同微调框架的微调数据集
+- [x] 支持仓库目录级别管理，支持自定义目录动态生成文档
+- [x] 支持仓库目录管理，支持修改仓库目录
+- [x] 支持用户级别管理，提供用户管理功能支持增删改查用户
+- [x] 支持用户权限管理，提供用户权限管理功能支持增删改查用户权限
+- [x] 支持对仓库级别的生成不同微调框架的微调数据集
 - 
 ## MCP支持
 
@@ -84,6 +84,31 @@ cd OpenDeepWiki
 
 2. 打开`docker-compose.yml`文件，修改以下环境变量：
 
+Ollama：
+```yaml
+services:
+  koalawiki:
+    environment:
+      - KOALAWIKI_REPOSITORIES=/repositories
+      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
+      - CHAT_MODEL=qwen2.5:32b # 必须要支持function的模型
+      - ANALYSIS_MODEL=qwen2.5:32b # 分析模型，用于生成仓库目录结构
+      - CHAT_API_KEY=sk-xxxx # 您GiteeAI的APIkey
+      - LANGUAGE= # 设置生成语言默认为"中文"
+      - ENDPOINT=https://你的OllamaIP:端口/v1
+      - DB_TYPE=sqlite
+      - MODEL_PROVIDER=OpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
+      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
+      - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
+      - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
+      - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
+      - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
+      - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
+      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析？这可能会对代码的质量产生影响。
+      - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK=false # 是否启用MCP Prompt生成
+      - ENABLE_WAREHOUSE_DESCRIPTION_TASK=false # 是否启用仓库Description生成
+```
+
 OpenAI：
 ```yaml
 services:
@@ -104,6 +129,9 @@ services:
       - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
       - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
       - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
+      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析？这可能会对代码的质量产生影响。
+      - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK=false # 是否启用MCP Prompt生成
+      - ENABLE_WAREHOUSE_DESCRIPTION_TASK=false # 是否启用仓库Description生成
 
 ```
 
@@ -127,6 +155,9 @@ services:
       - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
       - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
       - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
+      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析？这可能会对代码的质量产生影响。
+      - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK=false # 是否启用MCP Prompt生成
+      - ENABLE_WAREHOUSE_DESCRIPTION_TASK=false # 是否启用仓库Description生成
 ```
 
 Anthropic
@@ -149,6 +180,9 @@ services:
       - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
       - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
       - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
+      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析？这可能会对代码的质量产生影响。
+      - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK=false # 是否启用MCP Prompt生成
+      - ENABLE_WAREHOUSE_DESCRIPTION_TASK=false # 是否启用仓库Description生成
 ```
 
 
@@ -215,7 +249,8 @@ docker-compose build --build-arg ARCH=arm64
 docker-compose build --build-arg ARCH=amd64
 ```
 
-### 部署到 Sealos 通过公网访问
+### 一键部署到 Sealos 通过公网访问
+[![](https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg)](https://cloud.sealos.io/?openapp=system-template%3FtemplateName%3DOpenDeepWiki)
 详情请参考：[使用模板将 OpenDeepWiki 一键部署为 Sealos 应用暴露到公网](scripts/sealos/README.zh-CN.md)
 
 ## 🔍工作原理
@@ -260,6 +295,8 @@ graph TD
   - MAX_FILE_LIMIT 上传文件的最大限制，单位MB
   - DEEP_RESEARCH_MODEL 深度研究模型，为空使用CHAT_MODEL
   - ENABLE_INCREMENTAL_UPDATE 是否启用增量更新
+  - ENABLE_CODED_DEPENDENCY_ANALYSIS 是否启用代码依赖分析？这可能会对代码的质量产生影响。
+  - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK # 是否启用MCP Prompt生成
 
 ### 针对不同架构的构建
 Makefile提供了针对不同CPU架构构建的命令：
@@ -278,13 +315,21 @@ make build-backend-arm
 make build-frontend-amd
 ```
 
+## 👥 贡献者
+
+感谢所有为这个项目做出贡献的开发者！
+<div align="center">
+<a href="https://github.com/AIDotNet/OpenDeepWiki/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=AIDotNet/OpenDeepWiki&max=50&columns=10" />
+</a>
+
 ## Discord
 
-[加入我们](https://discord.gg/8sxUNacv)
+[加入我们](https://discord.gg/Y3fvpnGVwt)
 
 ## WeChat 
 
-![a4efdc9044eeaefddc257ba5624da5e5](https://github.com/user-attachments/assets/b12878b9-8db1-4e3c-8874-1e21885af7ee)
+![Image](https://github.com/user-attachments/assets/8262bcfd-0560-44ee-81d5-d03579450149)
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.

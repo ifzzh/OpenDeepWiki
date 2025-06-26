@@ -1,148 +1,359 @@
-'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { Row, Col,  theme } from 'antd';
-import { useParams, useSearchParams } from 'next/navigation';
+'use server'
+import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import 'katex/dist/katex.min.css';
 
-// 导入封装好的组件
-import {
-  DocumentContent,
-  DocumentSidebar,
-  MobileDocumentDrawer,
-  LoadingErrorState,
-  DocumentStyles,
-  extractHeadings,
-  createAnchorItems,
-  initializeMermaid,
-  SourceFiles
-} from '../../../components/document';
+// Markdown 编译器导入
+import { remark } from 'remark';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import remarkRehype from 'remark-rehype';
+import rehypeKatex from 'rehype-katex';
+import rehypeSlug from 'rehype-slug';
+import rehypeStringify from 'rehype-stringify';
+import rehypeRaw from 'rehype-raw';
 
-// 导入文档服务
-import { documentById } from '../../../services/warehouseService';
+// 直接导入工具函数，避免导入客户端组件
+import { extractHeadings, createAnchorItems } from '../../../components/document/utils/headingUtils';
 
-const { useToken } = theme;
+// 导入文档服务和类型
+import { documentById, getWarehouseOverview } from '../../../services/warehouseService';
 
-export default function DocumentPage() {
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const { owner, name, path } = params;
-  const branch = searchParams.get('branch');
-  const [document, setDocument] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [headings, setHeadings] = useState<{key: string, title: string, level: number, id: string}[]>([]);
-  const { token } = useToken();
+// 导入客户端组件和服务端组件
+import DocumentPageClient from './DocumentPageClient';
+import { DocumentData, Heading } from './types';
 
-  // 生成目录锚点项
-  const anchorItems = useMemo(() => {
-    return createAnchorItems(headings);
-  }, [headings]);
+// 编译 Markdown 内容为 HTML
+async function compileMarkdownToHtml(markdown: string): Promise<string> {
+  try {
+    if (!markdown || markdown.trim() === '') {
+      return '<p>暂无内容</p>';
+    }
+  } catch (error) {
+    console.error('Markdown 编译错误:', error);
+    return `
+      <div style="
+        background-color: #fff2f0; 
+        border: 1px solid #ffccc7; 
+        border-radius: 6px; 
+        padding: 16px;
+        color: #a8071a;
+        margin: 16px 0;
+      ">
+        <h4 style="margin: 0 0 8px 0;">Markdown 编译失败</h4>
+        <p style="margin: 0; font-size: 14px;">
+          ${error instanceof Error ? error.message : '未知错误'}
+        </p>
+      </div>
+    `;
+  }
+}
 
-  // 初始化mermaid配置
-  useEffect(() => {
-    const isDarkMode = token.colorBgBase.startsWith('#11'); // 简单判断当前是否为暗黑模式
-    initializeMermaid(isDarkMode);
-  }, [token.colorBgBase]);
+// 生成SEO友好的描述
+function generateSEODescription(document: DocumentData, owner: string, name: string, path: string): string {
+  if (document.description) {
+    return document.description;
+  }
+  
+  // 从内容中提取前150个字符作为描述
+  if (document.content) {
+    const plainText = document.content
+      .replace(/[#*`_~\[\]()]/g, '') // 移除Markdown标记
+      .replace(/\n+/g, ' ') // 替换换行为空格
+      .trim();
+    
+    if (plainText.length > 150) {
+      return plainText.substring(0, 147) + '...';
+    }
+    return plainText;
+  }
+  
+  return `${owner}/${name} 项目中的 ${path} 文档 - 详细的技术文档和使用指南`;
+}
 
-  // 获取文档内容
-  useEffect(() => {
-    const fetchDocument = async () => {
-      try {
-        setLoading(true);
-        const response = await documentById(owner as string, name as string, path as string, branch || undefined);
-        console.log(response, owner, name, path, branch);
-        if (response.isSuccess && response.data) {
-          setDocument(response.data);
-          // 提取标题作为目录
-          const extractedHeadings = extractHeadings(response.data.content);
-          setHeadings(extractedHeadings);
-        } else {
-          setError(response.message || '无法获取文档内容，请检查文档路径是否正确');
-        }
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : '网络异常，请稍后重试';
-        setError(`获取文档时发生错误：${errorMsg}`);
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+// 生成关键词
+function generateKeywords(document: DocumentData, owner: string, name: string, path: string): string {
+  const keywords = [
+    owner,
+    name,
+    path.split('/').pop()?.replace(/\.(md|txt|rst)$/i, ''), // 文件名（去除扩展名）
+    '文档',
+    '技术文档',
+    '开源项目',
+    'GitHub',
+    'Gitee'
+  ].filter(Boolean);
+  
+  // 从标题中提取关键词
+  if (document.title) {
+    const titleWords = document.title.split(/[\s\-_]+/).filter(word => word.length > 2);
+    keywords.push(...titleWords);
+  }
+  
+  // 从路径中提取关键词
+  const pathWords = path.split('/').filter(word => word.length > 2);
+  keywords.push(...pathWords);
+  
+  return [...new Set(keywords)].join(', ');
+}
 
-    fetchDocument();
-  }, [owner, name, path, branch]);
+// 生成结构化数据
+function generateStructuredData(document: DocumentData, owner: string, name: string, path: string, branch?: string) {
+  const url = `/${owner}/${name}/${path}${branch ? `?branch=${branch}` : ''}`;
+  
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: document.title || `${path} - ${name}`,
+    description: generateSEODescription(document, owner, name, path),
+    author: {
+      '@type': 'Organization',
+      name: owner
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'KoalaWiki'
+    },
+    dateCreated: document.createdAt,
+    dateModified: document.updatedAt || document.createdAt,
+    url: url,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': url
+    },
+    isPartOf: {
+      '@type': 'SoftwareSourceCode',
+      name: name,
+      codeRepository: document.address || `https://github.com/${owner}/${name}`,
+      programmingLanguage: 'Various'
+    },
+    keywords: generateKeywords(document, owner, name, path),
+    inLanguage: 'zh-CN',
+    genre: ['技术文档', '软件文档', '开发文档']
+  };
+}
 
-  // 渲染页面主体
-  return (
-    <main className="doc-page-container" style={{ backgroundColor: token.colorBgLayout, minHeight: '100vh' }}>
-      <Row 
-        style={{ 
-          padding: { xs: '8px', sm: '16px', md: '24px' }[token.screenSM],
-          maxWidth: '1600px',
-          margin: '0 auto'
-        }}
-      >
-        {loading || error ? (
-          <Col span={24}>
-            <LoadingErrorState
-              loading={loading}
-              error={error}
-              owner={owner as string}
-              name={name as string}
-              token={token}
-            />
-          </Col>
-        ) : (
-          <>
-            {/* 源文件组件 */}
-            {document?.fileSource && document.fileSource.length > 0 && (
-              <Col style={{
-                backgroundColor: token.colorBgElevated,
-              }} span={24}>
-                <SourceFiles
-                  fileSource={document.fileSource}
-                  owner={owner as string}
-                  branch={document.branch}
-                  git={document.address}
-                  name={name as string}
-                  token={token}
-                />
-              </Col>
-            )}
-            
-            {/* 主要内容区 */}
-            <Col xs={24} sm={24} md={18} lg={18} xl={18}>
-              <section itemProp="articleBody">
-                <DocumentContent
-                  document={document}
-                  owner={owner as string}
-                  name={name as string}
-                  token={token}
-                />
-              </section>
-            </Col>
-            
-            <Col xs={0} sm={0} md={6} lg={6} xl={6}>
-              <nav aria-label="文档目录">
-                <DocumentSidebar
-                  anchorItems={anchorItems}
-                  document={document}
-                />
-              </nav>
-            </Col>
-          </>
-        )}
-      </Row>
+// 检测是否为搜索引擎爬虫
+function isSearchEngineBot(userAgent: string): boolean {
+  const searchEngineBots = [
+    'googlebot',
+    'bingbot',
+    'slurp', // Yahoo
+    'duckduckbot',
+    'baiduspider',
+    'yandexbot',
+    'sogou',
+    'exabot',
+    'facebookexternalhit',
+    'twitterbot',
+    'linkedinbot',
+    'whatsapp',
+    'telegram',
+    'applebot',
+    'pingdom',
+    'uptimerobot'
+  ];
+  
+  const lowerUserAgent = userAgent.toLowerCase();
+  return searchEngineBots.some(bot => lowerUserAgent.includes(bot));
+}
 
-      {/* 移动端抽屉和悬浮按钮 - 仅在有文档内容时显示 */}
-      {!loading && !error && (
-        <MobileDocumentDrawer
-          anchorItems={anchorItems}
-          token={token}
-        />
-      )}
+// 生成页面元数据
+export async function generateMetadata({ 
+  params, 
+  searchParams 
+}: {
+  params: Promise<{ owner: string; name: string; path: string }>;
+  searchParams: Promise<{ branch?: string }>;
+}): Promise<Metadata> {
+  const { owner, name, path } = await params;
+  const { branch } = await searchParams;
+
+  try {
+    // 并行获取文档数据和仓库概览
+    const [documentResponse, overviewResponse] = await Promise.all([
+      documentById(owner, name, path, branch),
+      getWarehouseOverview(owner, name, branch).catch(() => null)
+    ]);
+    
+    if (documentResponse.isSuccess && documentResponse.data) {
+      const document = documentResponse.data as DocumentData;
+      const overview = overviewResponse?.data;
       
-      {/* 全局样式 */}
-      <DocumentStyles token={token} />
-    </main>
+      const title = document.title || `${path} - ${name}`;
+      const description = generateSEODescription(document, owner, name, path);
+      const keywords = generateKeywords(document, owner, name, path);
+      const url = `/${owner}/${name}/${path}${branch ? `?branch=${branch}` : ''}`;
+      
+      // 生成更丰富的元数据
+      return {
+        title: `${title} | ${owner}/${name} - KoalaWiki`,
+        description,
+        keywords,
+        authors: [{ name: owner }],
+        creator: owner,
+        publisher: 'KoalaWiki',
+        formatDetection: {
+          email: false,
+          address: false,
+          telephone: false,
+        },
+        metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://opendeep.wiki'),
+        alternates: {
+          canonical: url,
+        },
+        openGraph: {
+          title: `${title} | ${owner}/${name}`,
+          description,
+          type: 'article',
+          url,
+          siteName: 'KoalaWiki',
+          locale: 'zh_CN',
+          images: [
+            {
+              url: `/api/og?title=${encodeURIComponent(title)}&owner=${encodeURIComponent(owner)}&name=${encodeURIComponent(name)}`,
+              width: 1200,
+              height: 630,
+              alt: title,
+            }
+          ],
+          authors: [owner],
+          publishedTime: document.createdAt,
+          modifiedTime: document.updatedAt || document.createdAt,
+          section: '技术文档',
+          tags: keywords.split(', '),
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title: `${title} | ${owner}/${name}`,
+          description,
+          creator: `@${owner}`,
+          images: [`/api/og?title=${encodeURIComponent(title)}&owner=${encodeURIComponent(owner)}&name=${encodeURIComponent(name)}`],
+        },
+        robots: {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+          },
+        },
+        verification: {
+          google: process.env.GOOGLE_SITE_VERIFICATION,
+          yandex: process.env.YANDEX_VERIFICATION,
+          yahoo: process.env.YAHOO_SITE_VERIFICATION,
+        },
+        category: '技术文档',
+        classification: '软件开发',
+        other: {
+          'article:author': owner,
+          'article:section': '技术文档',
+          'article:tag': keywords,
+          'og:image:alt': title,
+          'twitter:label1': '作者',
+          'twitter:data1': owner,
+          'twitter:label2': '项目',
+          'twitter:data2': name,
+        },
+      };
+    }
+  } catch (error) {
+    console.error('生成元数据时出错:', error);
+  }
+
+  // 默认元数据（SEO优化版本）
+  const defaultTitle = `${path} - ${name} | ${owner} - KoalaWiki`;
+  const defaultDescription = `查看 ${owner}/${name} 项目中的 ${path} 文档。KoalaWiki 提供详细的技术文档、API参考和使用指南，帮助开发者快速理解和使用开源项目。`;
+  
+  return {
+    title: defaultTitle,
+    description: defaultDescription,
+    keywords: `${owner}, ${name}, ${path}, 文档, 技术文档, 开源项目, GitHub, API文档, 使用指南`,
+    authors: [{ name: owner }],
+    creator: owner,
+    publisher: 'KoalaWiki',
+    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://opendeep.wiki'),
+    openGraph: {
+      title: defaultTitle,
+      description: defaultDescription,
+      type: 'article',
+      siteName: 'KoalaWiki',
+      locale: 'zh_CN',
+    },
+    twitter: {
+      card: 'summary',
+      title: defaultTitle,
+      description: defaultDescription,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
+
+export default async function DocumentPage({ 
+  params, 
+  searchParams 
+}: {
+  params: Promise<{ owner: string; name: string; path: string }>;
+  searchParams: Promise<{ branch?: string }>;
+}) {
+  const { owner, name, path } = await params;
+  const { branch } = await searchParams;
+
+  // 获取请求头信息
+  const headersList = await headers();
+
+  // 在服务端获取文档数据
+  let document: DocumentData | null = null;
+  let error: string | null = null;
+  let headings: Heading[] = [];
+  let structuredData: any = null;
+
+  try {
+    const response = await documentById(owner, name, path, branch);
+    if (response.isSuccess && response.data) {
+      document = response.data as DocumentData;
+      // 提取标题作为目录
+      headings = extractHeadings(response.data.content);
+      // 生成结构化数据
+      structuredData = generateStructuredData(document, owner, name, path, branch);
+    } else {
+      error = response.message || '无法获取文档内容，请检查文档路径是否正确';
+    }
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : '网络异常，请稍后重试';
+    error = `获取文档时发生错误：${errorMsg}`;
+    console.error(err);
+  }
+
+  // 如果有错误且是404类型的错误，使用Next.js的notFound
+  if (error && (error.includes('404') || error.includes('未找到'))) {
+    notFound();
+  }
+  // 生成目录锚点项
+  const anchorItems = createAnchorItems(headings);
+
+  // 共同的props
+  const commonProps = {
+    document,
+    error,
+    headings,
+    anchorItems,
+    owner,
+    name,
+    path,
+    branch
+  };
+
+  return (
+    <>
+      <DocumentPageClient {...commonProps} />
+    </>
   );
 }

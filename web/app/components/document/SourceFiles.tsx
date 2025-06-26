@@ -1,3 +1,4 @@
+'use client'
 import React, { useState } from 'react';
 import { Collapse, List, Typography, Space } from 'antd';
 import { FileOutlined, CaretRightOutlined, GithubFilled } from '@ant-design/icons';

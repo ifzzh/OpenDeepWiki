@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using KoalaWiki.Domains;
 
-namespace KoalaWiki.Entities.DocumentFile;
+namespace KoalaWiki.Domains.DocumentFile;
 
 /// <inheritdoc />
 public class DocumentFileItem : Entity<string>

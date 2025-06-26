@@ -92,6 +92,12 @@ public static class KernelFactory
         var fileFunction = new FileFunction(gitPath);
         kernelBuilder.Plugins.AddFromObject(fileFunction);
 
+        if (DocumentOptions.EnableCodeDependencyAnalysis)
+        {
+            var codeAnalyzeFunction = new CodeAnalyzeFunction(gitPath);
+            kernelBuilder.Plugins.AddFromObject(codeAnalyzeFunction);
+        }
+
         var kernel = kernelBuilder.Build();
 
         return kernel;

@@ -2,7 +2,6 @@
 
 import { Suspense } from 'react';
 import { RepositoryView } from './RepositoryView';
-import { ServerLoadingErrorState } from '../../components/document/ServerComponents';
 
 interface ClientRepositoryPageProps {
   owner: string;
@@ -13,12 +12,10 @@ interface ClientRepositoryPageProps {
 
 export default function ClientRepositoryPage({ owner, name, document }: ClientRepositoryPageProps) {    
   return (
-    <Suspense fallback={<ServerLoadingErrorState loading={true} owner={owner} name={name} />}>
-      <RepositoryView
+    <RepositoryView
         owner={owner}
         name={name}
         document={document}
       />
-    </Suspense>
   );
 } 

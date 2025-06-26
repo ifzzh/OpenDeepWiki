@@ -2,7 +2,7 @@ import { Metadata, ResolvingMetadata } from 'next';
 import RepositoryLayoutServer from './layout.server';
 
 type Props = {
-  params: { owner: string; name: string; branch: string }
+  params: Promise<{ owner: string; name: string; branch: string }>
   children: React.ReactNode
 }
 
@@ -11,7 +11,7 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const { owner, name } = params;
+  const { owner, name } = await params;
 
   // 优化SEO的元数据
   return {
@@ -45,11 +45,13 @@ export default async function RepositoryLayout({
   params,
   children,
 }: Props) {
+  const { owner, name, branch } = await params;
+  
   return (
     <RepositoryLayoutServer
-      owner={params.owner}
-      name={params.name}
-      branch={params.branch}
+      owner={owner}
+      name={name}
+      branch={branch}
     >
       {children}
     </RepositoryLayoutServer>

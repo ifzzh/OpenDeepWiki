@@ -32,24 +32,24 @@ public class OverviewService
         if (classify.HasValue)
         {
             prompt = await PromptContext.Warehouse(nameof(PromptConstant.Warehouse.Overview) + classify,
-                new KernelArguments()
+                new KernelArguments(settings)
                 {
                     ["catalogue"] = catalog,
                     ["git_repository"] = gitRepository.Replace(".git", ""),
                     ["branch"] = readme,
                     ["readme"] = branch
-                });
+                },OpenAIOptions.ChatModel);
         }
         else
         {
             prompt = await PromptContext.Warehouse(nameof(PromptConstant.Warehouse.Overview),
-                new KernelArguments()
+                new KernelArguments(settings)
                 {
                     ["catalogue"] = catalog,
                     ["git_repository"] = gitRepository.Replace(".git", ""),
-                    ["branch"] = readme,
-                    ["readme"] = branch
-                });
+                    ["branch"] = branch,
+                    ["readme"] = readme
+                },OpenAIOptions.ChatModel);
         }
 
         history.AddUserMessage(prompt);
@@ -59,6 +59,21 @@ public class OverviewService
             if (!string.IsNullOrEmpty(item.Content))
             {
                 sr.Append(item.Content);
+            }
+        }
+        
+        if(DocumentOptions.RefineAndEnhanceQuality)
+        {
+            history.AddAssistantMessage(sr.ToString());
+            history.AddUserMessage("You need to generate more detailed new content and ensure the completeness of the content. Please do your best and spare no effort.");
+
+            sr.Clear();
+            await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))
+            {
+                if (!string.IsNullOrEmpty(item.Content))
+                {
+                    sr.Append(item.Content);
+                }
             }
         }
 

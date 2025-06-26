@@ -47,7 +47,6 @@ export default function RepositoriesPage() {
     try {
       setLoading(true);
       const { code, data } = await getRepositoryList(page, size, keyword);
-      console.log(data);
       if (code === 200) {
         setRepositories(data.items);
         setTotal(data.total);
@@ -202,11 +201,9 @@ export default function RepositoriesPage() {
     {
       title: '仓库',
       key: 'name',
-      width: 250,
       render: (_, record) => (
         <Space>
-          <Avatar icon={<FolderOutlined />} style={{ backgroundColor: '#87d068' }} />
-          <Tooltip title={record.address}>
+          <Tooltip title={record.name}>
             <Link
               style={{
                 // 隐藏多行
@@ -218,10 +215,10 @@ export default function RepositoriesPage() {
                 width: '120px',
               }}
               href={`/admin/repositories/${record.id}`}>
-              {record.address}
+              {record.organizationName ? `${record.organizationName}/` : ''}
+              {record.name}
             </Link>
           </Tooltip>
-          {record.isRecommended && <Tag color="gold"><StarOutlined /> 推荐</Tag>}
         </Space>
       ),
     },
@@ -229,6 +226,12 @@ export default function RepositoriesPage() {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
+      ellipsis: true,
+    },
+    {
+      title: '分支',
+      dataIndex: 'branch',
+      key: 'branch',
       ellipsis: true,
     },
     {
@@ -245,6 +248,23 @@ export default function RepositoriesPage() {
       dataIndex: 'type',
       key: 'type',
       render: (type) => <Tag>{type || 'git'}</Tag>,
+    },
+    {
+      title: '异常信息',
+      dataIndex: 'error',
+      key: 'error',
+      render: (text) => (
+        <Tooltip title={text}>
+          <div style={{
+            maxWidth: '200px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {text ? text.slice(0, 20) + (text.length > 20 ? '...' : '') : ''}
+          </div>
+        </Tooltip>
+      ),
     },
     {
       title: '创建时间',
@@ -319,13 +339,6 @@ export default function RepositoriesPage() {
             />
             <Button type="primary" onClick={handleSearch}>搜索</Button>
           </Space>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAddRepository}
-          >
-            添加仓库
-          </Button>
         </div>
 
         <Table
@@ -344,121 +357,48 @@ export default function RepositoriesPage() {
         />
       </Card>
 
-      {/* 添加仓库表单 */}
-      <Modal
-        title="添加仓库"
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onOk={handleFormSubmit}
-        okText="创建"
-        cancelText="取消"
-        width={600}
-      >
-        <Form
-          form={form}
-          layout="vertical"
+      {isEditModalOpen && (
+        <Modal
+          title="编辑仓库"
+          open={isEditModalOpen}
+          onCancel={() => setIsEditModalOpen(false)}
+          onOk={handleEditFormSubmit}
+          okText="保存"
+          cancelText="取消"
+          width={600}
         >
-          <Form.Item
-            name="address"
-            label="仓库地址"
-            rules={[{ required: true, message: '请输入Git仓库地址' }]}
+          <Form
+            form={editForm}
+            layout="vertical"
           >
-            <Input placeholder="例如: https://github.com/username/repo.git" />
-          </Form.Item>
+            <Form.Item
+              name="description"
+              label="描述"
+            >
+              <Input.TextArea rows={4} placeholder="仓库描述" />
+            </Form.Item>
 
-          <Form.Item
-            name="branch"
-            label="分支"
-            help="留空将使用默认分支"
-          >
-            <Input placeholder="例如: main, master" />
-          </Form.Item>
+            <Form.Item
+              name="isRecommended"
+              label="是否推荐"
+            >
+              <Select
+                placeholder="选择是否推荐"
+                options={[
+                  { value: true, label: '推荐' },
+                  { value: false, label: '不推荐' }
+                ]}
+              />
+            </Form.Item>
 
-          <Form.Item
-            name="enableGitAuth"
-            valuePropName="checked"
-          >
-            <Select
-              placeholder="是否需要认证"
-              options={[
-                { value: true, label: '需要认证（私有仓库）' },
-                { value: false, label: '无需认证（公开仓库）' }
-              ]}
-              defaultValue={false}
-            />
-          </Form.Item>
-
-          <Form.Item
-            noStyle
-            shouldUpdate={(prevValues, currentValues) => prevValues.enableGitAuth !== currentValues.enableGitAuth}
-          >
-            {({ getFieldValue }) =>
-              getFieldValue('enableGitAuth') ? (
-                <>
-                  <Form.Item
-                    name="gitUserName"
-                    label="Git用户名"
-                    rules={[{ required: true, message: '请输入Git用户名' }]}
-                  >
-                    <Input placeholder="Git用户名" />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="gitPassword"
-                    label="Git密码/令牌"
-                    rules={[{ required: true, message: '请输入Git密码或令牌' }]}
-                  >
-                    <Input.Password placeholder="Git密码或个人访问令牌" />
-                  </Form.Item>
-                </>
-              ) : null
-            }
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* 编辑仓库表单 */}
-      <Modal
-        title="编辑仓库"
-        open={isEditModalOpen}
-        onCancel={() => setIsEditModalOpen(false)}
-        onOk={handleEditFormSubmit}
-        okText="保存"
-        cancelText="取消"
-        width={600}
-      >
-        <Form
-          form={editForm}
-          layout="vertical"
-        >
-          <Form.Item
-            name="description"
-            label="描述"
-          >
-            <Input.TextArea rows={4} placeholder="仓库描述" />
-          </Form.Item>
-
-          <Form.Item
-            name="isRecommended"
-            label="是否推荐"
-            valuePropName="checked"
-          >
-            <Select
-              options={[
-                { value: true, label: '推荐' },
-                { value: false, label: '不推荐' }
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="prompt"
-            label="构建提示词"
-          >
-            <Input.TextArea rows={4} placeholder="构建提示词（可选）" />
-          </Form.Item>
-        </Form>
-      </Modal>
+            <Form.Item
+              name="prompt"
+              label="构建提示词"
+            >
+              <Input.TextArea rows={4} placeholder="构建提示词（可选）" />
+            </Form.Item>
+          </Form>
+        </Modal>)}
     </div>
   );
 } 

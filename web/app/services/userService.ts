@@ -32,6 +32,24 @@ export interface UpdateUserRequest {
   avatar?: string;
 }
 
+// 更新用户资料接口
+export interface UpdateProfileRequest {
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+// 修改密码接口
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+// 验证密码接口
+export interface VerifyPasswordRequest {
+  password: string;
+}
+
 // 分页响应接口
 export interface PageResponse<T> {
   total: number;
@@ -68,11 +86,19 @@ export async function getUserById(id: string): Promise<ApiResponse<UserInfo>> {
 }
 
 /**
+ * 获取当前用户信息
+ * @returns 当前用户信息
+ */
+export async function getCurrentUser(): Promise<ApiResponse<UserInfo>> {
+  return fetchApi<UserInfo>(`${API_URL}/api/User/CurrentUser`);
+}
+
+/**
  * 创建用户
  * @param user 用户信息
  * @returns 创建结果
  */
-export async function createUser(user: CreateUserRequest): Promise<any> {
+export async function createUser(user: CreateUserRequest): Promise<ApiResponse<UserInfo>> {
   return fetchApi<UserInfo>(`${API_URL}/api/User/User`, {
     method: 'POST',
     body: JSON.stringify(user),
@@ -89,6 +115,58 @@ export async function updateUser(id: string, user: UpdateUserRequest): Promise<A
   return fetchApi<UserInfo>(`${API_URL}/api/User/User?id=${id}`, {
     method: 'PUT',
     body: JSON.stringify(user),
+  });
+}
+
+/**
+ * 更新当前用户资料
+ * @param user 用户资料信息
+ * @returns 更新结果
+ */
+export async function updateCurrentUserProfile(user: UpdateProfileRequest): Promise<ApiResponse<UserInfo>> {
+  return fetchApi<UserInfo>(`${API_URL}/api/User/Profile`, {
+    method: 'PUT',
+    body: JSON.stringify(user),
+  });
+}
+
+/**
+ * 验证当前密码
+ * @param password 当前密码
+ * @returns 验证结果
+ */
+export async function verifyPassword(password: string): Promise<ApiResponse<boolean>> {
+  return fetchApi<boolean>(`${API_URL}/api/User/VerifyPassword`, {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  });
+}
+
+/**
+ * 修改密码
+ * @param changePasswordData 修改密码数据
+ * @returns 修改结果
+ */
+export async function changePassword(changePasswordData: ChangePasswordRequest): Promise<ApiResponse<boolean>> {
+  return fetchApi<boolean>(`${API_URL}/api/User/ChangePassword`, {
+    method: 'POST',
+    body: JSON.stringify(changePasswordData),
+  });
+}
+
+/**
+ * 上传头像
+ * @param file 头像文件
+ * @returns 头像URL
+ */
+export async function uploadAvatar(file: File): Promise<ApiResponse<string>> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return fetchApi(`${API_URL}/api/User/UploadAvatar`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
   });
 }
 

@@ -7,8 +7,8 @@
   "home": {
     "title": "AI驱动的代码知识库",
     "subtitle": "OpenDeepWiki 是参考DeepWiki作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成等功能。",
-    "add_repo_button": "添加新仓库",
-    "query_last_repo_button": "查询上次提交仓库",
+    "add_repo_button": "添加",
+    "query_last_repo_button": "查询",
     "badge": {
       "ai_powered": "AI驱动"
     },
@@ -91,6 +91,7 @@
       "title": "添加仓库",
       "submit_type": "提交方式",
       "git_repo": "Git仓库",
+      "custom_repo": "自定义仓库",
       "upload_zip": "上传压缩包",
       "repo_address": "仓库地址",
       "repo_address_placeholder": "https://github.com/username/repository",
@@ -329,5 +330,19 @@
       "changelog": "更新日志"
     },
     "update_tooltip": "最近更新: {{time}}"
+  },
+  "auth": {
+    "login": "登录",
+    "logout": "退出登录",
+    "logout_success": "退出登录成功",
+    "user": "用户",
+    "settings": "设置",
+    "admin_panel": "管理面板",
+    "joined": "加入于",
+    "role": {
+      "admin": "管理员",
+      "editor": "编辑者",
+      "user": "用户"
+    }
   }
 } 

@@ -1,19 +1,28 @@
 import { toMarkdown } from 'mdast-util-to-markdown';
 import { SKIP, visit } from 'unist-util-visit';
-
 // 预处理函数：确保 think 标签前后有两个换行符
 export const normalizeThinkTags = (markdown: string) => {
-  // 删除```mermaid里面的[]里面的(),保留[]
   return markdown
-    // 处理mermaid代码块中的[]()格式
-      // 确保 <think> 标签前后有两个换行符
-      .replaceAll(/([^\n])\s*<think>/g, '$1\n\n<think>')
-      .replaceAll(/<think>\s*([^\n])/g, '<think>\n\n$1')
-      // 确保 </think> 标签前后有两个换行符
-      .replaceAll(/([^\n])\s*<\/think>/g, '$1\n\n</think>')
-      .replaceAll(/<\/think>\s*([^\n])/g, '</think>\n\n$1')
-      // 处理可能产生的多余换行符
-      .replaceAll(/\n{3,}/g, '\n\n')
+    .replaceAll(/([^\n])\s*<think>/g, '$1\n\n<think>')
+    .replaceAll(/<think>\s*([^\n])/g, '<think>\n\n$1')
+    .replaceAll(/([^\n])\s*<\/think>/g, '$1\n\n</think>')
+    .replaceAll(/<\/think>\s*([^\n])/g, '</think>\n\n$1')
+    .replaceAll(/\n{3,}/g, '\n\n')
+};
+
+// 提取<think>标签中的内容
+export const extractThinkContent = (markdown: string) => {
+  const thinkContents: string[] = [];
+  const regex = /<think>([\s\S]*?)<\/think>/g;
+  let match;
+  
+  while ((match = regex.exec(markdown)) !== null) {
+    if (match[1]) {
+      thinkContents.push(match[1].trim());
+    }
+  }
+  
+  return thinkContents;
 };
 
 export const remarkCaptureThink = () => {

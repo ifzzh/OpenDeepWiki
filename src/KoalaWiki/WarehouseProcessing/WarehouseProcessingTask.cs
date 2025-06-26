@@ -1,4 +1,5 @@
-﻿using KoalaWiki.Entities;
+﻿using KoalaWiki.Domains.Warehouse;
+using KoalaWiki.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace KoalaWiki.WarehouseProcessing;
@@ -33,64 +34,61 @@ public partial class WarehouseProcessingTask(IServiceProvider service, ILogger<W
                 var dbContext = scope.ServiceProvider.GetService<IKoalaWikiContext>();
 
                 // 读取现有的仓库状态=2，并且处理时间满足一星期
-                var warehouses = await dbContext!.Warehouses
+                var warehouse = await dbContext!.Warehouses
                     .Where(x => x.Status == WarehouseStatus.Completed)
-                    .ToListAsync(stoppingToken);
+                    .FirstOrDefaultAsync(stoppingToken);
 
-                var ids = warehouses.Select(x => x.Id).ToArray();
+                if (warehouse == null)
+                {
+                    // 如果没有仓库，等待一段时间后重试
+                    await Task.Delay(1000 * 60, stoppingToken);
+                    continue;
+                }
 
                 var documents = await dbContext.Documents
-                    .Where(x => ids.Contains(x.WarehouseId) && x.LastUpdate < DateTime.Now.AddDays(-updateInterval))
+                    .Where(x => warehouse.Id == x.WarehouseId && x.LastUpdate < DateTime.Now.AddDays(-updateInterval))
                     .ToListAsync(stoppingToken);
 
                 var warehouseIds = documents.Select(x => x.WarehouseId).ToArray();
 
                 // 从这里得到了超过一星期没更新的仓库
-                warehouses = await dbContext.Warehouses
+                warehouse = await dbContext.Warehouses
                     .Where(x => warehouseIds.Contains(x.Id))
-                    .ToListAsync(stoppingToken);
+                    .FirstOrDefaultAsync(stoppingToken);
 
-                if (warehouses.Count == 0)
+                if (warehouse == null)
                 {
                     await Task.Delay(1000 * 60, stoppingToken);
                 }
                 else
                 {
-                    foreach (var warehouse in warehouses)
+                    var document = documents.FirstOrDefault(x => x.WarehouseId == warehouse.Id);
+
+                    var commitId = await HandleAnalyseAsync(warehouse, document, dbContext);
+
+                    if (string.IsNullOrEmpty(commitId))
                     {
-                        var document = documents.FirstOrDefault(x => x.WarehouseId == warehouse.Id);
-
-                        var commitId = await HandleAnalyseAsync(warehouse, document, dbContext);
-
-                        if (string.IsNullOrEmpty(commitId))
-                        {
-                            // 更新git记录
-                            await dbContext.Documents
-                                .Where(x => x.WarehouseId == warehouse.Id)
-                                .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.Now), stoppingToken);
-
-                            return;
-                        }
-
                         // 更新git记录
                         await dbContext.Documents
                             .Where(x => x.WarehouseId == warehouse.Id)
                             .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.Now), stoppingToken);
 
-                        await dbContext.Warehouses.Where(x => x.Id == warehouse.Id)
-                            .ExecuteUpdateAsync(x => x.SetProperty(a => a.Version, commitId), stoppingToken);
+                        return;
                     }
+
+                    // 更新git记录
+                    await dbContext.Documents
+                        .Where(x => x.WarehouseId == warehouse.Id)
+                        .ExecuteUpdateAsync(x => x.SetProperty(a => a.LastUpdate, DateTime.Now), stoppingToken);
+
+                    await dbContext.Warehouses.Where(x => x.Id == warehouse.Id)
+                        .ExecuteUpdateAsync(x => x.SetProperty(a => a.Version, commitId), stoppingToken);
                 }
             }
             catch (Exception exception)
             {
                 logger.LogError(exception, "处理仓库失败");
 
-                await Task.Delay(1000 * 60, stoppingToken);
-            }
-            finally
-            {
-                // 等待一段时间再继续处理
                 await Task.Delay(1000 * 60, stoppingToken);
             }
         }

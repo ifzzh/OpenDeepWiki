@@ -1,28 +1,44 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 
-namespace CodeDependencyAnalyzer
+namespace KoalaWiki.CodeMap
 {
     public class DependencyAnalyzer
     {
         private readonly Dictionary<string, HashSet<string>> _fileDependencies = new();
         private readonly Dictionary<string, HashSet<string>> _functionDependencies = new();
-        private readonly Dictionary<string, List<FunctionInfo>> _fileToFunctions = new();
+        private readonly Dictionary<string, List<CodeMapFunctionInfo>> _fileToFunctions = new();
         private readonly Dictionary<string, string> _functionToFile = new();
         private readonly List<ILanguageParser> _parsers = new();
+        private readonly Dictionary<string, ISemanticAnalyzer> _semanticAnalyzers = new();
         private readonly string _basePath;
         private bool _isInitialized = false;
+        private ProjectSemanticModel? _semanticModel;
+        private List<GitIgnoreRule> _gitIgnoreRules = new();
 
         public DependencyAnalyzer(string basePath)
         {
             _basePath = basePath;
             
-            // 注册不同语言的解析器
-            _parsers.Add(new CSharpParser());
+            // 注册传统解析器（作为回退）
+            // _parsers.Add(new CSharpParser());
             _parsers.Add(new JavaScriptParser());
             _parsers.Add(new PythonParser());
             _parsers.Add(new JavaParser());
             _parsers.Add(new CppParser());
+            _parsers.Add(new GoParser());
+            
+            // 注册语义分析器
+            RegisterSemanticAnalyzer(new GoSemanticAnalyzer());
+            // TODO: 添加其他语言的语义分析器
+        }
+        
+        private void RegisterSemanticAnalyzer(ISemanticAnalyzer analyzer)
+        {
+            foreach (var extension in analyzer.SupportedExtensions)
+            {
+                _semanticAnalyzers[extension] = analyzer;
+            }
         }
 
         public async Task Initialize()
@@ -30,14 +46,19 @@ namespace CodeDependencyAnalyzer
             if (_isInitialized)
                 return;
                 
+            // 初始化.gitignore规则
+            await InitializeGitIgnore();
+            
             var files = GetAllSourceFiles(_basePath);
             
-            // 并行处理所有文件以提高性能
-            var tasks = files.Select(async file => 
+            // 优先使用语义分析器
+            await InitializeSemanticAnalysis(files);
+            
+            // 对不支持语义分析的文件使用传统解析器
+            var traditionalFiles = files.Where(f => !HasSemanticAnalyzer(f)).ToList();
+            var traditionalTasks = traditionalFiles.Select(async file => 
             {
-                var extension = Path.GetExtension(file).ToLowerInvariant();
                 var parser = GetParserForFile(file);
-                
                 if (parser != null)
                 {
                     var fileContent = await File.ReadAllTextAsync(file);
@@ -45,8 +66,119 @@ namespace CodeDependencyAnalyzer
                 }
             });
             
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(traditionalTasks);
             _isInitialized = true;
+        }
+        
+        private async Task InitializeSemanticAnalysis(List<string> files)
+        {
+            var groupedFiles = files.GroupBy(f => Path.GetExtension(f).ToLowerInvariant())
+                                   .Where(g => _semanticAnalyzers.ContainsKey(g.Key))
+                                   .ToDictionary(g => g.Key, g => g.ToArray());
+            
+            var tasks = groupedFiles.Select(async kvp =>
+            {
+                var analyzer = _semanticAnalyzers[kvp.Key];
+                var projectModel = await analyzer.AnalyzeProjectAsync(kvp.Value);
+                return projectModel;
+            });
+            
+            var models = await Task.WhenAll(tasks);
+            
+            // 合并语义模型
+            _semanticModel = MergeSemanticModels(models);
+            
+            // 将语义模型转换为传统格式以保持兼容性
+            ConvertSemanticToTraditional();
+        }
+        
+        private bool HasSemanticAnalyzer(string filePath)
+        {
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            return _semanticAnalyzers.ContainsKey(extension);
+        }
+        
+        private ProjectSemanticModel MergeSemanticModels(ProjectSemanticModel[] models)
+        {
+            var merged = new ProjectSemanticModel();
+            
+            foreach (var model in models)
+            {
+                foreach (var kvp in model.Files)
+                {
+                    merged.Files[kvp.Key] = kvp.Value;
+                }
+                
+                foreach (var kvp in model.Dependencies)
+                {
+                    merged.Dependencies[kvp.Key] = kvp.Value;
+                }
+                
+                foreach (var kvp in model.AllTypes)
+                {
+                    merged.AllTypes[kvp.Key] = kvp.Value;
+                }
+                
+                foreach (var kvp in model.AllFunctions)
+                {
+                    merged.AllFunctions[kvp.Key] = kvp.Value;
+                }
+            }
+            
+            return merged;
+        }
+        
+        private void ConvertSemanticToTraditional()
+        {
+            if (_semanticModel == null) return;
+            
+            // 转换依赖关系
+            foreach (var kvp in _semanticModel.Dependencies)
+            {
+                _fileDependencies[kvp.Key] = new HashSet<string>(kvp.Value);
+            }
+            
+            // 转换函数信息
+            foreach (var fileModel in _semanticModel.Files.Values)
+            {
+                var functionList = new List<CodeMapFunctionInfo>();
+                
+                // 添加顶级函数
+                foreach (var func in fileModel.Functions)
+                {
+                    functionList.Add(ConvertSemanticFunction(func));
+                }
+                
+                // 添加类型中的方法
+                foreach (var type in fileModel.Types)
+                {
+                    foreach (var method in type.Methods)
+                    {
+                        functionList.Add(ConvertSemanticFunction(method));
+                    }
+                }
+                
+                _fileToFunctions[fileModel.FilePath] = functionList;
+                
+                // 建立函数到文件的映射
+                foreach (var func in functionList)
+                {
+                    _functionToFile[func.FullName] = fileModel.FilePath;
+                }
+            }
+        }
+        
+        private CodeMapFunctionInfo ConvertSemanticFunction(CodeMap.FunctionInfo semanticFunc)
+        {
+            return new CodeMapFunctionInfo
+            {
+                Name = semanticFunc.Name,
+                FullName = semanticFunc.FullName,
+                FilePath = semanticFunc.FilePath,
+                LineNumber = semanticFunc.LineNumber,
+                Body = "", // 语义分析不提供函数体
+                Calls = semanticFunc.Calls.Select(c => c.Name).ToList()
+            };
         }
 
         private async Task ProcessFile(string filePath, string fileContent, ILanguageParser parser)
@@ -64,11 +196,11 @@ namespace CodeDependencyAnalyzer
                 
                 // 提取函数信息
                 var functions = parser.ExtractFunctions(fileContent);
-                var functionInfoList = new List<FunctionInfo>();
+                var functionInfoList = new List<CodeMapFunctionInfo>();
                 
                 foreach (var function in functions)
                 {
-                    var functionInfo = new FunctionInfo
+                    var functionInfo = new CodeMapFunctionInfo
                     {
                         Name = function.Name,
                         FullName = $"{filePath}:{function.Name}",
@@ -112,7 +244,6 @@ namespace CodeDependencyAnalyzer
             await Initialize();
             
             var normalizedPath = Path.GetFullPath(filePath);
-            var fullFunctionId = $"{normalizedPath}:{functionName}";
             var visited = new HashSet<string>();
             
             return BuildFunctionDependencyTree(normalizedPath, functionName, visited, 0);
@@ -120,7 +251,7 @@ namespace CodeDependencyAnalyzer
 
         private DependencyTree BuildFileDependencyTree(string filePath, HashSet<string> visited, int level, int maxDepth = 10)
         {
-            if (level > maxDepth || visited.Contains(filePath))
+            if (level > maxDepth || !visited.Add(filePath))
             {
                 return new DependencyTree
                 {
@@ -130,9 +261,7 @@ namespace CodeDependencyAnalyzer
                     IsCyclic = visited.Contains(filePath)
                 };
             }
-            
-            visited.Add(filePath);
-            
+
             var tree = new DependencyTree
             {
                 NodeType = DependencyNodeType.File,
@@ -169,11 +298,11 @@ namespace CodeDependencyAnalyzer
             return tree;
         }
 
-        private DependencyTree BuildFunctionDependencyTree(string filePath, string functionName, HashSet<string> visited, int level, int maxDepth = 20)
+        private DependencyTree BuildFunctionDependencyTree(string filePath, string functionName, HashSet<string> visited, int level, int maxDepth = 10)
         {
             var fullFunctionId = $"{filePath}:{functionName}";
             
-            if (level > maxDepth || visited.Contains(fullFunctionId))
+            if (level > maxDepth || !visited.Add(fullFunctionId))
             {
                 return new DependencyTree
                 {
@@ -183,9 +312,7 @@ namespace CodeDependencyAnalyzer
                     IsCyclic = visited.Contains(fullFunctionId)
                 };
             }
-            
-            visited.Add(fullFunctionId);
-            
+
             var tree = new DependencyTree
             {
                 NodeType = DependencyNodeType.Function,
@@ -243,7 +370,7 @@ namespace CodeDependencyAnalyzer
             return result;
         }
 
-        private FunctionInfo ResolveFunctionCall(string functionCall, string currentFile)
+        private CodeMapFunctionInfo ResolveFunctionCall(string functionCall, string currentFile)
         {
             // 检查是否为本地函数
             if (_fileToFunctions.TryGetValue(currentFile, out var functions))
@@ -290,21 +417,204 @@ namespace CodeDependencyAnalyzer
             
             return extension switch
             {
-                ".cs" => _parsers.FirstOrDefault(p => p is CSharpParser),
+                // ".cs" => _parsers.FirstOrDefault(p => p is CSharpParser),
                 ".js" => _parsers.FirstOrDefault(p => p is JavaScriptParser),
                 ".py" => _parsers.FirstOrDefault(p => p is PythonParser),
                 ".java" => _parsers.FirstOrDefault(p => p is JavaParser),
                 ".cpp" or ".h" or ".hpp" or ".cc" => _parsers.FirstOrDefault(p => p is CppParser),
+                ".go" => _parsers.FirstOrDefault(p => p is GoParser),
                 _ => null
             };
         }
 
         private List<string> GetAllSourceFiles(string path)
         {
-            var extensions = new[] { ".cs", ".js", ".py", ".java", ".cpp", ".h", ".hpp", ".cc" };
-            return Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
-                .Where(f => extensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
-                .ToList();
+            var extensions = new[] { ".cs", ".js", ".py", ".java", ".cpp", ".h", ".hpp", ".cc", ".go" };
+            var allFiles = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
+                .Where(f => extensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
+            
+            // 应用.gitignore规则过滤
+            return allFiles.Where(f => !IsIgnoredByGitIgnore(f)).ToList();
+        }
+
+        private async Task InitializeGitIgnore()
+        {
+            var gitIgnorePath = Path.Combine(_basePath, ".gitignore");
+            if (File.Exists(gitIgnorePath))
+            {
+                var lines = await File.ReadAllLinesAsync(gitIgnorePath);
+                _gitIgnoreRules = ParseGitIgnoreRules(lines);
+            }
+        }
+
+        private List<GitIgnoreRule> ParseGitIgnoreRules(string[] lines)
+        {
+            var rules = new List<GitIgnoreRule>();
+            
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                
+                // 跳过空行和注释
+                if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith("#"))
+                    continue;
+                
+                var isNegation = trimmedLine.StartsWith("!");
+                var pattern = isNegation ? trimmedLine.Substring(1) : trimmedLine;
+                
+                // 处理目录规则（以/结尾）
+                var isDirectory = pattern.EndsWith("/");
+                if (isDirectory)
+                    pattern = pattern.TrimEnd('/');
+                
+                // 转换git ignore模式为正则表达式
+                var regex = ConvertGitIgnorePatternToRegex(pattern);
+                
+                rules.Add(new GitIgnoreRule
+                {
+                    OriginalPattern = trimmedLine,
+                    Regex = new Regex(regex, RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                    IsNegation = isNegation,
+                    IsDirectory = isDirectory
+                });
+            }
+            
+            return rules;
+        }
+
+        private string ConvertGitIgnorePatternToRegex(string pattern)
+        {
+            var sb = new StringBuilder();
+            
+            // 如果模式以/开头，表示从根目录开始匹配
+            var isAbsolute = pattern.StartsWith("/");
+            if (isAbsolute)
+            {
+                pattern = pattern.Substring(1);
+                sb.Append("^");
+            }
+            else
+            {
+                // 非绝对路径可以匹配任何位置
+                sb.Append("(^|/)");
+            }
+            
+            // 转换通配符和特殊字符
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                char c = pattern[i];
+                switch (c)
+                {
+                    case '*':
+                        if (i + 1 < pattern.Length && pattern[i + 1] == '*')
+                        {
+                            // ** 匹配任意层级目录
+                            if (i + 2 < pattern.Length && pattern[i + 2] == '/')
+                            {
+                                sb.Append("(.*/)");
+                                i += 2; // 跳过 **/ 
+                            }
+                            else
+                            {
+                                sb.Append(".*");
+                                i++; // 跳过第二个 *
+                            }
+                        }
+                        else
+                        {
+                            // 单个 * 匹配除路径分隔符外的任意字符
+                            sb.Append("[^/]*");
+                        }
+                        break;
+                    case '?':
+                        sb.Append("[^/]");
+                        break;
+                    case '[':
+                        // 字符类，直接添加
+                        var endBracket = pattern.IndexOf(']', i + 1);
+                        if (endBracket > i)
+                        {
+                            sb.Append(pattern.Substring(i, endBracket - i + 1));
+                            i = endBracket;
+                        }
+                        else
+                        {
+                            sb.Append("\\[");
+                        }
+                        break;
+                    case '.':
+                    case '^':
+                    case '$':
+                    case '+':
+                    case '(':
+                    case ')':
+                    case '{':
+                    case '}':
+                    case '|':
+                    case '\\':
+                        // 转义正则表达式特殊字符
+                        sb.Append('\\');
+                        sb.Append(c);
+                        break;
+                    default:
+                        sb.Append(c);
+                        break;
+                }
+            }
+            
+            // 如果不是绝对路径，在末尾添加边界匹配
+            if (!isAbsolute)
+            {
+                sb.Append("($|/)");
+            }
+            else
+            {
+                sb.Append("$");
+            }
+            
+            return sb.ToString();
+        }
+
+        private bool IsIgnoredByGitIgnore(string filePath)
+        {
+            if (_gitIgnoreRules.Count == 0)
+                return false;
+            
+            // 获取相对于_basePath的路径
+            var relativePath = Path.GetRelativePath(_basePath, filePath).Replace('\\', '/');
+            
+            bool isIgnored = false;
+            
+            foreach (var rule in _gitIgnoreRules)
+            {
+                bool matches = false;
+                
+                if (rule.IsDirectory)
+                {
+                    // 对于目录规则，检查是否是目录或在该目录下的文件
+                    var dirPath = Path.GetDirectoryName(relativePath)?.Replace('\\', '/') ?? "";
+                    matches = rule.Regex.IsMatch(dirPath) || rule.Regex.IsMatch(relativePath);
+                }
+                else
+                {
+                    // 文件规则
+                    matches = rule.Regex.IsMatch(relativePath);
+                }
+                
+                if (matches)
+                {
+                    if (rule.IsNegation)
+                    {
+                        isIgnored = false; // 否定规则，取消忽略
+                    }
+                    else
+                    {
+                        isIgnored = true; // 匹配忽略规则
+                    }
+                }
+            }
+            
+            return isIgnored;
         }
 
         public string GenerateDependencyTreeVisualization(DependencyTree tree)
@@ -367,6 +677,27 @@ namespace CodeDependencyAnalyzer
             return sb.ToString();
         }
 
+        /// <summary>
+        /// 检查指定文件是否被.gitignore规则忽略
+        /// </summary>
+        /// <param name="filePath">要检查的文件路径</param>
+        /// <returns>如果文件被忽略返回true，否则返回false</returns>
+        public async Task<bool> IsFileIgnored(string filePath)
+        {
+            await InitializeGitIgnore();
+            return IsIgnoredByGitIgnore(filePath);
+        }
+
+        /// <summary>
+        /// 获取当前加载的.gitignore规则信息
+        /// </summary>
+        /// <returns>规则信息的列表</returns>
+        public async Task<List<string>> GetGitIgnoreRules()
+        {
+            await InitializeGitIgnore();
+            return _gitIgnoreRules.Select(r => r.OriginalPattern).ToList();
+        }
+
         private void GenerateDotNodes(DependencyTree node, StringBuilder sb, Dictionary<string, int> nodeCounter, string parentId = null)
         {
             // 生成唯一节点ID
@@ -405,7 +736,7 @@ namespace CodeDependencyAnalyzer
         }
     }
 
-    public class FunctionInfo
+    public class CodeMapFunctionInfo
     {
         public string Name { get; set; }
         public string FullName { get; set; }
@@ -444,776 +775,11 @@ namespace CodeDependencyAnalyzer
         public int LineNumber { get; set; }
     }
 
-    public interface ILanguageParser
+    public class GitIgnoreRule
     {
-        List<string> ExtractImports(string fileContent);
-        List<Function> ExtractFunctions(string fileContent);
-        List<string> ExtractFunctionCalls(string functionBody);
-        string ResolveImportPath(string import, string currentFilePath, string basePath);
-        int GetFunctionLineNumber(string fileContent, string functionName);
-    }
-
-    public class CSharpParser : ILanguageParser
-    {
-        public List<string> ExtractImports(string fileContent)
-        {
-            var imports = new List<string>();
-            // var syntaxTree = CSharpSyntaxTree.ParseText(fileContent);
-            // var root = syntaxTree.GetCompilationUnitRoot();
-            //
-            // foreach (var usingDirective in root.Usings)
-            // {
-            //     imports.Add(usingDirective.Name.ToString());
-            // }
-            
-            return imports;
-        }
-
-        public List<Function> ExtractFunctions(string fileContent)
-        {
-            var functions = new List<Function>();
-            // var syntaxTree = CSharpSyntaxTree.ParseText(fileContent);
-            // var root = syntaxTree.GetCompilationUnitRoot();
-            //
-            // // 提取所有方法声明
-            // var methodDeclarations = root.DescendantNodes().OfType<MethodDeclarationSyntax>();
-            //
-            // foreach (var method in methodDeclarations)
-            // {
-            //     functions.Add(new Function
-            //     {
-            //         Name = method.Identifier.ValueText,
-            //         Body = method.Body?.ToString() ?? method.ExpressionBody?.ToString() ?? string.Empty
-            //     });
-            // }
-            
-            return functions;
-        }
-
-        public List<string> ExtractFunctionCalls(string functionBody)
-        {
-            var functionCalls = new List<string>();
-            
-            // try
-            // {
-            //     var syntaxTree = CSharpSyntaxTree.ParseText($"class C {{ void M() {{ {functionBody} }} }}");
-            //     var root = syntaxTree.GetCompilationUnitRoot();
-            //     
-            //     // 提取所有方法调用
-            //     var invocations = root.DescendantNodes().OfType<InvocationExpressionSyntax>();
-            //     
-            //     foreach (var invocation in invocations)
-            //     {
-            //         if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
-            //         {
-            //             functionCalls.Add(memberAccess.Name.Identifier.ValueText);
-            //         }
-            //         else if (invocation.Expression is IdentifierNameSyntax identifier)
-            //         {
-            //             functionCalls.Add(identifier.Identifier.ValueText);
-            //         }
-            //     }
-            // }
-            // catch
-            // {
-            //     // 使用正则表达式作为备用解析方法
-            //     var callRegex = new Regex(@"(\w+)\s*\(", RegexOptions.Compiled);
-            //     var matches = callRegex.Matches(functionBody);
-            //     
-            //     foreach (Match match in matches)
-            //     {
-            //         var name = match.Groups[1].Value;
-            //         if (!new[] { "if", "for", "while", "switch", "catch" }.Contains(name))
-            //         {
-            //             functionCalls.Add(name);
-            //         }
-            //     }
-            // }
-            
-            return functionCalls;
-        }
-
-        public string ResolveImportPath(string import, string currentFilePath, string basePath)
-        {
-            // C#使用命名空间而非直接引用文件，需要解析项目文件
-            var currentDir = Path.GetDirectoryName(currentFilePath);
-            
-            // 尝试从项目中查找类型
-            var parts = import.Split('.');
-            var typeName = parts.Last();
-            
-            // 在项目中查找包含此类型名称的文件
-            var possibleFiles = Directory.GetFiles(basePath, "*.cs", SearchOption.AllDirectories);
-            
-            foreach (var file in possibleFiles)
-            {
-                if (file == currentFilePath) continue;
-                
-                var content = File.ReadAllText(file);
-                // 检查文件是否包含此类型声明
-                if (content.Contains($"class {typeName}") || 
-                    content.Contains($"struct {typeName}") || 
-                    content.Contains($"interface {typeName}") || 
-                    content.Contains($"enum {typeName}"))
-                {
-                    // 检查命名空间是否匹配
-                    var namespaceRegex = new Regex($@"namespace\s+({string.Join(@"\.", parts.Take(parts.Length - 1))})\s*{{");
-                    if (namespaceRegex.IsMatch(content))
-                    {
-                        return file;
-                    }
-                }
-            }
-            
-            return null;
-        }
-
-        public int GetFunctionLineNumber(string fileContent, string functionName)
-        {
-            var lines = fileContent.Split('\n');
-            var methodRegex = new Regex($@"\b{functionName}\s*\(");
-            
-            for (int i = 0; i < lines.Length; i++)
-            {
-                if (methodRegex.IsMatch(lines[i]) && lines[i].Contains("void") || 
-                    lines[i].Contains("int") || lines[i].Contains("string") || 
-                    lines[i].Contains("bool") || lines[i].Contains("object") ||
-                    lines[i].Contains("Task"))
-                {
-                    return i + 1;
-                }
-            }
-            
-            return 0;
-        }
-    }
-
-    public class JavaScriptParser : ILanguageParser
-    {
-        public List<string> ExtractImports(string fileContent)
-        {
-            var imports = new List<string>();
-            
-            // 匹配ES6导入语句
-            var importRegex = new Regex(@"import\s+(?:{[^}]*}|\*\s+as\s+\w+|\w+)\s+from\s+['""]([^'""]+)['""];", RegexOptions.Compiled);
-            var matches = importRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                imports.Add(match.Groups[1].Value);
-            }
-            
-            // 匹配CommonJS导入
-            var requireRegex = new Regex(@"(?:const|let|var)\s+(?:{\s*[^}]*\s*}|\w+)\s*=\s*require\(['""]([^'""]+)['""]", RegexOptions.Compiled);
-            matches = requireRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                imports.Add(match.Groups[1].Value);
-            }
-            
-            return imports;
-        }
-
-        public List<Function> ExtractFunctions(string fileContent)
-        {
-            var functions = new List<Function>();
-            
-            // 匹配函数声明
-            var funcRegex = new Regex(@"(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*function|(?:const|let|var)\s+(\w+)\s*=\s*\([^)]*\)\s*=>)\s*{([^{}]*(?:{[^{}]*(?:{[^{}]*}[^{}]*)*}[^{}]*)*)}", RegexOptions.Compiled | RegexOptions.Singleline);
-            var matches = funcRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                var name = match.Groups[1].Success ? match.Groups[1].Value : 
-                           match.Groups[2].Success ? match.Groups[2].Value :
-                           match.Groups[3].Value;
-                
-                functions.Add(new Function
-                {
-                    Name = name,
-                    Body = match.Groups[4].Value
-                });
-            }
-            
-            // 匹配类方法
-            var methodRegex = new Regex(@"(\w+)\s*\([^)]*\)\s*{([^{}]*(?:{[^{}]*(?:{[^{}]*}[^{}]*)*}[^{}]*)*)}", RegexOptions.Compiled | RegexOptions.Singleline);
-            matches = methodRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                if (!match.Groups[1].Value.Equals("function", StringComparison.OrdinalIgnoreCase))
-                {
-                    functions.Add(new Function
-                    {
-                        Name = match.Groups[1].Value,
-                        Body = match.Groups[2].Value
-                    });
-                }
-            }
-            
-            return functions;
-        }
-
-        public List<string> ExtractFunctionCalls(string functionBody)
-        {
-            var functionCalls = new List<string>();
-            
-            // 匹配函数调用
-            var callRegex = new Regex(@"(\w+)\s*\(", RegexOptions.Compiled);
-            var matches = callRegex.Matches(functionBody);
-            
-            foreach (Match match in matches)
-            {
-                var name = match.Groups[1].Value;
-                // 过滤一些常见的JS API和关键字
-                if (!new[] { "if", "for", "while", "switch", "catch" }.Contains(name))
-                {
-                    functionCalls.Add(name);
-                }
-            }
-            
-            // 匹配方法调用
-            var methodCallRegex = new Regex(@"(\w+)\.(\w+)\s*\(", RegexOptions.Compiled);
-            matches = methodCallRegex.Matches(functionBody);
-            
-            foreach (Match match in matches)
-            {
-                functionCalls.Add(match.Groups[2].Value);
-            }
-            
-            return functionCalls;
-        }
-
-        public string ResolveImportPath(string import, string currentFilePath, string basePath)
-        {
-            var currentDir = Path.GetDirectoryName(currentFilePath);
-            
-            // 处理相对路径导入
-            if (import.StartsWith("./") || import.StartsWith("../"))
-            {
-                var resolvedPath = Path.GetFullPath(Path.Combine(currentDir, import));
-                
-                // 处理没有扩展名的情况
-                if (!Path.HasExtension(resolvedPath))
-                {
-                    if (File.Exists(resolvedPath + ".js")) return resolvedPath + ".js";
-                    if (File.Exists(resolvedPath + ".jsx")) return resolvedPath + ".jsx";
-                    if (File.Exists(resolvedPath + ".ts")) return resolvedPath + ".ts";
-                    if (File.Exists(resolvedPath + ".tsx")) return resolvedPath + ".tsx";
-                    
-                    // 检查是否为目录中的index文件
-                    if (Directory.Exists(resolvedPath))
-                    {
-                        if (File.Exists(Path.Combine(resolvedPath, "index.js"))) 
-                            return Path.Combine(resolvedPath, "index.js");
-                        if (File.Exists(Path.Combine(resolvedPath, "index.jsx"))) 
-                            return Path.Combine(resolvedPath, "index.jsx");
-                        if (File.Exists(Path.Combine(resolvedPath, "index.ts"))) 
-                            return Path.Combine(resolvedPath, "index.ts");
-                        if (File.Exists(Path.Combine(resolvedPath, "index.tsx"))) 
-                            return Path.Combine(resolvedPath, "index.tsx");
-                    }
-                }
-                else if (File.Exists(resolvedPath))
-                {
-                    return resolvedPath;
-                }
-            }
-            // 处理包导入
-            else if (!import.StartsWith("/"))
-            {
-                // 在node_modules中搜索
-                var nodeModulesPath = FindNodeModulesPath(currentDir);
-                if (!string.IsNullOrEmpty(nodeModulesPath))
-                {
-                    var packagePath = Path.Combine(nodeModulesPath, import);
-                    
-                    // 检查包入口点
-                    if (Directory.Exists(packagePath))
-                    {
-                        // 读取package.json
-                        var packageJson = Path.Combine(packagePath, "package.json");
-                        if (File.Exists(packageJson))
-                        {
-                            try
-                            {
-                                var jsonContent = File.ReadAllText(packageJson);
-                                var mainRegex = new Regex(@"""main"":\s*""([^""]+)""");
-                                var match = mainRegex.Match(jsonContent);
-                                if (match.Success)
-                                {
-                                    var mainFile = Path.Combine(packagePath, match.Groups[1].Value);
-                                    if (File.Exists(mainFile)) return mainFile;
-                                }
-                            }
-                            catch
-                            {
-                                // 忽略JSON解析错误
-                            }
-                        }
-                        
-                        // 默认检查index文件
-                        if (File.Exists(Path.Combine(packagePath, "index.js")))
-                            return Path.Combine(packagePath, "index.js");
-                    }
-                }
-                
-                // 尝试在项目中搜索匹配的文件
-                var possibleFiles = Directory.GetFiles(basePath, "*.js", SearchOption.AllDirectories);
-                foreach (var file in possibleFiles)
-                {
-                    if (Path.GetFileNameWithoutExtension(file) == import || 
-                        Path.GetFileName(file) == import + ".js")
-                    {
-                        return file;
-                    }
-                }
-            }
-            
-            return null;
-        }
-        private string FindNodeModulesPath(string startDir)
-        {
-            var currentDir = startDir;
-            while (!string.IsNullOrEmpty(currentDir))
-            {
-                var nodeModulesPath = Path.Combine(currentDir, "node_modules");
-                if (Directory.Exists(nodeModulesPath))
-                {
-                    return nodeModulesPath;
-                }
-                
-                currentDir = Path.GetDirectoryName(currentDir);
-            }
-            
-            return null;
-        }
-
-        public int GetFunctionLineNumber(string fileContent, string functionName)
-        {
-            var lines = fileContent.Split('\n');
-            
-            // 检查函数声明
-            var funcRegex = new Regex($@"function\s+{functionName}\s*\(|const\s+{functionName}\s*=\s*function|const\s+{functionName}\s*=\s*\(|let\s+{functionName}\s*=\s*function|let\s+{functionName}\s*=\s*\(|var\s+{functionName}\s*=\s*function|var\s+{functionName}\s*=\s*\(");
-            
-            for (int i = 0; i < lines.Length; i++)
-            {
-                if (funcRegex.IsMatch(lines[i]))
-                {
-                    return i + 1;
-                }
-            }
-            
-            // 检查类方法
-            var methodRegex = new Regex($@"\b{functionName}\s*\([^)]*\)\s*{{");
-            
-            for (int i = 0; i < lines.Length; i++)
-            {
-                if (methodRegex.IsMatch(lines[i]))
-                {
-                    return i + 1;
-                }
-            }
-            
-            return 0;
-        }
-    }
-
-    public class PythonParser : ILanguageParser
-    {
-        public List<string> ExtractImports(string fileContent)
-        {
-            var imports = new List<string>();
-            
-            // 匹配import语句
-            var importRegex = new Regex(@"import\s+([^\s,;]+)(?:\s*,\s*([^\s,;]+))*", RegexOptions.Compiled);
-            var matches = importRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                for (int i = 1; i < match.Groups.Count; i++)
-                {
-                    if (match.Groups[i].Success && !string.IsNullOrWhiteSpace(match.Groups[i].Value))
-                    {
-                        imports.Add(match.Groups[i].Value);
-                    }
-                }
-            }
-            
-            // 匹配from...import语句
-            var fromImportRegex = new Regex(@"from\s+([^\s]+)\s+import\s+(?:([^\s,;]+)(?:\s*,\s*([^\s,;]+))*|\*)", RegexOptions.Compiled);
-            matches = fromImportRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                imports.Add(match.Groups[1].Value);
-            }
-            
-            return imports;
-        }
-
-        public List<Function> ExtractFunctions(string fileContent)
-        {
-            var functions = new List<Function>();
-            
-            // 匹配函数定义
-            var funcRegex = new Regex(@"def\s+(\w+)\s*\([^)]*\)\s*(?:->\s*[^:]+)?\s*:(.*?)(?=\n(?:def|class)|\Z)", RegexOptions.Compiled | RegexOptions.Singleline);
-            var matches = funcRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                functions.Add(new Function
-                {
-                    Name = match.Groups[1].Value,
-                    Body = match.Groups[2].Value
-                });
-            }
-            
-            return functions;
-        }
-
-        public List<string> ExtractFunctionCalls(string functionBody)
-        {
-            var functionCalls = new List<string>();
-            
-            // 匹配函数调用
-            var callRegex = new Regex(@"(\w+)\s*\(", RegexOptions.Compiled);
-            var matches = callRegex.Matches(functionBody);
-            
-            foreach (Match match in matches)
-            {
-                var name = match.Groups[1].Value;
-                // 过滤一些常见的Python内置函数和关键字
-                if (!new[] { "print", "len", "int", "str", "list", "dict", "set", "tuple", "if", "while", "for" }.Contains(name))
-                {
-                    functionCalls.Add(name);
-                }
-            }
-            
-            // 匹配方法调用
-            var methodCallRegex = new Regex(@"(\w+)\.(\w+)\s*\(", RegexOptions.Compiled);
-            matches = methodCallRegex.Matches(functionBody);
-            
-            foreach (Match match in matches)
-            {
-                functionCalls.Add(match.Groups[2].Value);
-            }
-            
-            return functionCalls;
-        }
-
-        public string ResolveImportPath(string import, string currentFilePath, string basePath)
-        {
-            var currentDir = Path.GetDirectoryName(currentFilePath);
-            
-            // 处理相对导入（以.开头）
-            if (import.StartsWith("."))
-            {
-                var parts = import.Split('.');
-                var dir = currentDir;
-                
-                // 处理上级目录导入
-                for (int i = 0; i < parts.Length; i++)
-                {
-                    if (string.IsNullOrEmpty(parts[i]))
-                    {
-                        dir = Path.GetDirectoryName(dir);
-                    }
-                    else
-                    {
-                        var modulePath = Path.Combine(dir, parts[i] + ".py");
-                        if (File.Exists(modulePath))
-                        {
-                            return modulePath;
-                        }
-                        
-                        // 检查是否为包（目录）
-                        var packagePath = Path.Combine(dir, parts[i]);
-                        var initPath = Path.Combine(packagePath, "__init__.py");
-                        if (Directory.Exists(packagePath) && File.Exists(initPath))
-                        {
-                            return initPath;
-                        }
-                    }
-                }
-            }
-            // 处理绝对导入
-            else
-            {
-                // 搜索整个项目中的模块
-                var moduleName = import.Split('.')[0];
-                var possibleFiles = Directory.GetFiles(basePath, moduleName + ".py", SearchOption.AllDirectories);
-                
-                if (possibleFiles.Length > 0)
-                {
-                    return possibleFiles[0];
-                }
-                
-                // 搜索包
-                var possibleDirs = Directory.GetDirectories(basePath, moduleName, SearchOption.AllDirectories);
-                foreach (var dir in possibleDirs)
-                {
-                    var initPath = Path.Combine(dir, "__init__.py");
-                    if (File.Exists(initPath))
-                    {
-                        return initPath;
-                    }
-                }
-            }
-            
-            return null;
-        }
-
-        public int GetFunctionLineNumber(string fileContent, string functionName)
-        {
-            var lines = fileContent.Split('\n');
-            var funcRegex = new Regex($@"def\s+{functionName}\s*\(");
-            
-            for (int i = 0; i < lines.Length; i++)
-            {
-                if (funcRegex.IsMatch(lines[i]))
-                {
-                    return i + 1;
-                }
-            }
-            
-            return 0;
-        }
-    }
-
-    public class JavaParser : ILanguageParser
-    {
-        public List<string> ExtractImports(string fileContent)
-        {
-            var imports = new List<string>();
-            
-            // 匹配import语句
-            var importRegex = new Regex(@"import\s+([^;]+);", RegexOptions.Compiled);
-            var matches = importRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                imports.Add(match.Groups[1].Value.Trim());
-            }
-            
-            return imports;
-        }
-
-        public List<Function> ExtractFunctions(string fileContent)
-        {
-            var functions = new List<Function>();
-            
-            // 匹配方法定义
-            var methodRegex = new Regex(@"(?:public|private|protected|static|\s) +(?:[a-zA-Z0-9_\.<>\[\]]+) +([a-zA-Z0-9_]+) *\([^)]*\) *(?:throws [^{]*)?\{([^{}]*(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}[^{}]*)*)\}", RegexOptions.Compiled);
-            var matches = methodRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                var name = match.Groups[1].Value;
-                if (!new[] { "if", "for", "while", "switch", "catch" }.Contains(name))
-                {
-                    functions.Add(new Function
-                    {
-                        Name = name,
-                        Body = match.Groups[2].Value
-                    });
-                }
-            }
-            
-            return functions;
-        }
-
-        public List<string> ExtractFunctionCalls(string functionBody)
-        {
-            var functionCalls = new List<string>();
-            
-            // 匹配方法调用
-            var callRegex = new Regex(@"(?:\b[a-zA-Z0-9_]+\.)?\b([a-zA-Z0-9_]+)\s*\(", RegexOptions.Compiled);
-            var matches = callRegex.Matches(functionBody);
-            
-            foreach (Match match in matches)
-            {
-                var name = match.Groups[1].Value;
-                // 过滤一些常见的关键字
-                if (!new[] { "if", "for", "while", "switch", "catch" }.Contains(name))
-                {
-                    functionCalls.Add(name);
-                }
-            }
-            
-            return functionCalls;
-        }
-
-        public string ResolveImportPath(string import, string currentFilePath, string basePath)
-        {
-            var parts = import.Split('.');
-            var className = parts[parts.Length - 1];
-            
-            // 处理wildcard导入
-            if (className.Equals("*"))
-            {
-                className = "";
-            }
-            
-            // 在项目中搜索类文件
-            var possibleFiles = Directory.GetFiles(basePath, "*.java", SearchOption.AllDirectories);
-            
-            foreach (var file in possibleFiles)
-            {
-                if (string.IsNullOrEmpty(className))
-                {
-                    // 检查包声明是否匹配
-                    var content = File.ReadAllText(file);
-                    var packageRegex = new Regex($@"package\s+{string.Join("\\.", parts.Take(parts.Length - 1))};");
-                    if (packageRegex.IsMatch(content))
-                    {
-                        return file;
-                    }
-                }
-                else if (Path.GetFileNameWithoutExtension(file).Equals(className, StringComparison.OrdinalIgnoreCase))
-                {
-                    // 检查包声明是否匹配
-                    var content = File.ReadAllText(file);
-                    var packageRegex = new Regex($@"package\s+{string.Join("\\.", parts.Take(parts.Length - 1))};");
-                    if (packageRegex.IsMatch(content))
-                    {
-                        return file;
-                    }
-                }
-            }
-            
-            return null;
-        }
-
-        public int GetFunctionLineNumber(string fileContent, string functionName)
-        {
-            var lines = fileContent.Split('\n');
-            var methodRegex = new Regex($@"(?:public|private|protected|static|\s) +(?:[a-zA-Z0-9_\.<>\[\]]+) +{functionName} *\(");
-            
-            for (int i = 0; i < lines.Length; i++)
-            {
-                if (methodRegex.IsMatch(lines[i]))
-                {
-                    return i + 1;
-                }
-            }
-            
-            return 0;
-        }
-    }
-
-    public class CppParser : ILanguageParser
-    {
-        public List<string> ExtractImports(string fileContent)
-        {
-            var imports = new List<string>();
-            
-            // 匹配#include语句
-            var includeRegex = new Regex(@"#include\s+[<""]([^>""]+)[>""]", RegexOptions.Compiled);
-            var matches = includeRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                imports.Add(match.Groups[1].Value);
-            }
-            
-            return imports;
-        }
-
-        public List<Function> ExtractFunctions(string fileContent)
-        {
-            var functions = new List<Function>();
-            
-            // 匹配函数定义（简化版，不处理所有C++语法复杂情况）
-            var funcRegex = new Regex(@"(?:(?:[a-zA-Z0-9_\*&\s:<>,]+)\s+)?([a-zA-Z0-9_]+)\s*\([^)]*\)\s*(?:const)?\s*(?:noexcept)?\s*(?:override)?\s*(?:final)?\s*(?:=\s*default)?\s*(?:=\s*delete)?\s*(?:=\s*0)?\s*\{([^{}]*(?:{[^{}]*(?:{[^{}]*}[^{}]*)*}[^{}]*)*)\}", RegexOptions.Compiled);
-            var matches = funcRegex.Matches(fileContent);
-            
-            foreach (Match match in matches)
-            {
-                var name = match.Groups[1].Value;
-                // 过滤掉构造函数、析构函数和关键字
-                if (!name.StartsWith("~") && !new[] { "if", "for", "while", "switch", "catch" }.Contains(name))
-                {
-                    functions.Add(new Function
-                    {
-                        Name = name,
-                        Body = match.Groups[2].Value
-                    });
-                }
-            }
-            
-            return functions;
-        }
-
-        public List<string> ExtractFunctionCalls(string functionBody)
-        {
-            var functionCalls = new List<string>();
-            
-            // 匹配函数调用
-            var callRegex = new Regex(@"(?:(?:[a-zA-Z0-9_]+)::)?([a-zA-Z0-9_]+)\s*\(", RegexOptions.Compiled);
-            var matches = callRegex.Matches(functionBody);
-            
-            foreach (Match match in matches)
-            {
-                var name = match.Groups[1].Value;
-                // 过滤一些常见的关键字
-                if (!new[] { "if", "for", "while", "switch", "catch" }.Contains(name))
-                {
-                    functionCalls.Add(name);
-                }
-            }
-            
-            return functionCalls;
-        }
-
-        public string ResolveImportPath(string import, string currentFilePath, string basePath)
-        {
-            var currentDir = Path.GetDirectoryName(currentFilePath);
-            
-            // 对于系统头文件，不尝试解析实际路径
-            if (import.Contains('/') || import.Contains('\\'))
-            {
-                // 尝试在项目中查找头文件
-                var possibleFiles = Directory.GetFiles(basePath, Path.GetFileName(import), SearchOption.AllDirectories);
-                if (possibleFiles.Length > 0)
-                {
-                    return possibleFiles[0];
-                }
-            }
-            else
-            {
-                // 查找当前目录和项目中的头文件
-                var localPath = Path.Combine(currentDir, import);
-                if (File.Exists(localPath))
-                {
-                    return localPath;
-                }
-                
-                var possibleFiles = Directory.GetFiles(basePath, import, SearchOption.AllDirectories);
-                if (possibleFiles.Length > 0)
-                {
-                    return possibleFiles[0];
-                }
-            }
-            
-            return null;
-        }
-
-        public int GetFunctionLineNumber(string fileContent, string functionName)
-        {
-            var lines = fileContent.Split('\n');
-            var funcRegex = new Regex($@"(?:(?:[a-zA-Z0-9_\*&\s:<>,]+)\s+)?{functionName}\s*\(");
-            
-            for (int i = 0; i < lines.Length; i++)
-            {
-                if (funcRegex.IsMatch(lines[i]))
-                {
-                    return i + 1;
-                }
-            }
-            
-            return 0;
-        }
+        public string OriginalPattern { get; set; }
+        public Regex Regex { get; set; }
+        public bool IsNegation { get; set; }
+        public bool IsDirectory { get; set; }
     }
 }

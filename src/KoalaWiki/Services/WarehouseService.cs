@@ -1,28 +1,121 @@
 ﻿using System.IO.Compression;
 using System.Text;
 using FastService;
-using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.DocumentFile;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Dto;
-using KoalaWiki.Entities;
-using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Functions;
-using KoalaWiki.Git;
 using LibGit2Sharp;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
+using System.Text.Json;
+using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Git;
+using KoalaWiki.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace KoalaWiki.Services;
 
-public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepositoryService gitRepositoryService)
+[Tags("仓库管理")]
+[Route("/api/Warehouse")]
+public class WarehouseService(
+    IKoalaWikiContext access, 
+    IMapper mapper, 
+    GitRepositoryService gitRepositoryService,
+    IUserContext userContext,
+    IHttpContextAccessor httpContextAccessor)
     : FastApi
 {
     /// <summary>
+    /// 检查用户对指定仓库的访问权限
+    /// </summary>
+    /// <param name="warehouseId">仓库ID</param>
+    /// <returns>是否有访问权限</returns>
+    private async Task<bool> CheckWarehouseAccessAsync(string warehouseId)
+    {
+        var currentUserId = userContext.CurrentUserId;
+        var isAdmin = httpContextAccessor.HttpContext?.User?.IsInRole("admin") ?? false;
+
+        // 管理员有所有权限
+        if (isAdmin) return true;
+
+        // 检查仓库是否存在权限分配
+        var hasPermissionAssignment = await access.WarehouseInRoles
+            .AnyAsync(wr => wr.WarehouseId == warehouseId);
+
+        // 如果仓库没有权限分配，则是公共仓库，所有人都可以访问
+        if (!hasPermissionAssignment) return true;
+
+        // 如果用户未登录，无法访问有权限分配的仓库
+        if (string.IsNullOrEmpty(currentUserId)) return false;
+
+        // 获取用户的角色ID列表
+        var userRoleIds = await access.UserInRoles
+            .Where(ur => ur.UserId == currentUserId)
+            .Select(ur => ur.RoleId)
+            .ToListAsync();
+
+        // 如果用户没有任何角色，无法访问有权限分配的仓库
+        if (!userRoleIds.Any()) return false;
+
+        // 检查用户角色是否有该仓库的权限
+        return await access.WarehouseInRoles
+            .AnyAsync(wr => userRoleIds.Contains(wr.RoleId) && wr.WarehouseId == warehouseId);
+    }
+
+    /// <summary>
+    /// 检查用户对指定仓库的管理权限
+    /// </summary>
+    /// <param name="warehouseId">仓库ID</param>
+    /// <returns>是否有管理权限</returns>
+    private async Task<bool> CheckWarehouseManageAccessAsync(string warehouseId)
+    {
+        var currentUserId = userContext.CurrentUserId;
+        var isAdmin = httpContextAccessor.HttpContext?.User?.IsInRole("admin") ?? false;
+
+        // 管理员有所有权限
+        if (isAdmin) return true;
+
+        // 如果用户未登录，无管理权限
+        if (string.IsNullOrEmpty(currentUserId)) return false;
+
+        // 检查仓库是否存在权限分配
+        var hasPermissionAssignment = await access.WarehouseInRoles
+            .AnyAsync(wr => wr.WarehouseId == warehouseId);
+
+        // 如果仓库没有权限分配，只有管理员可以管理
+        if (!hasPermissionAssignment) return false;
+
+        // 获取用户的角色ID列表
+        var userRoleIds = await access.UserInRoles
+            .Where(ur => ur.UserId == currentUserId)
+            .Select(ur => ur.RoleId)
+            .ToListAsync();
+
+        // 如果用户没有任何角色，无管理权限
+        if (!userRoleIds.Any()) return false;
+
+        // 检查用户角色是否有该仓库的写入或删除权限（管理权限）
+        return await access.WarehouseInRoles
+            .AnyAsync(wr => userRoleIds.Contains(wr.RoleId) && 
+                           wr.WarehouseId == warehouseId && 
+                           (wr.IsWrite || wr.IsDelete));
+    }
+
+    /// <summary>
     /// 更新仓库状态，并且重新提交
     /// </summary>
+    [EndpointSummary("更新仓库状态")]
     public async Task UpdateWarehouseStatusAsync(string warehouseId)
     {
+        // 检查管理权限
+        if (!await CheckWarehouseManageAccessAsync(warehouseId))
+        {
+            throw new UnauthorizedAccessException("您没有权限管理此仓库");
+        }
+
         await access.Warehouses
             .Where(x => x.Id == warehouseId)
             .ExecuteUpdateAsync(x => x.SetProperty(y => y.Status, WarehouseStatus.Pending));
@@ -37,11 +130,11 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
     /// 查询上次提交的仓库
     /// </summary>
     /// <returns></returns>
+    [EndpointSummary("查询上次提交的仓库")]
     public async Task<object> GetLastWarehouseAsync(string address)
     {
-        
         address = address.Trim().TrimEnd('/').ToLower();
-        
+
         // 判断是否.git结束，如果不是需要添加
         if (!address.EndsWith(".git"))
         {
@@ -76,7 +169,8 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
         name = name.Trim().ToLower();
         var warehouse = await access.Warehouses
             .AsNoTracking()
-            .Where(x => x.Name.ToLower() == name && x.OrganizationName.ToLower() == owner)
+            .Where(x => x.Name.ToLower() == name && x.OrganizationName.ToLower() == owner &&
+                        x.Status == WarehouseStatus.Completed)
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
@@ -109,42 +203,189 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
     }
 
     /// <summary>
+    /// 从URL下载文件到本地
+    /// </summary>
+    [EndpointSummary("从URL下载文件到本地")]
+    private async Task<FileInfo> DownloadFileFromUrlAsync(string fileUrl, string organization, string repositoryName)
+    {
+        using var httpClient = new HttpClient();
+        httpClient.Timeout = TimeSpan.FromMinutes(10); // 设置10分钟超时
+
+        try
+        {
+            // 发送GET请求下载文件
+            var response = await httpClient.GetAsync(fileUrl);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"下载文件失败，HTTP状态码: {response.StatusCode}");
+            }
+
+            // 优先从响应头中提取文件名
+            string fileName = string.Empty;
+            if (response.Content.Headers.ContentDisposition != null &&
+                !string.IsNullOrEmpty(response.Content.Headers.ContentDisposition.FileName))
+            {
+                fileName = response.Content.Headers.ContentDisposition.FileName.Trim('"');
+            }
+            else if (response.Content.Headers.TryGetValues("Content-Disposition", out var values))
+            {
+                // 兼容部分服务器未标准化ContentDisposition解析
+                var disposition = values.FirstOrDefault();
+                if (!string.IsNullOrEmpty(disposition))
+                {
+                    // 优先处理 filename*（RFC 5987）
+                    var fileNameStarMarker = "filename*=";
+                    var idxStar = disposition.IndexOf(fileNameStarMarker, StringComparison.OrdinalIgnoreCase);
+                    if (idxStar >= 0)
+                    {
+                        var value = disposition.Substring(idxStar + fileNameStarMarker.Length).Trim('"', '\'', ' ');
+                        // 处理形如 utf-8''filename.zip
+                        var parts = value.Split("''", 2);
+                        if (parts.Length == 2)
+                        {
+                            fileName = parts[1];
+                        }
+                        else
+                        {
+                            fileName = value;
+                        }
+                    }
+                    else
+                    {
+                        var fileNameMarker = "filename=";
+                        var idx = disposition.IndexOf(fileNameMarker, StringComparison.OrdinalIgnoreCase);
+                        if (idx >= 0)
+                        {
+                            fileName = disposition.Substring(idx + fileNameMarker.Length).Trim('"', '\'', ' ');
+                        }
+                    }
+                }
+            }
+
+            // 如果响应头没有文件名，则从URL中提取
+            if (string.IsNullOrEmpty(fileName))
+            {
+                var uri = new Uri(fileUrl);
+                fileName = Path.GetFileName(uri.LocalPath);
+            }
+
+            string suffix;
+
+            if (string.IsNullOrEmpty(fileName) || !fileName.Contains('.'))
+            {
+                // 如果无法从文件名提取后缀，尝试从URL路径推断
+                if (fileUrl.Contains("/archive/") && fileUrl.Contains(".zip"))
+                {
+                    suffix = "zip";
+                }
+                else if (fileUrl.Contains(".tar.gz"))
+                {
+                    suffix = "gz";
+                }
+                else if (fileUrl.Contains(".tar"))
+                {
+                    suffix = "tar";
+                }
+                else
+                {
+                    suffix = "zip"; // 默认使用zip格式
+                }
+            }
+            else
+            {
+                suffix = fileName.Split('.').Last().ToLower();
+
+                // 验证文件格式
+                if (!new[] { "zip", "gz", "tar", "br" }.Contains(suffix))
+                {
+                    throw new Exception($"不支持的文件格式: {suffix}，只支持zip、gz、tar、br格式");
+                }
+            }
+
+            var fileInfo = new FileInfo(Path.Combine(Constant.GitPath, organization, repositoryName + "." + suffix));
+
+            if (fileInfo.Directory?.Exists == false)
+            {
+                fileInfo.Directory.Create();
+            }
+
+            // 下载并保存文件
+            await using var fileStream = new FileStream(fileInfo.FullName, FileMode.Create);
+            await response.Content.CopyToAsync(fileStream);
+
+            return fileInfo;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new Exception($"下载文件时发生网络错误: {ex.Message}");
+        }
+        catch (TaskCanceledException)
+        {
+            throw new Exception("下载文件超时，请检查网络连接或尝试更小的文件");
+        }
+    }
+
+    /// <summary>
     /// 上传并且提交仓库
     /// </summary>
+    [EndpointSummary("上传并且提交仓库")]
     public async Task UploadAndSubmitWarehouseAsync(HttpContext context)
     {
-        // 获取文件
-        var file = context.Request.Form.Files["file"];
-        if (file == null)
+        if (!DocumentOptions.EnableFileCommit)
         {
-            context.Response.StatusCode = 400;
-            throw new Exception("没有文件上传");
-        }
-
-        // 只支持压缩包.zip 或gzip 
-        if (!file.FileName.EndsWith(".zip") && !file.FileName.EndsWith(".gz") && !file.FileName.EndsWith(".tar") &&
-            !file.FileName.EndsWith(".br"))
-        {
-            context.Response.StatusCode = 400;
-            throw new Exception("只支持zip，gz，tar，br格式的文件");
+            throw new Exception("当前不允许上传文件，请联系管理员开启");
         }
 
         var organization = context.Request.Form["organization"].ToString();
         var repositoryName = context.Request.Form["repositoryName"].ToString();
 
-        // 后缀名
-        var suffix = file.FileName.Split('.').Last();
-
-        var fileInfo = new FileInfo(Path.Combine(Constant.GitPath, organization, repositoryName + "." + suffix));
-
-        if (fileInfo.Directory?.Exists == false)
+        if (string.IsNullOrEmpty(organization) || string.IsNullOrEmpty(repositoryName))
         {
-            fileInfo.Directory.Create();
+            throw new Exception("组织名称和仓库名称不能为空");
+        } // 检查是否是URL下载方式
+
+        var fileUrl = context.Request.Form["fileUrl"].ToString();
+
+        FileInfo fileInfo;
+
+        if (!string.IsNullOrEmpty(fileUrl))
+        {
+            // 从URL下载文件
+            fileInfo = await DownloadFileFromUrlAsync(fileUrl, organization, repositoryName);
         }
-
-        await using (var stream = new FileStream(fileInfo.FullName, FileMode.Create))
+        else
         {
-            await file.CopyToAsync(stream);
+            // 获取上传的文件
+            var file = context.Request.Form.Files["file"];
+            if (file == null)
+            {
+                context.Response.StatusCode = 400;
+                throw new Exception("没有文件上传");
+            }
+
+            // 只支持压缩包.zip 或gzip 
+            if (!file.FileName.EndsWith(".zip") && !file.FileName.EndsWith(".gz") && !file.FileName.EndsWith(".tar") &&
+                !file.FileName.EndsWith(".br"))
+            {
+                context.Response.StatusCode = 400;
+                throw new Exception("只支持zip，gz，tar，br格式的文件");
+            }
+
+            // 后缀名
+            var suffix = file.FileName.Split('.').Last();
+
+            fileInfo = new FileInfo(Path.Combine(Constant.GitPath, organization, repositoryName + "." + suffix));
+
+            if (fileInfo.Directory?.Exists == false)
+            {
+                fileInfo.Directory.Create();
+            }
+
+            await using (var stream = new FileStream(fileInfo.FullName, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
         }
 
         var name = fileInfo.FullName.Replace(".zip", "")
@@ -152,31 +393,27 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
             .Replace(".tar", "")
             .Replace(".br", "");
         // 解压文件，根据后缀名判断解压方式
-        if (file.FileName.EndsWith(".zip"))
+        if (fileInfo.FullName.EndsWith(".zip"))
         {
             // 解压
             var zipPath = fileInfo.FullName.Replace(".zip", "");
             ZipFile.ExtractToDirectory(fileInfo.FullName, zipPath, true);
         }
-        else if (file.FileName.EndsWith(".gz"))
+        else if (fileInfo.FullName.EndsWith(".gz"))
         {
-            using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
-            await using (var outputStream = new FileStream(name, FileMode.Create))
-            await using (var decompressionStream = new GZipStream(inputStream, CompressionMode.Decompress))
-            {
-                await decompressionStream.CopyToAsync(outputStream);
-            }
+            await using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
+            await using var outputStream = new FileStream(name, FileMode.Create);
+            await using var decompressionStream = new GZipStream(inputStream, CompressionMode.Decompress);
+            await decompressionStream.CopyToAsync(outputStream);
         }
-        else if (file.FileName.EndsWith(".tar"))
+        else if (fileInfo.FullName.EndsWith(".tar"))
         {
-            using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
-            await using (var outputStream = new FileStream(name, FileMode.Create))
-            await using (var decompressionStream = new GZipStream(inputStream, CompressionMode.Decompress))
-            {
-                await decompressionStream.CopyToAsync(outputStream);
-            }
+            await using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
+            await using var outputStream = new FileStream(name, FileMode.Create);
+            await using var decompressionStream = new GZipStream(inputStream, CompressionMode.Decompress);
+            await decompressionStream.CopyToAsync(outputStream);
         }
-        else if (file.FileName.EndsWith(".br"))
+        else if (fileInfo.FullName.EndsWith(".br"))
         {
             await using var inputStream = new FileStream(fileInfo.FullName, FileMode.Open);
             await using var outputStream = new FileStream(name, FileMode.Create);
@@ -258,6 +495,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
     /// <summary>
     /// 提交仓库
     /// </summary>
+    [EndpointSummary("提交仓库")]
     public async Task SubmitWarehouseAsync(WarehouseInput input, HttpContext context)
     {
         try
@@ -272,13 +510,14 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
             var (localPath, organization) = GitService.GetRepositoryPath(input.Address);
 
             organization = organization.Trim().ToLower();
-            
+
             var names = input.Address.Split('/');
 
             var repositoryName = names[^1].Replace(".git", "").ToLower();
 
             var value = await access.Warehouses.FirstOrDefaultAsync(x =>
-                x.OrganizationName.ToLower() == organization && x.Name.ToLower() == repositoryName && x.Branch == input.Branch &&
+                x.OrganizationName.ToLower() == organization && x.Name.ToLower() == repositoryName &&
+                x.Branch == input.Branch &&
                 x.Status == WarehouseStatus.Completed);
 
             // 判断这个仓库是否已经添加
@@ -302,7 +541,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
                                 x.Name == repositoryName)
                     .FirstOrDefaultAsync();
 
-                if (branch != null)
+                if (branch is { Status: WarehouseStatus.Completed or WarehouseStatus.Processing })
                 {
                     throw new Exception("该分支已经存在");
                 }
@@ -346,24 +585,116 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
         }
     }
 
+    [EndpointSummary("自定义提交仓库")]
+    public async Task CustomSubmitWarehouseAsync(CustomWarehouseInput input, HttpContext context)
+    {
+        try
+        {
+            input.Organization = input.Organization.Trim().ToLower();
+
+            var repositoryName = input.RepositoryName.Trim().ToLower();
+
+            var value = await access.Warehouses.FirstOrDefaultAsync(x =>
+                x.OrganizationName.ToLower() == input.Organization && x.Name.ToLower() == repositoryName &&
+                x.Branch == input.Branch &&
+                x.Status == WarehouseStatus.Completed);
+
+            // 判断这个仓库是否已经添加
+            if (value?.Status is WarehouseStatus.Completed)
+            {
+                throw new Exception("该名称渠道已存在且处于完成状态，不可重复创建");
+            }
+            else if (value?.Status is WarehouseStatus.Pending)
+            {
+                throw new Exception("该名称渠道已存在且处于待处理状态，请等待处理完成");
+            }
+            else if (value?.Status is WarehouseStatus.Processing)
+            {
+                throw new Exception("该名称渠道已存在且正在处理中，请稍后再试");
+            }
+            else if (!string.IsNullOrEmpty(input.Branch))
+            {
+                var branch = await access.Warehouses
+                    .AsNoTracking()
+                    .Where(x => x.Branch == input.Branch && x.OrganizationName == input.Organization &&
+                                x.Name == repositoryName)
+                    .FirstOrDefaultAsync();
+
+                if (branch is { Status: WarehouseStatus.Completed or WarehouseStatus.Processing })
+                {
+                    throw new Exception("该分支已经存在");
+                }
+            }
+
+            // 删除旧的仓库
+            var oldWarehouse = await access.Warehouses
+                .Where(x => x.OrganizationName == input.Organization &&
+                            x.Name == repositoryName && x.Branch == input.Branch)
+                .ExecuteDeleteAsync();
+
+            var entity = mapper.Map<Warehouse>(input);
+            entity.Name = repositoryName;
+            entity.OrganizationName = input.Organization;
+            entity.Description = string.Empty;
+            entity.Version = string.Empty;
+            entity.Error = string.Empty;
+            entity.Prompt = string.Empty;
+            entity.Branch = input.Branch;
+            entity.Type = "git";
+            entity.CreatedAt = DateTime.UtcNow;
+            entity.OptimizedDirectoryStructure = string.Empty;
+            entity.Id = Guid.NewGuid().ToString();
+            await access.Warehouses.AddAsync(entity);
+
+            await access.SaveChangesAsync();
+
+            await context.Response.WriteAsJsonAsync(new
+            {
+                code = 200,
+                message = "提交成功"
+            });
+        }
+        catch (Exception e)
+        {
+            await context.Response.WriteAsJsonAsync(new
+            {
+                code = 500,
+                message = e.Message
+            });
+        }
+    }
+
     /// <summary>
     /// 获取仓库概述
     /// </summary>
+    [EndpointSummary("获取仓库概述")]
     public async Task GetWarehouseOverviewAsync(string owner, string name, string? branch, HttpContext context)
     {
         owner = owner.Trim().ToLower();
         name = name.Trim().ToLower();
-        
+
         var warehouse = await access.Warehouses
             .AsNoTracking()
             .Where(x => x.Name.ToLower() == name && x.OrganizationName.ToLower() == owner &&
-                        (string.IsNullOrEmpty(branch) || x.Branch == branch))
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch) && x.Status == WarehouseStatus.Completed)
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
         if (warehouse == null)
         {
             throw new NotFoundException($"仓库不存在，请检查仓库名称和组织名称:{owner} {name} {branch}");
+        }
+
+        // 检查用户权限
+        if (!await CheckWarehouseAccessAsync(warehouse.Id))
+        {
+            context.Response.StatusCode = 403;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                code = 403,
+                message = "您没有权限访问此仓库"
+            });
+            return;
         }
 
         var document = await access.Documents
@@ -397,6 +728,7 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
     /// <param name="pageSize">每页显示的记录数。</param>
     /// <param name="keyword">搜索关键词，用于匹配仓库名称或地址。</param>
     /// <returns>返回一个包含总记录数和当前页仓库数据的分页结果对象。</returns>
+    [EndpointSummary("获取仓库列表")]
     public async Task<PageDto<WarehouseDto>> GetWarehouseListAsync(int page, int pageSize, string keyword)
     {
         var query = access.Warehouses
@@ -411,6 +743,60 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
                 x.Name.ToLower().Contains(keyword) || x.Address.ToLower().Contains(keyword) ||
                 x.Description.ToLower().Contains(keyword));
         }
+
+        // 权限过滤：如果仓库存在WarehouseInRole分配，则只有拥有相应角色的用户才能访问
+        var currentUserId = userContext.CurrentUserId;
+        var isAdmin = httpContextAccessor.HttpContext?.User?.IsInRole("admin") ?? false;
+
+        if (!isAdmin && !string.IsNullOrEmpty(currentUserId))
+        {
+            // 获取用户的角色ID列表
+            var userRoleIds = await access.UserInRoles
+                .Where(ur => ur.UserId == currentUserId)
+                .Select(ur => ur.RoleId)
+                .ToListAsync();
+
+            // 如果用户没有任何角色，只能看到公共仓库（没有权限分配的仓库）
+            if (!userRoleIds.Any())
+            {
+                var publicWarehouseIds = await access.Warehouses
+                    .Where(w => !access.WarehouseInRoles.Any(wr => wr.WarehouseId == w.Id))
+                    .Select(w => w.Id)
+                    .ToListAsync();
+
+                query = query.Where(x => publicWarehouseIds.Contains(x.Id));
+            }
+            else
+            {
+                // 用户可以访问的仓库：
+                // 1. 通过角色权限可以访问的仓库
+                // 2. 没有任何权限分配的公共仓库
+                var accessibleWarehouseIds = await access.WarehouseInRoles
+                    .Where(wr => userRoleIds.Contains(wr.RoleId))
+                    .Select(wr => wr.WarehouseId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var publicWarehouseIds = await access.Warehouses
+                    .Where(w => !access.WarehouseInRoles.Any(wr => wr.WarehouseId == w.Id))
+                    .Select(w => w.Id)
+                    .ToListAsync();
+
+                var allAccessibleIds = accessibleWarehouseIds.Concat(publicWarehouseIds).Distinct().ToList();
+                query = query.Where(x => allAccessibleIds.Contains(x.Id));
+            }
+        }
+        else if (string.IsNullOrEmpty(currentUserId))
+        {
+            // 未登录用户只能看到公共仓库
+            var publicWarehouseIds = await access.Warehouses
+                .Where(w => !access.WarehouseInRoles.Any(wr => wr.WarehouseId == w.Id))
+                .Select(w => w.Id)
+                .ToListAsync();
+
+            query = query.Where(x => publicWarehouseIds.Contains(x.Id));
+        }
+        // 管理员可以看到所有仓库，不需要额外过滤
 
         // 按仓库名称和组织名称分组，保持排序一致性
         var groupedQuery = query
@@ -488,6 +874,12 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
     [EndpointSummary("获取指定仓库代码文件")]
     public async Task<ResultDto<string>> GetFileContent(string warehouseId, string path)
     {
+        // 检查用户权限
+        if (!await CheckWarehouseAccessAsync(warehouseId))
+        {
+            throw new UnauthorizedAccessException("您没有权限访问此仓库");
+        }
+
         var query = await access.Documents
             .AsNoTracking()
             .Where(x => x.WarehouseId == warehouseId)
@@ -508,8 +900,21 @@ public class WarehouseService(IKoalaWikiContext access, IMapper mapper, GitRepos
     /// <summary>
     /// 导出Markdown压缩包
     /// </summary>
+    [EndpointSummary("导出Markdown压缩包")]
     public async Task ExportMarkdownZip(string warehouseId, HttpContext context)
     {
+        // 检查用户权限
+        if (!await CheckWarehouseAccessAsync(warehouseId))
+        {
+            context.Response.StatusCode = 403;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                code = 403,
+                message = "您没有权限访问此仓库"
+            });
+            return;
+        }
+
         var query = await access.Warehouses
             .AsNoTracking()
             .Where(x => x.Id == warehouseId)

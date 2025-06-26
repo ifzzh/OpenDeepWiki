@@ -1,5 +1,6 @@
 ﻿using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Entities;
 using KoalaWiki.Git;
 using Microsoft.EntityFrameworkCore;
@@ -158,10 +159,6 @@ public class WarehouseTask(
                 await dbContext.Warehouses.Where(x => x.Id == value.Id)
                     .ExecuteUpdateAsync(x => x.SetProperty(a => a.Status, WarehouseStatus.Failed)
                         .SetProperty(x => x.Error, e.ToString()), stoppingToken);
-
-                // 删除其他的
-                await dbContext.Documents.Where(x => x.WarehouseId == value.Id)
-                    .ExecuteDeleteAsync(cancellationToken: stoppingToken);
             }
         }
     }

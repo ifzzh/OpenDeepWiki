@@ -21,7 +21,6 @@ export default function SettingsPage() {
 
   // 处理表单提交
   const handleFormSubmit = (formType: string, values: any) => {
-    console.log(`${formType} settings form values:`, values);
     message.success('设置已保存');
   };
   

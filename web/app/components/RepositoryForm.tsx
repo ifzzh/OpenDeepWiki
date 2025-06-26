@@ -1,8 +1,8 @@
 import { Button, Form, Input, Modal, Select, message, Spin, Divider, Space, Switch, Typography, theme, Radio, Upload, Alert } from 'antd';
 import { useState, useEffect } from 'react';
 import { RepositoryFormValues } from '../types';
-import { submitWarehouse, UploadAndSubmitWarehouse, getBranchList } from '../services';
-import { GithubOutlined, LockOutlined, UserOutlined, LinkOutlined, BranchesOutlined, UploadOutlined, FileZipOutlined, InboxOutlined, ReloadOutlined } from '@ant-design/icons';
+import { submitWarehouse, UploadAndSubmitWarehouse, getBranchList, Customsubmitwarehouse } from '../services';
+import { GithubOutlined, LockOutlined, UserOutlined, LinkOutlined, BranchesOutlined, UploadOutlined, FileZipOutlined, InboxOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { useTranslation } from '../i18n/client';
 
 const { Text, Title } = Typography;
@@ -28,6 +28,7 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
   const [enableGitAuth, setEnableGitAuth] = useState(false);
   const [submitType, setSubmitType] = useState('git');
   const [fileList, setFileList] = useState<any[]>([]);
+  const [uploadMethod, setUploadMethod] = useState('url'); // 'file' or 'url'，默认选择URL
   const [branches, setBranches] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [manualBranchInput, setManualBranchInput] = useState(false);
@@ -54,34 +55,70 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
         } else {
           message.error(response.data.message || t('repository.form.error_message', '添加失败，请重试'))
         }
+      } else if (submitType === 'custom') {
+        // 使用自定义仓库提交
+        const response = await Customsubmitwarehouse(values) as any;
+
+        if (response.data.code === 200) {
+          message.success(t('repository.form.success_message', '仓库添加成功'));
+          onSubmit(values);
+          form.resetFields();
+        } else {
+          message.error(response.data.message || t('repository.form.error_message', '添加失败，请重试'))
+        }
       } else {
         // 使用压缩包提交
-        if (fileList.length === 0) {
-          message.error(t('repository.form.upload_required', '请上传压缩包文件'));
-          setLoading(false);
-          return;
-        }
+        if (uploadMethod === 'file') {
+          // 文件上传方式
+          if (fileList.length === 0) {
+            message.error(t('repository.form.upload_required', '请上传压缩包文件'));
+            setLoading(false);
+            return;
+          }
 
-        const file = fileList[0];
-        if (!file || !file.originFileObj) {
-          message.error(t('repository.form.invalid_file', '文件对象无效，请重新上传'));
-          setLoading(false);
-          return;
-        }
+          const file = fileList[0];
+          if (!file || !file.originFileObj) {
+            message.error(t('repository.form.invalid_file', '文件对象无效，请重新上传'));
+            setLoading(false);
+            return;
+          }
 
-        const formData = new FormData();
-        formData.append('file', file.originFileObj);
-        formData.append('organization', values.organization);
-        formData.append('repositoryName', values.repositoryName);
+          const formData = new FormData();
+          formData.append('file', file.originFileObj);
+          formData.append('organization', values.organization);
+          formData.append('repositoryName', values.repositoryName);
 
-        const { data } = await UploadAndSubmitWarehouse(formData) as any;
-        if (data) {
-          if (data.code === 200) {
-            message.success(t('repository.form.upload_success', '压缩包上传成功'));
-            form.resetFields();
-            setFileList([]);
-          } else {
-            message.error(data.message || t('repository.form.upload_failed', '上传失败，请重试'));
+          const { data } = await UploadAndSubmitWarehouse(formData) as any;
+          if (data) {
+            if (data.code === 200) {
+              message.success(t('repository.form.upload_success', '压缩包上传成功'));
+              form.resetFields();
+              setFileList([]);
+            } else {
+              message.error(data.message || t('repository.form.upload_failed', '上传失败，请重试'));
+            }
+          }
+        } else {
+          // URL下载方式
+          if (!values.fileUrl) {
+            message.error(t('repository.form.url_required', '请输入压缩包URL'));
+            setLoading(false);
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append('fileUrl', values.fileUrl);
+          formData.append('organization', values.organization);
+          formData.append('repositoryName', values.repositoryName);
+
+          const { data } = await UploadAndSubmitWarehouse(formData) as any;
+          if (data) {
+            if (data.code === 200) {
+              message.success(t('repository.form.url_download_success', '从URL下载压缩包成功'));
+              form.resetFields();
+            } else {
+              message.error(data.message || t('repository.form.url_download_failed', '从URL下载失败，请重试'));
+            }
           }
         }
       }
@@ -196,27 +233,47 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
       });
     }
   };
-
   const handleTypeChange = (e: any) => {
     setSubmitType(e.target.value);
     // 切换时清空不相关的字段
     if (e.target.value === 'git') {
       form.setFieldsValue({
         organization: undefined,
-        repositoryName: undefined
+        repositoryName: undefined,
+        fileUrl: undefined,
+        email: undefined
       });
       setFileList([]);
+    } else if (e.target.value === 'custom') {
+      form.setFieldsValue({
+        fileUrl: undefined
+      });
+      setFileList([]);
+      setUploadMethod('url');
     } else {
+      // upload类型
       form.setFieldsValue({
         address: undefined,
         branch: 'main',
         enableGitAuth: false,
         gitUserName: undefined,
-        gitPassword: undefined
+        gitPassword: undefined,
+        email: undefined
       });
       setEnableGitAuth(false);
       setBranches([]);
       setManualBranchInput(false);
+    }
+  };
+
+  // 处理上传方式切换
+  const handleUploadMethodChange = (e: any) => {
+    setUploadMethod(e.target.value);
+    // 切换时清空相关字段
+    if (e.target.value === 'file') {
+      form.setFieldsValue({ fileUrl: undefined });
+    } else {
+      setFileList([]);
     }
   };
 
@@ -273,6 +330,7 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
       setEnableGitAuth(false);
       setSubmitType('git');
       setFileList([]);
+      setUploadMethod('url'); // 重置时也默认选择URL
       setBranches([]);
       setManualBranchInput(false);
       setLastAddress('');
@@ -293,7 +351,9 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
         <Space>
           {submitType === 'git' ?
             <GithubOutlined style={{ color: token.colorPrimary }} /> :
-            <FileZipOutlined style={{ color: token.colorPrimary }} />
+            submitType === 'custom' ?
+              <SettingOutlined style={{ color: token.colorPrimary }} /> :
+              <FileZipOutlined style={{ color: token.colorPrimary }} />
           }
           <Title level={5} style={{ margin: 0 }}>{t('repository.form.title')}</Title>
         </Space>
@@ -310,7 +370,7 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
           type="primary"
           onClick={handleSubmit}
           loading={loading}
-          icon={submitType === 'git' ? <GithubOutlined /> : <UploadOutlined />}
+          icon={submitType === 'git' ? <GithubOutlined /> : submitType === 'custom' ? <SettingOutlined /> : <UploadOutlined />}
         >
           {t('repository.form.submit')}
         </Button>,
@@ -322,12 +382,13 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
         layout="vertical"
         requiredMark="optional"
         initialValues={{
-          type: 'git',
-          branch: 'main',
-          enableGitAuth: false,
-          submitType: 'git',
-          ...initialValues,
-        }}
+            type: 'git',
+            branch: 'main',
+            enableGitAuth: false,
+            submitType: 'git',
+            uploadMethod: 'url', // 默认选择URL方式
+            ...initialValues,
+          }}
         style={{ maxWidth: '100%' }}
       >
         <Form.Item
@@ -336,6 +397,7 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
         >
           <Radio.Group onChange={handleTypeChange} value={submitType}>
             <Radio.Button value="git">{t('repository.form.git_repo')}</Radio.Button>
+            <Radio.Button value="custom">{t('repository.form.custom_repo')}</Radio.Button>
             <Radio.Button value="upload">{t('repository.form.upload_zip')}</Radio.Button>
           </Radio.Group>
         </Form.Item>
@@ -464,6 +526,147 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
               </Space>
             )}
           </>
+        ) : submitType === 'custom' ? (
+          <>
+            <Alert
+              message="自定义仓库提交"
+              description="请填写自定义仓库的详细信息，包括组织名、仓库名、Git地址等。"
+              type="info"
+              showIcon
+              style={{ marginBottom: token.marginMD }}
+            />
+
+            <Form.Item
+              name="organization"
+              label="组织名称"
+              rules={[{ required: submitType === 'custom', message: '请输入组织名称' }]}
+            >
+              <Input
+                placeholder="请输入组织名称"
+                allowClear
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="repositoryName"
+              label="仓库名称"
+              rules={[{ required: submitType === 'custom', message: '请输入仓库名称' }]}
+            >
+              <Input
+                placeholder="请输入仓库名称"
+                allowClear
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="address"
+              label="仓库地址"
+              rules={[{ required: submitType === 'custom', message: '请输入仓库地址' }]}
+            >
+              <Input
+                placeholder="https://github.com/user/repo.git"
+                prefix={<LinkOutlined style={{ color: token.colorTextSecondary }} />}
+                allowClear
+                onChange={handleAddressChange}
+                onBlur={e => {
+                  // 当失去焦点且地址完整时，尝试获取分支
+                  if (e.target.value && e.target.value !== lastAddress) {
+                    setLastAddress(e.target.value);
+                    fetchBranches(e.target.value);
+                  }
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="branch"
+              label={
+                <Space>
+                  <BranchesOutlined style={{ color: token.colorPrimary }} />
+                  <Text>分支</Text>
+                  <Space>
+                    <Button 
+                      type="link" 
+                      size="small" 
+                      onClick={fetchBranches} 
+                      loading={loadingBranches}
+                      icon={<ReloadOutlined />}
+                      style={{ padding: '0 4px' }}
+                    >
+                      加载分支
+                    </Button>
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={toggleBranchInputMode}
+                      style={{ padding: '0 4px' }}
+                    >
+                      {manualBranchInput ? '使用选择器' : '手动输入'}
+                    </Button>
+                  </Space>
+                </Space>
+              }
+              tooltip="选择要使用的仓库分支"
+              rules={[{ required: submitType === 'custom', message: '请选择分支' }]}
+            >
+              {manualBranchInput ? (
+                <Input
+                  placeholder="请输入分支名称"
+                  prefix={<BranchesOutlined style={{ color: token.colorTextSecondary }} />}
+                  allowClear
+                />
+              ) : (
+                <Select
+                  placeholder="选择分支"
+                  loading={loadingBranches}
+                  showSearch
+                  allowClear
+                >
+                  {branches.map(branch => (
+                    <Select.Option key={branch} value={branch}>
+                      {branch}
+                    </Select.Option>
+                  ))}
+                </Select>
+              )}
+            </Form.Item>
+
+            <Divider style={{ margin: `${token.marginMD}px 0` }} />
+
+            <Form.Item
+              name="gitUserName"
+              label="Git用户名（可选）"
+              extra={<Text type="secondary" style={{ fontSize: token.fontSizeSM }}>私有仓库需要提供用户名</Text>}
+            >
+              <Input
+                placeholder="Git用户名"
+                prefix={<UserOutlined style={{ color: token.colorTextSecondary }} />}
+                allowClear
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="gitPassword"
+              label="Git密码/令牌（可选）"
+              extra={<Text type="secondary" style={{ fontSize: token.fontSizeSM }}>私有仓库需要提供密码或访问令牌</Text>}
+            >
+              <Input.Password
+                placeholder="Git密码或访问令牌"
+                prefix={<LockOutlined style={{ color: token.colorTextSecondary }} />}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="email"
+              label="邮箱（可选）"
+              rules={[{ type: 'email', message: '请输入有效的邮箱地址' }]}
+            >
+              <Input
+                placeholder="your.email@example.com"
+                allowClear
+              />
+            </Form.Item>
+          </>
         ) : (
           <>
             <Alert
@@ -497,20 +700,48 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
             </Form.Item>
 
             <Form.Item
-              label={t('repository.form.upload_zip_file')}
-              required={submitType === 'upload'}
-              extra={<Text type="secondary" style={{ fontSize: token.fontSizeSM }}>{t('repository.form.upload_tip')}</Text>}
+              name="uploadMethod"
+              label={t('repository.form.upload_method', '提交方式')}
             >
-              <Upload.Dragger {...uploadProps}>
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined style={{ color: token.colorPrimary }} />
-                </p>
-                <p className="ant-upload-text">{t('repository.form.drag_text')}</p>
-                <p className="ant-upload-hint" style={{ fontSize: token.fontSizeSM }}>
-                  {t('repository.form.upload_formats')}
-                </p>
-              </Upload.Dragger>
+              <Radio.Group onChange={handleUploadMethodChange} value={uploadMethod}>
+                <Radio.Button value="file">{t('repository.form.upload_file', '上传文件')}</Radio.Button>
+                <Radio.Button value="url">{t('repository.form.from_url', '来自URL')}</Radio.Button>
+              </Radio.Group>
             </Form.Item>
+
+            {uploadMethod === 'file' ? (
+              <Form.Item
+                label={t('repository.form.upload_zip_file')}
+                required={submitType === 'upload' && uploadMethod === 'file'}
+                extra={<Text type="secondary" style={{ fontSize: token.fontSizeSM }}>{t('repository.form.upload_tip')}</Text>}
+              >
+                <Upload.Dragger {...uploadProps}>
+                  <p className="ant-upload-drag-icon">
+                    <InboxOutlined style={{ color: token.colorPrimary }} />
+                  </p>
+                  <p className="ant-upload-text">{t('repository.form.drag_text')}</p>
+                  <p className="ant-upload-hint" style={{ fontSize: token.fontSizeSM }}>
+                    {t('repository.form.upload_formats')}
+                  </p>
+                </Upload.Dragger>
+              </Form.Item>
+            ) : (
+              <Form.Item
+                name="fileUrl"
+                label={t('repository.form.zip_url', '压缩包URL')}
+                rules={[
+                  { required: submitType === 'upload' && uploadMethod === 'url', message: t('repository.form.url_required', '请输入压缩包URL') },
+                  { type: 'url', message: t('repository.form.url_invalid', '请输入有效的URL地址') }
+                ]}
+                extra={<Text type="secondary" style={{ fontSize: token.fontSizeSM }}>{t('repository.form.url_tip', '支持的压缩包格式：zip、gz、tar、br')}</Text>}
+              >
+                <Input
+                  placeholder={t('repository.form.zip_url_placeholder', 'https://github.com/user/repo/archive/refs/heads/main.zip')}
+                  prefix={<LinkOutlined style={{ color: token.colorTextSecondary }} />}
+                  allowClear
+                />
+              </Form.Item>
+            )}
           </>
         )}
       </Form>
@@ -518,4 +749,4 @@ const RepositoryForm: React.FC<RepositoryFormProps> = ({
   );
 };
 
-export default RepositoryForm; 
+export default RepositoryForm;

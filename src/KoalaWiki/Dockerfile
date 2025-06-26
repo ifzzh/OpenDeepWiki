@@ -10,6 +10,8 @@ ARG TARGETARCH
 WORKDIR /src
 COPY ["src/KoalaWiki/KoalaWiki.csproj", "src/KoalaWiki/"]
 COPY ["NuGet.Config", "."]
+COPY ["Directory.Packages.props", "."]
+COPY ["Directory.Build.props", "."]
 RUN dotnet restore "src/KoalaWiki/KoalaWiki.csproj" -a $TARGETARCH
 COPY . .
 WORKDIR "/src/src/KoalaWiki"

@@ -1,5 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Domains;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Entities;
 using KoalaWiki.Options;
 using LibGit2Sharp;

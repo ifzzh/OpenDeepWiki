@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.github\workflows\docker-image.yml = .github\workflows\docker-image.yml
 		NuGet.Config = NuGet.Config
 		build.sh = build.sh
+		docker-compose-mem0.yml = docker-compose-mem0.yml
+		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KoalaWiki.Core", "KoalaWiki.Core\KoalaWiki.Core.csproj", "{8E887B45-75E2-4264-B5DE-93C9E206495E}"

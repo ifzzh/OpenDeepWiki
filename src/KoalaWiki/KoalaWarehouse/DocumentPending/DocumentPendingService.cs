@@ -2,8 +2,9 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.DocumentFile;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Entities;
-using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Functions;
 using KoalaWiki.Prompts;
 using Microsoft.EntityFrameworkCore;
@@ -192,7 +193,7 @@ public class DocumentPendingService
                     ["git_repository"] = gitRepository.Replace(".git", ""),
                     ["branch"] = branch,
                     ["title"] = catalog.Name
-                });
+                }, OpenAIOptions.ChatModel);
         }
         else
         {
@@ -204,23 +205,28 @@ public class DocumentPendingService
                     ["git_repository"] = gitRepository.Replace(".git", ""),
                     ["branch"] = branch,
                     ["title"] = catalog.Name
-                });
+                }, OpenAIOptions.ChatModel);
         }
+
         var history = new ChatHistory();
 
         history.AddUserMessage(prompt);
 
         var fileFunction = new FileFunction(path);
-        history.AddUserMessage(await fileFunction.ReadFilesAsync(catalog.DependentFile.ToArray()));
+        history.AddUserMessage(
+            $"The following is the list of contents of the pre-read files <files>{await fileFunction.ReadFilesAsync(catalog.DependentFile.ToArray())}</files>,Now you can continue to generate the document and go all out to produce more detailed document content.");
+
 
         var sr = new StringBuilder();
 
-        await foreach (var i in chat.GetStreamingChatMessageContentsAsync(history, new OpenAIPromptExecutionSettings()
-                       {
-                           ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-                           MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.ChatModel),
-                           Temperature = 0.5,
-                       }, kernel))
+        var settings = new OpenAIPromptExecutionSettings()
+        {
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+            MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.ChatModel),
+            Temperature = 0.5,
+        };
+
+        await foreach (var i in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))
         {
             if (!string.IsNullOrEmpty(i.Content))
             {
@@ -228,8 +234,36 @@ public class DocumentPendingService
             }
         }
 
+        if (DocumentOptions.RefineAndEnhanceQuality)
+        {
+            history.AddAssistantMessage(sr.ToString());
+            history.AddUserMessage(
+                """
+                Create thorough documentation that:
+                - Covers all key functionality with precise technical details
+                - Includes practical code examples and usage patterns  
+                - Ensures completeness without gaps or omissions
+                - Maintains clarity and professional quality throughout
+                Please do your best and spare no effort.
+                """);
+
+            sr.Clear();
+            await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))
+            {
+                if (!string.IsNullOrEmpty(item.Content))
+                {
+                    sr.Append(item.Content);
+                }
+            }
+        }
+
+        // 删除内容中所有的<thinking>内的内容，可能存在多个<thinking>标签,
+        var thinkingRegex = new Regex(@"<thinking>.*?</thinking>", RegexOptions.Singleline);
+        sr = new StringBuilder(thinkingRegex.Replace(sr.ToString(), string.Empty));
+
+
         // 使用正则表达式将<blog></blog>中的内容提取
-        var regex = new Regex(@"<docs>(.*?)</docs>", RegexOptions.Singleline);
+        var regex = new Regex(@"<blog>(.*?)</blog>", RegexOptions.Singleline);
 
         var match = regex.Match(sr.ToString());
 
@@ -241,9 +275,25 @@ public class DocumentPendingService
             sr.Append(extractedContent);
         }
 
+        var content = sr.ToString().Trim();
+
+        // 删除所有的所有的<think></think>
+        var thinkRegex = new Regex(@"<think>(.*?)</think>", RegexOptions.Singleline);
+        content = thinkRegex.Replace(content, string.Empty);
+
+        // 从docs提取
+        var docsRegex = new Regex(@"<docs>(.*?)</docs>", RegexOptions.Singleline);
+        var docsMatch = docsRegex.Match(content);
+        if (docsMatch.Success)
+        {
+            // 提取到的内容
+            var extractedDocs = docsMatch.Groups[1].Value;
+            content = content.Replace(docsMatch.Value, extractedDocs);
+        }
+
         var fileItem = new DocumentFileItem()
         {
-            Content = sr.ToString(),
+            Content = content,
             DocumentCatalogId = catalog.Id,
             Description = string.Empty,
             Extra = new Dictionary<string, string>(),

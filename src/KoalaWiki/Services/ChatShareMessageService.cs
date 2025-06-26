@@ -6,7 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KoalaWiki.Services;
 
-public class ChatShareMessageService(IKoalaWikiContext koalaWikiContext) : FastApi
+[Tags("聊天分享消息管理")]
+[Route("/api/ChatShareMessage")]
+public class ChatShareMessageService(IKoalaWikiContext koalaWikiContext,IUserContext userContext) : FastApi
 {
     public async Task<ResultDto<object>> GetListAsync(string chatShareMessageId, int page,
         int pageSize)
@@ -29,7 +31,7 @@ public class ChatShareMessageService(IKoalaWikiContext koalaWikiContext) : FastA
 
         return ResultDto<object>.Success(new
         {
-            items = list,
+            items = list.OrderBy(x=>x.CreatedAt).ToList(),
             total = total,
             info = chatMessage
         });
@@ -57,6 +59,7 @@ public class ChatShareMessageService(IKoalaWikiContext koalaWikiContext) : FastA
             Ip = ip,
             Id = Guid.NewGuid().ToString(),
             WarehouseId = warehouse.Id,
+            UserId = userContext.CurrentUserId,
             IsDeep = input.IsDeep,
             Question = input.Message,
         };

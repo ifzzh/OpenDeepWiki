@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,7 +28,7 @@ public static class SitemapExtensions
         var sb = new StringBuilder();
         // 关键xml
         foreach (var warehouseUrl in warehouses.Select(warehouse => string.Format(UrlTemplate,
-                     $"{context.Request.Scheme}://{context.Request.Host}/wiki/{warehouse.OrganizationName}/{warehouse.Name}",
+                     $"https://{context.Request.Host}/{warehouse.OrganizationName}/{warehouse.Name}",
                      "weekly",
                      "0.5")))
         {
@@ -36,7 +37,7 @@ public static class SitemapExtensions
 
         foreach (var catalogUrl in from catalog in catalogs let warehouse = warehouses
                      .FirstOrDefault(x => x.Id == catalog.WarehouseId) select string.Format(UrlTemplate,
-                     $"{context.Request.Scheme}://{context.Request.Host}/wiki/{warehouse?.OrganizationName}/{warehouse?.Name}/{catalog.Url}",
+                     $"https://{context.Request.Host}/{warehouse?.OrganizationName}/{warehouse?.Name}/{catalog.Url}",
                      "weekly",
                      "0.5"))
         {

@@ -1,4 +1,5 @@
-﻿using KoalaWiki.Entities;
+﻿using KoalaWiki.Domains.Warehouse;
+using KoalaWiki.Entities;
 
 namespace KoalaWiki.Dto;
 

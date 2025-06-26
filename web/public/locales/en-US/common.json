@@ -7,8 +7,8 @@
   "home": {
     "title": "AI-Powered Code Knowledge Base",
     "subtitle": "OpenDeepWiki is an open-source project inspired by DeepWiki, built on .NET 9 and Semantic Kernel. It helps developers better understand and use code repositories, providing code analysis, documentation generation, and more.",
-    "add_repo_button": "Add New Repository",
-    "query_last_repo_button": "Check Last Submitted Repo",
+    "add_repo_button": "Add",
+    "query_last_repo_button": "Query",
     "badge": {
       "ai_powered": "AI-Powered"
     },
@@ -91,6 +91,7 @@
       "title": "Add Repository",
       "submit_type": "Submission Method",
       "git_repo": "Git Repository",
+      "custom_repo": "Custom Repository",
       "upload_zip": "Upload Archive",
       "repo_address": "Repository Address",
       "repo_address_placeholder": "https://github.com/username/repository",
@@ -329,5 +330,19 @@
       "changelog": "Changelog"
     },
     "update_tooltip": "Last Updated: {{time}}"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "logout_success": "Logout successful",
+    "user": "User",
+    "settings": "Settings",
+    "admin_panel": "Admin Panel",
+    "joined": "Joined",
+    "role": {
+      "admin": "Administrator",
+      "editor": "Editor",
+      "user": "User"
+    }
   }
 } 

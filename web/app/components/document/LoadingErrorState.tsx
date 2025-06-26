@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Card, Skeleton, Typography, Button, Space, Result, Avatar, Tag, Statistic } from 'antd';
 import { ArrowLeftOutlined, FileExclamationOutlined, ReloadOutlined, GithubOutlined, StarOutlined, ForkOutlined, CalendarOutlined, BranchesOutlined } from '@ant-design/icons';
@@ -57,27 +59,6 @@ const RepositoryInfoState = ({ owner, name, token }) => {
               html_url: data.owner.html_url
             }
           });
-        } else {
-          // 如果GitHub API获取失败，尝试从自己的API获取
-          const result = await getLastWarehouse(`https://github.com/${owner}/${name}`);
-          if (result.data) {
-            setRepoInfo({
-              name: result.data.name,
-              description: result.data.description || '暂无描述',
-              stars: 0,
-              forks: 0,
-              language: '',
-              updated_at: result.data.updatedAt || result.data.createdAt,
-              html_url: result.data.address,
-              owner: {
-                login: owner,
-                avatar_url: '',
-                html_url: `https://github.com/${owner}`
-              }
-            });
-          } else {
-            setError('无法获取仓库信息');
-          }
         }
       } catch (err) {
         setError('获取仓库信息时出错');

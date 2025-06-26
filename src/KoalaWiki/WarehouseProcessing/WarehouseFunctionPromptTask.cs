@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using KoalaWiki.Core.DataAccess;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Entities;
 using KoalaWiki.KoalaWarehouse;
 using KoalaWiki.Options;
@@ -20,6 +21,13 @@ public partial class WarehouseFunctionPromptTask(IServiceProvider service, ILogg
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // 获取环境变量判断是否启用
+        if (DocumentOptions.EnableWarehouseFunctionPromptTask == false)
+        {
+            logger.LogInformation("仓库描述生成任务未启用");
+            return;
+        }
+
         await Task.Delay(1000, stoppingToken);
 
         await using var scope = service.CreateAsyncScope();

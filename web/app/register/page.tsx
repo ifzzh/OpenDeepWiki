@@ -5,13 +5,37 @@ import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutline
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from '../login/auth.module.css';
-import { register } from '../services/authService';
-import { useState } from 'react';
+import { register, getSupportedThirdPartyLogins } from '../services/authService';
+import { useState, useEffect } from 'react';
 import { API_URL } from '../services/api';
+
+interface ThirdPartyLoginProvider {
+  name: string;
+  icon: string;
+  clientId: string;
+  redirectUri: string;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [thirdPartyProviders, setThirdPartyProviders] = useState<ThirdPartyLoginProvider[]>([]);
+
+  // 获取支持的第三方登录方式
+  useEffect(() => {
+    const fetchThirdPartyProviders = async () => {
+      try {
+        const response = await getSupportedThirdPartyLogins();
+        if (response.code === 200 && response.data) {
+          setThirdPartyProviders(response.data);
+        }
+      } catch (error) {
+        console.error('获取第三方登录方式失败:', error);
+      }
+    };
+
+    fetchThirdPartyProviders();
+  }, []);
 
   // 处理注册
   const onFinish = async (values: any) => {
@@ -51,16 +75,42 @@ export default function RegisterPage() {
     }
   };
 
-  // GitHub OAuth处理
-  const handleGithubLogin = () => {
-    // 直接重定向到后端的GitHub OAuth授权URL
-    window.location.href = `${API_URL}/api/Auth/GitHubOAuth`;
+  // 处理第三方登录
+  const handleThirdPartyLogin = (providerName: string) => {
+    // 记录登录类型
+    localStorage.setItem('oauthProvider', providerName.toLowerCase());
+    
+    // 根据提供商名称构建OAuth URL
+    if (providerName.toLowerCase() === 'github') {
+      window.location.href = `${API_URL}/api/Auth/GitHubOAuth`;
+    } else if (providerName.toLowerCase() === 'google') {
+      window.location.href = `${API_URL}/api/Auth/GoogleOAuth`;
+    } else {
+      // 通用OAuth处理
+      window.location.href = `${API_URL}/api/Auth/${providerName}OAuth`;
+    }
   };
 
-  // Google OAuth处理
+  // 获取第三方登录按钮图标
+  const getProviderIcon = (providerName: string) => {
+    switch (providerName.toLowerCase()) {
+      case 'github':
+        return <GithubOutlined />;
+      case 'google':
+        return <GoogleOutlined />;
+      default:
+        return null;
+    }
+  };
+
+  // GitHub OAuth处理（保持向后兼容）
+  const handleGithubLogin = () => {
+    handleThirdPartyLogin('github');
+  };
+
+  // Google OAuth处理（保持向后兼容）
   const handleGoogleLogin = () => {
-    // 直接重定向到后端的Google OAuth授权URL
-    window.location.href = `${API_URL}/api/Auth/GoogleOAuth`;
+    handleThirdPartyLogin('google');
   };
 
   return (
@@ -178,26 +228,25 @@ export default function RegisterPage() {
               已有账户? <Link href="/login">立即登录</Link>
             </div>
             
-            <Divider plain>其他注册方式</Divider>
-            
-            <div className={styles.socialLogin}>
-              <Button 
-                icon={<GithubOutlined />} 
-                size="large"
-                className={styles.socialButton}
-                onClick={handleGithubLogin}
-              >
-                Github
-              </Button>
-              <Button 
-                icon={<GoogleOutlined />} 
-                size="large"
-                className={styles.socialButton}
-                onClick={handleGoogleLogin}
-              >
-                Google
-              </Button>
-            </div>
+            {thirdPartyProviders.length > 0 && (
+              <>
+                <Divider plain>其他注册方式</Divider>
+                
+                <div className={styles.socialLogin}>
+                  {thirdPartyProviders.map((provider) => (
+                    <Button 
+                      key={provider.name}
+                      icon={getProviderIcon(provider.name)}
+                      size="large"
+                      className={styles.socialButton}
+                      onClick={() => handleThirdPartyLogin(provider.name)}
+                    >
+                      {provider.name}
+                    </Button>
+                  ))}
+                </div>
+              </>
+            )}
           </Form>
         </Card>
       </div>

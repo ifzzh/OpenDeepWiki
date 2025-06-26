@@ -2,8 +2,8 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using KoalaWiki.Domains;
+using KoalaWiki.Domains.Warehouse;
 using KoalaWiki.Entities;
-using KoalaWiki.Entities.DocumentFile;
 using KoalaWiki.Functions;
 using KoalaWiki.KoalaWarehouse.DocumentPending;
 using KoalaWiki.KoalaWarehouse.GenerateThinkCatalogue;
@@ -46,8 +46,6 @@ public partial class DocumentsService
         var pathInfos = new List<PathInfo>();
         // 递归扫描目录所有文件和目录
         ScanDirectory(path, pathInfos, ignoreFiles);
-        var catalogue = new List<string>();
-
         return pathInfos;
     }
 
@@ -76,6 +74,147 @@ public partial class DocumentsService
         return catalogue.ToString();
     }
 
+    /// <summary>
+    /// 获取优化的树形目录结构，大幅节省tokens
+    /// </summary>
+    /// <param name="path">扫描路径</param>
+    /// <param name="format">输出格式：compact(紧凑文本)、json(JSON格式)、pathlist(优化路径列表)</param>
+    /// <returns>优化后的目录结构</returns>
+    public static string GetCatalogueOptimized(string path, string format = "compact")
+    {
+        var ignoreFiles = GetIgnoreFiles(path);
+        var pathInfos = new List<PathInfo>();
+
+        // 递归扫描目录所有文件和目录
+        ScanDirectory(path, pathInfos, ignoreFiles);
+
+        // 构建文件树
+        var fileTree = FileTreeBuilder.BuildTree(pathInfos, path);
+
+        return format.ToLower() switch
+        {
+            "json" => FileTreeBuilder.ToCompactJson(fileTree),
+            "pathlist" => string.Join("\n", FileTreeBuilder.ToPathList(fileTree)),
+            "compact" or _ => FileTreeBuilder.ToCompactString(fileTree)
+        };
+    }
+
+    /// <summary>
+    /// 获取智能过滤的优化树形目录结构
+    /// </summary>
+    /// <param name="path">扫描路径</param>
+    /// <param name="readme">README内容</param>
+    /// <param name="format">输出格式</param>
+    /// <returns>优化后的目录结构</returns>
+    public static async Task<string> GetCatalogueSmartFilterOptimizedAsync(string path, string readme,
+        string format = "compact")
+    {
+        var ignoreFiles = GetIgnoreFiles(path);
+        var pathInfos = new List<PathInfo>();
+
+        // 递归扫描目录所有文件和目录
+        ScanDirectory(path, pathInfos, ignoreFiles);
+
+        // 如果文件数量较少，直接返回优化结构
+        if (pathInfos.Count < 800)
+        {
+            var fileTree = FileTreeBuilder.BuildTree(pathInfos, path);
+            return format.ToLower() switch
+            {
+                "json" => FileTreeBuilder.ToCompactJson(fileTree),
+                "pathlist" => string.Join("\n", FileTreeBuilder.ToPathList(fileTree)),
+                "compact" or _ => FileTreeBuilder.ToCompactString(fileTree)
+            };
+        }
+
+        // 如果不启用智能过滤，返回优化结构
+        if (DocumentOptions.EnableSmartFilter == false)
+        {
+            var fileTree = FileTreeBuilder.BuildTree(pathInfos, path);
+            return format.ToLower() switch
+            {
+                "json" => FileTreeBuilder.ToCompactJson(fileTree),
+                "pathlist" => string.Join("\n", FileTreeBuilder.ToPathList(fileTree)),
+                "compact" or _ => FileTreeBuilder.ToCompactString(fileTree)
+            };
+        }
+
+        Log.Logger.Information("开始优化目录结构（使用树形格式）");
+
+        var analysisModel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
+            OpenAIOptions.ChatApiKey, path, OpenAIOptions.AnalysisModel);
+
+        var codeDirSimplifier = analysisModel.Plugins["CodeAnalysis"]["CodeDirSimplifier"];
+
+        // 使用优化的目录结构作为输入
+        var optimizedInput = GetCatalogueOptimized(path, "compact");
+
+        var sb = new StringBuilder();
+        int retryCount = 0;
+        const int maxRetries = 5;
+        Exception? lastException = null;
+
+        while (retryCount < maxRetries)
+        {
+            try
+            {
+                await foreach (var item in analysisModel.InvokeStreamingAsync(codeDirSimplifier, new KernelArguments(
+                                   new OpenAIPromptExecutionSettings()
+                                   {
+                                       MaxTokens = GetMaxTokens(OpenAIOptions.AnalysisModel)
+                                   })
+                               {
+                                   ["code_files"] = optimizedInput,
+                                   ["readme"] = readme
+                               }))
+                {
+                    sb.Append(item);
+                }
+
+                // 成功则跳出循环
+                lastException = null;
+                break;
+            }
+            catch (Exception ex)
+            {
+                retryCount++;
+                lastException = ex;
+                Log.Logger.Error(ex, $"优化目录结构失败，重试第{retryCount}次");
+                if (retryCount >= maxRetries)
+                {
+                    throw new Exception($"优化目录结构失败，已重试{maxRetries}次", ex);
+                }
+
+                await Task.Delay(5000 * retryCount);
+                sb.Clear();
+            }
+        }
+
+        // 正则表达式提取response_file
+        var regex = new Regex("<response_file>(.*?)</response_file>", RegexOptions.Singleline);
+        var match = regex.Match(sb.ToString());
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+
+        // 可能是```json
+        var jsonRegex = new Regex("```json(.*?)```", RegexOptions.Singleline);
+        var jsonMatch = jsonRegex.Match(sb.ToString());
+        if (jsonMatch.Success)
+        {
+            return jsonMatch.Groups[1].Value;
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 获取智能过滤的目录结构（保持向后兼容的原始方法）
+    /// </summary>
+    /// <param name="path">扫描路径</param>
+    /// <param name="readme">README内容</param>
+    /// <returns>目录结构字符串</returns>
     public static async Task<string> GetCatalogueSmartFilterAsync(string path, string readme)
     {
         var ignoreFiles = GetIgnoreFiles(path);
@@ -190,7 +329,6 @@ public partial class DocumentsService
         return catalogue.ToString();
     }
 
-
     public static async Task<string> GenerateReadMe(Warehouse warehouse, string path,
         IKoalaWikiContext koalaWikiContext)
     {
@@ -277,7 +415,7 @@ public partial class DocumentsService
 
         if (string.IsNullOrWhiteSpace(catalogue))
         {
-            catalogue = await GetCatalogueSmartFilterAsync(path, readme);
+            catalogue = await GetCatalogueSmartFilterOptimizedAsync(path, readme);
             if (!string.IsNullOrWhiteSpace(catalogue))
             {
                 await dbContext.Warehouses.Where(x => x.Id == warehouse.Id)
@@ -285,7 +423,7 @@ public partial class DocumentsService
             }
         }
 
-        var classify = await WarehouseClassify.ClassifyAsync(fileKernel, catalogue, readme);
+        var classify = warehouse.Classify ?? await WarehouseClassify.ClassifyAsync(fileKernel, catalogue, readme);
 
         await dbContext.Warehouses.Where(x => x.Id == warehouse.Id)
             .ExecuteUpdateAsync(x => x.SetProperty(y => y.Classify, classify));
@@ -338,7 +476,14 @@ public partial class DocumentsService
         // 递归处理目录层次结构
         ProcessCatalogueItems(result.items, null, warehouse, document, documents);
 
-        documents.ForEach(x => x.IsCompleted = false);
+        documents.ForEach(x =>
+        {
+            x.IsCompleted = false;
+            if (string.IsNullOrWhiteSpace(x.Prompt))
+            {
+                x.Prompt = " ";
+            }
+        });
 
         // 删除遗留数据
         await dbContext.DocumentCatalogs.Where(x => x.WarehouseId == warehouse.Id)
@@ -389,6 +534,22 @@ public partial class DocumentsService
         {
             return 32768;
         }
+
+        if (model.StartsWith("DeepSeek-R1"))
+        {
+            return 32768;
+        }
+
+        if (model.StartsWith("o"))
+        {
+            return 65535;
+        }
+
+        if (model.StartsWith("MiniMax-M1", StringComparison.OrdinalIgnoreCase))
+        {
+            return 40000;
+        }
+
         return model switch
         {
             "deepseek-chat" => 8192,
@@ -398,18 +559,19 @@ public partial class DocumentsService
             "gpt-4.1" => 32768,
             "gpt-4o" => 16384,
             "o4-mini" => 32768,
-            "doubao-1-5-pro-256k-250115" => 12288,
+            "doubao-1-5-pro-256k-250115" => 256000,
             "o3-mini" => 32768,
             "Qwen/Qwen3-235B-A22B" => null,
             "grok-3" => 65536,
             "qwen2.5-coder-3b-instruct" => 65535,
-            "qwen3-235b-a22b" => 65535,
+            "qwen3-235b-a22b" => 16384,
             "claude-sonnet-4-20250514" => 63999,
             "gemini-2.5-pro-preview-05-06" => 32768,
             "gemini-2.5-flash-preview-04-17" => 32768,
             "Qwen3-32B" => 32768,
             "deepseek-r1" => 32768,
             "deepseek-r1:32b-qwen-distill-fp16" => 32768,
+
             _ => null
         };
     }

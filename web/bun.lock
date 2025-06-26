@@ -31,6 +31,7 @@
         "rehype-katex": "^7.0.1",
         "rehype-raw": "^7.0.0",
         "rehype-slug": "^6.0.0",
+        "remark": "^15.0.1",
         "remark-gfm": "^4.0.1",
         "remark-html": "^16.0.1",
         "remark-math": "^6.0.0",
@@ -1413,6 +1414,8 @@
     "rehype-slug": ["rehype-slug@6.0.0", "https://registry.npmmirror.com/rehype-slug/-/rehype-slug-6.0.0.tgz", { "dependencies": { "@types/hast": "^3.0.0", "github-slugger": "^2.0.0", "hast-util-heading-rank": "^3.0.0", "hast-util-to-string": "^3.0.0", "unist-util-visit": "^5.0.0" } }, "sha512-lWyvf/jwu+oS5+hL5eClVd3hNdmwM1kAC0BUvEGD19pajQMIzcNUd/k9GsfQ+FfECvX+JE+e9/btsKH0EjJT6A=="],
 
     "rehype-stringify": ["rehype-stringify@10.0.1", "https://registry.npmmirror.com/rehype-stringify/-/rehype-stringify-10.0.1.tgz", { "dependencies": { "@types/hast": "^3.0.0", "hast-util-to-html": "^9.0.0", "unified": "^11.0.0" } }, "sha512-k9ecfXHmIPuFVI61B9DeLPN0qFHfawM6RsuX48hoqlaKSF61RskNjSm1lI8PhBEM0MRdLxVVm4WmTqJQccH9mA=="],
+
+    "remark": ["remark@15.0.1", "https://registry.npmmirror.com/remark/-/remark-15.0.1.tgz", { "dependencies": { "@types/mdast": "^4.0.0", "remark-parse": "^11.0.0", "remark-stringify": "^11.0.0", "unified": "^11.0.0" } }, "sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A=="],
 
     "remark-breaks": ["remark-breaks@4.0.0", "https://registry.npmmirror.com/remark-breaks/-/remark-breaks-4.0.0.tgz", { "dependencies": { "@types/mdast": "^4.0.0", "mdast-util-newline-to-break": "^2.0.0", "unified": "^11.0.0" } }, "sha512-IjEjJOkH4FuJvHZVIW0QCDWxcG96kCq7An/KVH2NfJe6rKZU2AsHeB3OEjPNRxi4QC34Xdx7I2KGYn6IpT7gxQ=="],
 

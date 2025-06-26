@@ -486,3 +486,6 @@ $RECYCLE.BIN/
 /src/KoalaWiki/repositories
 /src/KoalaWiki/KoalaWiki.db
 /output
+/neo4j_data
+/postgres_db
+/history

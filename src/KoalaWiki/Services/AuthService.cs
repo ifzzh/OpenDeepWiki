@@ -1,14 +1,13 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using FastService;
-using KoalaWiki.Core.DataAccess;
 using KoalaWiki.Domains.Users;
 using KoalaWiki.Dto;
-using KoalaWiki.Infrastructure;
-using KoalaWiki.Options;
+using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Octokit;
 using User = KoalaWiki.Domains.Users.User;
 
@@ -17,11 +16,13 @@ namespace KoalaWiki.Services;
 /// <summary>
 /// 认证服务
 /// </summary>
-[Tags("Auth")]
+[Tags("认证服务")]
+[Route("/api/Auth")]
 [Filter(typeof(ResultFilter))]
 public class AuthService(
     IKoalaWikiContext dbContext,
     JwtOptions jwtOptions,
+    IMapper mapper,
     ILogger<AuthService> logger,
     IConfiguration configuration,
     IHttpContextAccessor httpContextAccessor) : FastApi
@@ -59,13 +60,41 @@ public class AuthService(
             dbContext.Users.Update(user);
             await dbContext.SaveChangesAsync();
 
+            // 获取当前胡的角色
+            var roleIds = await dbContext.UserInRoles
+                .Where(ur => ur.UserId == user.Id)
+                .Select(x => x.RoleId)
+                .ToListAsync();
+
+            var roles = await dbContext.Roles
+                .Where(r => roleIds.Contains(r.Id))
+                .ToListAsync();
+
             user.Password = string.Empty; // 清空密码
+            var dto = mapper.Map<UserInfoDto>(user);
+            dto.Role = string.Join(',', roles.Select(x => x.Name));
 
             // 生成JWT令牌
-            var token = GenerateJwtToken(user);
+            var token = GenerateJwtToken(user, roles);
             var refreshToken = GenerateRefreshToken(user);
 
-            return new LoginDto(true, token, refreshToken, user, null);
+            // 设置到cookie
+            var tokenCookieOptions = CreateCookieOptions(jwtOptions.ExpireMinutes);
+            var refreshTokenCookieOptions = CreateCookieOptions(jwtOptions.RefreshExpireMinutes);
+
+            httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken,
+                refreshTokenCookieOptions);
+            httpContextAccessor.HttpContext?.Response.Cookies.Append("token", token, tokenCookieOptions);
+
+            logger.LogInformation(
+                "用户登录成功，已设置cookie。Token长度: {TokenLength}, 环境: {Environment}, HTTPS: {IsHttps}, Secure: {Secure}, SameSite: {SameSite}",
+                token.Length,
+                configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"),
+                httpContextAccessor.HttpContext?.Request.IsHttps,
+                tokenCookieOptions.Secure,
+                tokenCookieOptions.SameSite);
+
+            return new LoginDto(true, token, refreshToken, dto, null);
         }
         catch (Exception ex)
         {
@@ -77,9 +106,6 @@ public class AuthService(
     /// <summary>
     /// 用户注册
     /// </summary>
-    /// <param name="username">用户名</param>
-    /// <param name="email">邮箱</param>
-    /// <param name="password">密码</param>
     /// <returns>注册结果</returns>
     public async Task<LoginDto> RegisterAsync(RegisterInput input)
     {
@@ -125,18 +151,35 @@ public class AuthService(
                 Email = input.Email,
                 Password = input.Password, // 随机密码
                 CreatedAt = DateTime.UtcNow,
-                Role = "user" // 默认角色
             };
 
             // 保存用户
             await dbContext.Users.AddAsync(user);
             await dbContext.SaveChangesAsync();
+            // 获取当前胡的角色
+            var roleIds = await dbContext.UserInRoles
+                .Where(ur => ur.UserId == user.Id)
+                .Select(x => x.RoleId)
+                .ToListAsync();
+
+            var roles = await dbContext.Roles
+                .Where(r => roleIds.Contains(r.Id))
+                .ToListAsync();
 
             user.Password = string.Empty; // 清空密码
+
+            var dto = mapper.Map<UserInfoDto>(user);
+
             // 创建token
-            var token = GenerateJwtToken(user);
+            var token = GenerateJwtToken(user, roles);
             var refreshToken = GenerateRefreshToken(user);
-            return new LoginDto(true, token, refreshToken, user, null);
+
+            // 设置到cookie
+            httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken,
+                CreateCookieOptions(jwtOptions.RefreshExpireMinutes));
+            httpContextAccessor.HttpContext?.Response.Cookies.Append("token", token,
+                CreateCookieOptions(jwtOptions.ExpireMinutes));
+            return new LoginDto(true, token, refreshToken, dto, null);
         }
         catch (Exception ex)
         {
@@ -150,7 +193,7 @@ public class AuthService(
     /// </summary>
     /// <param name="code">授权码</param>
     /// <returns>登录结果</returns>
-    public async Task<(bool Success, string Token, string? RefreshToken, User? User, string? ErrorMessage)>
+    public async Task<LoginDto>
         GitHubLoginAsync(string code)
     {
         try
@@ -160,7 +203,7 @@ public class AuthService(
 
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
             {
-                return (false, string.Empty, null, null, "GitHub配置错误");
+                return new LoginDto(false, string.Empty, null, null, "GitHub配置错误");
             }
 
             // 获取访问令牌
@@ -170,7 +213,7 @@ public class AuthService(
 
             if (string.IsNullOrEmpty(token.AccessToken))
             {
-                return (false, string.Empty, null, null, "GitHub授权失败");
+                return new LoginDto(false, string.Empty, null, null, "GitHub授权失败");
             }
 
             // 设置访问令牌
@@ -180,118 +223,197 @@ public class AuthService(
             var githubUser = await client.User.Current();
 
             // 查询用户是否存在
-            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == githubUser.Email);
+            var userInAuth = await dbContext.UserInAuths.FirstOrDefaultAsync(u =>
+                u.Id == githubUser.Id.ToString() && u.Provider == "GitHub");
+
+            User user = null;
+            if (userInAuth != null)
+            {
+                user = await dbContext.Users
+                    .FirstOrDefaultAsync(u => u.Id == userInAuth.UserId);
+            }
 
             // 用户不存在，自动注册
-            if (user == null && !string.IsNullOrEmpty(githubUser.Email))
+            if (user == null)
             {
                 user = new User
                 {
                     Id = Guid.NewGuid().ToString("N"),
                     Name = githubUser.Login,
-                    Email = githubUser.Email,
+                    Email = githubUser.Email ?? string.Empty,
                     Password = Guid.NewGuid().ToString(), // 随机密码
                     Avatar = githubUser.AvatarUrl,
                     CreatedAt = DateTime.UtcNow,
-                    Role = "user" // 默认角色
                 };
+
+                // 绑定GitHub账号
+                userInAuth = new UserInAuth
+                {
+                    Id = githubUser.Id.ToString(),
+                    UserId = user.Id,
+                    Provider = "GitHub",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // 获取普通用户角色
+                var userRole = await dbContext.Roles
+                    .FirstOrDefaultAsync(r => r.Name == "user");
+
+                await dbContext.UserInRoles.AddAsync(new UserInRole
+                {
+                    UserId = user.Id,
+                    RoleId = userRole!.Id
+                });
 
                 // 保存用户
                 await dbContext.Users.AddAsync(user);
+                await dbContext.UserInAuths.AddAsync(userInAuth);
                 await dbContext.SaveChangesAsync();
             }
             else if (user == null)
             {
-                return (false, string.Empty, null, null, "GitHub账号未绑定邮箱，无法登录");
+                return new LoginDto(false, string.Empty, null, null, "GitHub账号未绑定邮箱，无法登录");
             }
 
             // 更新登录信息
             user.LastLoginAt = DateTime.UtcNow;
             user.LastLoginIp = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+
+            if (httpContextAccessor.HttpContext?.Request.Headers["x-forwarded-for"].Count > 0)
+            {
+                user.LastLoginIp = httpContextAccessor.HttpContext.Request.Headers["x-forwarded-for"];
+            }
+            else if (httpContextAccessor.HttpContext?.Request.Headers["x-real-ip"].Count > 0)
+            {
+                user.LastLoginIp = httpContextAccessor.HttpContext.Request.Headers["x-real-ip"];
+            }
+
             await dbContext.SaveChangesAsync();
 
+            // 获取当前胡的角色
+            var roleIds = await dbContext.UserInRoles
+                .Where(ur => ur.UserId == user.Id)
+                .Select(x => x.RoleId)
+                .ToListAsync();
+
+            var roles = await dbContext.Roles
+                .Where(r => roleIds.Contains(r.Id))
+                .ToListAsync();
+
             // 生成JWT令牌
-            var jwtToken = GenerateJwtToken(user);
+            var jwtToken = GenerateJwtToken(user, roles);
             var refreshToken = GenerateRefreshToken(user);
 
-            return (true, jwtToken, refreshToken, user, null);
+            var userDto = mapper.Map<UserInfoDto>(user);
+
+            userDto.Role = string.Join(',', roles.Select(x => x.Name));
+
+
+            // 设置到cookie
+            httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken,
+                CreateCookieOptions(jwtOptions.RefreshExpireMinutes));
+            httpContextAccessor.HttpContext?.Response.Cookies.Append("token", jwtToken,
+                CreateCookieOptions(jwtOptions.ExpireMinutes));
+
+            return new LoginDto(true, jwtToken, refreshToken, userDto, null);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "GitHub登录失败");
-            return (false, string.Empty, null, null, "GitHub登录失败，请稍后再试");
+            return new LoginDto(false, string.Empty, null, null, "GitHub登录失败，请稍后再试");
         }
     }
 
+    // /// <summary>
+    // /// 谷歌邮箱登录
+    // /// </summary>
+    // /// <param name="idToken">ID令牌</param>
+    // /// <returns>登录结果</returns>
+    // public async Task<(bool Success, string Token, string? RefreshToken, User? User, string? ErrorMessage)>
+    //     GoogleLoginAsync(string idToken)
+    // {
+    //     try
+    //     {
+    //         // 验证Google ID令牌
+    //         var payload = await ValidateGoogleIdToken(idToken);
+    //         if (payload == null)
+    //         {
+    //             return (false, string.Empty, null, null, "Google认证失败");
+    //         }
+    //
+    //         // 获取邮箱
+    //         var email = payload.Email;
+    //         if (string.IsNullOrEmpty(email))
+    //         {
+    //             return (false, string.Empty, null, null, "无法获取Google邮箱");
+    //         }
+    //
+    //         // 查询用户是否存在
+    //         var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+    //
+    //         // 用户不存在，自动注册
+    //         if (user == null)
+    //         {
+    //             // 生成用户名
+    //             var username = email.Split('@')[0];
+    //             var existingUsername = await dbContext.Users.AnyAsync(u => u.Name == username);
+    //             if (existingUsername)
+    //             {
+    //                 username = $"{username}{Guid.NewGuid().ToString("N").Substring(0, 6)}";
+    //             }
+    //
+    //             user = new User
+    //             {
+    //                 Id = Guid.NewGuid().ToString("N"),
+    //                 Name = username,
+    //                 Email = email,
+    //                 Password = Guid.NewGuid().ToString(), // 随机密码
+    //                 Avatar = payload.Picture,
+    //                 CreatedAt = DateTime.UtcNow,
+    //                 Role = "user" // 默认角色
+    //             };
+    //
+    //             // 保存用户
+    //             await dbContext.Users.AddAsync(user);
+    //             await dbContext.SaveChangesAsync();
+    //         }
+    //
+    //         // 更新登录信息
+    //         user.LastLoginAt = DateTime.UtcNow;
+    //         user.LastLoginIp = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+    //         await dbContext.SaveChangesAsync();
+    //
+    //         // 生成JWT令牌
+    //         var token = GenerateJwtToken(user);
+    //         var refreshToken = GenerateRefreshToken(user);
+    //
+    //         return (true, token, refreshToken, user, null);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         logger.LogError(ex, "Google登录失败");
+    //         return (false, string.Empty, null, null, "Google登录失败，请稍后再试");
+    //     }
+    // }
+
     /// <summary>
-    /// 谷歌邮箱登录
+    /// 用户退出登录
     /// </summary>
-    /// <param name="idToken">ID令牌</param>
-    /// <returns>登录结果</returns>
-    public async Task<(bool Success, string Token, string? RefreshToken, User? User, string? ErrorMessage)>
-        GoogleLoginAsync(string idToken)
+    /// <returns>退出结果</returns>
+    public async Task<bool> LogoutAsync()
     {
         try
         {
-            // 验证Google ID令牌
-            var payload = await ValidateGoogleIdToken(idToken);
-            if (payload == null)
-            {
-                return (false, string.Empty, null, null, "Google认证失败");
-            }
+            // 清除cookie
+            httpContextAccessor.HttpContext?.Response.Cookies.Delete("token");
+            httpContextAccessor.HttpContext?.Response.Cookies.Delete("refreshToken");
 
-            // 获取邮箱
-            var email = payload.Email;
-            if (string.IsNullOrEmpty(email))
-            {
-                return (false, string.Empty, null, null, "无法获取Google邮箱");
-            }
-
-            // 查询用户是否存在
-            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
-
-            // 用户不存在，自动注册
-            if (user == null)
-            {
-                // 生成用户名
-                var username = email.Split('@')[0];
-                var existingUsername = await dbContext.Users.AnyAsync(u => u.Name == username);
-                if (existingUsername)
-                {
-                    username = $"{username}{Guid.NewGuid().ToString("N").Substring(0, 6)}";
-                }
-
-                user = new User
-                {
-                    Id = Guid.NewGuid().ToString("N"),
-                    Name = username,
-                    Email = email,
-                    Password = Guid.NewGuid().ToString(), // 随机密码
-                    Avatar = payload.Picture,
-                    CreatedAt = DateTime.UtcNow,
-                    Role = "user" // 默认角色
-                };
-
-                // 保存用户
-                await dbContext.Users.AddAsync(user);
-                await dbContext.SaveChangesAsync();
-            }
-
-            // 更新登录信息
-            user.LastLoginAt = DateTime.UtcNow;
-            user.LastLoginIp = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
-            await dbContext.SaveChangesAsync();
-
-            // 生成JWT令牌
-            var token = GenerateJwtToken(user);
-            var refreshToken = GenerateRefreshToken(user);
-
-            return (true, token, refreshToken, user, null);
+            return await Task.FromResult(true);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Google登录失败");
-            return (false, string.Empty, null, null, "Google登录失败，请稍后再试");
+            logger.LogError(ex, "用户退出登录失败");
+            return false;
         }
     }
 
@@ -333,9 +455,24 @@ public class AuthService(
                     return (false, string.Empty, null, "用户不存在");
                 }
 
+                // 获取当前胡的角色
+                var roleIds = await dbContext.UserInRoles
+                    .Where(ur => ur.UserId == user.Id)
+                    .Select(x => x.RoleId)
+                    .ToListAsync();
+
+                var roles = await dbContext.Roles
+                    .Where(r => roleIds.Contains(r.Id))
+                    .ToListAsync();
                 // 生成新的JWT令牌
-                var newToken = GenerateJwtToken(user);
+                var newToken = GenerateJwtToken(user, roles);
                 var newRefreshToken = GenerateRefreshToken(user);
+
+                // 设置到cookie
+                httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", newRefreshToken,
+                    CreateCookieOptions(jwtOptions.RefreshExpireMinutes));
+                httpContextAccessor.HttpContext?.Response.Cookies.Append("token", newToken,
+                    CreateCookieOptions(jwtOptions.ExpireMinutes));
 
                 return (true, newToken, newRefreshToken, null);
             }
@@ -355,15 +492,16 @@ public class AuthService(
     /// 生成JWT令牌
     /// </summary>
     /// <param name="user">用户</param>
+    /// <param name="roles"></param>
     /// <returns>JWT令牌</returns>
-    private string GenerateJwtToken(User user)
+    private string GenerateJwtToken(User user, List<Role> roles)
     {
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Name, user.Name),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role)
+            new Claim(ClaimTypes.Role, string.Join(',', roles.Select(x => x.Name)))
         };
 
         var key = jwtOptions.GetSymmetricSecurityKey();
@@ -435,11 +573,11 @@ public class AuthService(
                 return null;
             }
 
-            var payloadJson = System.Text.Encoding.UTF8.GetString(
+            var payloadJson = Encoding.UTF8.GetString(
                 Convert.FromBase64String(tokenParts[1].PadRight(4 * ((tokenParts[1].Length + 3) / 4), '=')
                     .Replace('-', '+').Replace('_', '/')));
 
-            var payload = System.Text.Json.JsonSerializer.Deserialize<GooglePayload>(payloadJson);
+            var payload = JsonSerializer.Deserialize<GooglePayload>(payloadJson);
             return payload;
         }
         catch
@@ -447,6 +585,107 @@ public class AuthService(
             return null;
         }
     }
+
+    /// <summary>
+    /// 获取支持的第三方登录方式
+    /// </summary>
+    public async Task<List<SupportedThirdPartyLoginsDto>> GetSupportedThirdPartyLoginsAsync()
+    {
+        var supportedLogins = new List<SupportedThirdPartyLoginsDto>();
+
+        // 检查GitHub配置
+        if (!string.IsNullOrEmpty(configuration["GitHub:ClientId"]) &&
+            !string.IsNullOrEmpty(configuration["GitHub:ClientSecret"]))
+        {
+            supportedLogins.Add(new SupportedThirdPartyLoginsDto
+            {
+                Name = "GitHub",
+                Icon = "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                ClientId = configuration["GitHub:ClientId"] ?? string.Empty,
+                RedirectUri = configuration["GitHub:RedirectUri"] ?? string.Empty
+            });
+        }
+
+        // 检查Google配置
+        if (!string.IsNullOrEmpty(configuration["Google:ClientId"]) &&
+            !string.IsNullOrEmpty(configuration["Google:ClientSecret"]))
+        {
+            supportedLogins.Add(new SupportedThirdPartyLoginsDto
+            {
+                Name = "Google",
+                Icon = "https://www.google.com/favicon.ico",
+                ClientId = configuration["Google:ClientId"] ?? string.Empty,
+                RedirectUri = configuration["Google:RedirectUri"] ?? string.Empty
+            });
+        }
+
+        return await Task.FromResult(supportedLogins);
+    }
+
+    /// <summary>
+    /// 测试方法：检查当前请求中的cookie和认证状态
+    /// </summary>
+    /// <returns>调试信息</returns>
+    public async Task<object> GetAuthDebugInfoAsync()
+    {
+        var context = httpContextAccessor.HttpContext;
+        if (context == null)
+        {
+            return new { message = "HttpContext为空" };
+        }
+
+        var tokenFromCookie = context.Request.Cookies["token"];
+        var refreshTokenFromCookie = context.Request.Cookies["refreshToken"];
+        var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+        var isAuthenticated = context.User?.Identity?.IsAuthenticated ?? false;
+        var userName = context.User?.Identity?.Name;
+        var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        return await Task.FromResult(new
+        {
+            HasTokenCookie = !string.IsNullOrEmpty(tokenFromCookie),
+            TokenCookieLength = tokenFromCookie?.Length ?? 0,
+            HasRefreshTokenCookie = !string.IsNullOrEmpty(refreshTokenFromCookie),
+            RefreshTokenCookieLength = refreshTokenFromCookie?.Length ?? 0,
+            HasAuthorizationHeader = !string.IsNullOrEmpty(authHeader),
+            AuthorizationHeader = authHeader?.Substring(0, Math.Min(20, authHeader?.Length ?? 0)) + "...",
+            IsAuthenticated = isAuthenticated,
+            UserName = userName,
+            UserId = userId,
+            RequestUrl = context.Request.Path,
+            RequestMethod = context.Request.Method,
+            IsHttps = context.Request.IsHttps,
+            Environment = configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"),
+            AllCookies = context.Request.Cookies.Keys.ToArray()
+        });
+    }
+
+    /// <summary>
+    /// 创建cookie选项，根据环境调整安全设置
+    /// </summary>
+    /// <param name="expireMinutes">过期时间（分钟）</param>
+    /// <returns>cookie选项</returns>
+    private CookieOptions CreateCookieOptions(int expireMinutes)
+    {
+        return new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false, // 开发环境或HTTP时不要求HTTPS
+            SameSite = SameSiteMode.Lax, // 开发环境使用更宽松的策略
+            Expires = DateTime.UtcNow.AddMinutes(expireMinutes)
+        };
+    }
+}
+
+public class SupportedThirdPartyLoginsDto
+{
+    public string Name { get; set; } = string.Empty;
+
+    public string Icon { get; set; } = string.Empty;
+
+    public string ClientId { get; set; } = string.Empty;
+
+    public string RedirectUri { get; set; } = string.Empty;
 }
 
 /// <summary>

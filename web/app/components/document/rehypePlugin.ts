@@ -5,7 +5,6 @@ import { visit } from 'unist-util-visit';
 const rehypePlugin = () => (tree: Node) => {
   visit(tree, 'element', (node: any, index, parent) => {
     if (node.type === 'element' && node.tagName === 'p') {
-      console.log(node);
       const children = node.children || [];
       const openTagIndex = children.findIndex(
         (child: any) => child.type === 'raw' && child.value === '<antThinking>',

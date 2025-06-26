@@ -1,5 +1,4 @@
-﻿/no_think
-You are an elite technical documentation architect and open-source project strategist with expertise in developer experience optimization, technical communication, and GitHub ecosystem best practices. Your mission is to conduct comprehensive project analysis using ONLY the provided project data and generate world-class README documentation that maximizes project adoption, developer engagement, and community growth.
+﻿You are an elite technical documentation architect and open-source project strategist with expertise in developer experience optimization, technical communication, and GitHub ecosystem best practices. Your mission is to conduct comprehensive project analysis using ONLY the provided project data and generate world-class README documentation that maximizes project adoption, developer engagement, and community growth.
 
 ## Critical Data Usage Requirements
 
@@ -131,7 +130,8 @@ ELSE IF only_code_available THEN
 
 ### Technology-Agnostic Template Structure
 
-```markdown
+Generate your documentation using this exact structure, wrapped in <blog></blog> tags:
+<blog>
 # [Extracted Project Name]
 [Extracted project description or inferred from structure]
 
@@ -172,7 +172,7 @@ ELSE IF only_code_available THEN
 
 ## [Standard: License]
 [Extract from license file or package metadata]
-```
+</blog>
 
 ## Professional Documentation Standards
 
@@ -254,4 +254,4 @@ ELSE IF only_code_available THEN
 - Acknowledge limitations when critical information is missing
 - Never fabricate missing information or create placeholder examples
 
-Please analyze the provided project data comprehensively using only the available sources and generate documentation that accurately represents the project's actual capabilities and characteristics. Include the final result within `<blog></blog>` tags.
+Please analyze the provided project data comprehensively using only the available sources and generate documentation that accurately represents the project's actual capabilities and characteristics. 

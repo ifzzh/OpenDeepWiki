@@ -76,7 +76,6 @@ export default function AdminLayout({
 
   return (
     <>
-      {/* 通过CDN方式引入TailwindCSS */}
       <Script 
         id="tailwind-cdn"
         src="https://cdn.tailwindcss.com"

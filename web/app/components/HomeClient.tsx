@@ -1,25 +1,19 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { Button, Typography, Layout, Space, Input, Empty, Card, Row, Col, Statistic, Pagination, message, ConfigProvider, Divider, Avatar, Tag, Badge } from 'antd';
+import {
+  Typography, Layout, Space, Empty, Row, Col, Pagination, message, ConfigProvider, Divider, Avatar,
+} from 'antd';
 import {
   PlusOutlined,
   GithubOutlined,
-  SearchOutlined,
-  BookOutlined,
-  StarOutlined,
   RocketOutlined,
-  CodeOutlined,
-  BranchesOutlined,
-  ClockCircleOutlined,
-  FireOutlined,
-  TrophyOutlined,
-  TeamOutlined,
-  DatabaseOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import RepositoryForm from './RepositoryForm';
 import RepositoryList from './RepositoryList';
 import LastRepoModal from './LastRepoModal';
 import LanguageSwitcher from './LanguageSwitcher';
+import UserAvatar from './UserAvatar';
 import { Repository, RepositoryFormValues } from '../types';
 import { submitWarehouse } from '../services/warehouseService';
 import { HomeStats } from '../services/statsService';
@@ -28,137 +22,10 @@ import { createRoot } from 'react-dom/client';
 import { homepage } from '../const/urlconst';
 import { useTranslation } from '../i18n/client';
 import { useSearchParams } from 'next/navigation';
+import { SearchBar, Button, Tag } from '@lobehub/ui';
 
-const { Content, Header, Footer } = Layout;
+const { Content, Footer } = Layout;
 const { Title, Paragraph, Text } = Typography;
-const { Search } = Input;
-
-// 现代简约设计系统 - 增强版光晕效果
-const designSystem = {
-  colors: {
-    primary: '#2563eb',      // 专业蓝色
-    primaryLight: '#3b82f6', // 浅蓝色
-    primaryDark: '#1d4ed8',  // 深蓝色
-    success: '#059669',      // 成功绿色
-    warning: '#d97706',      // 警告橙色
-    error: '#dc2626',        // 错误红色
-    neutral: {
-      50: '#f8fafc',
-      100: '#f1f5f9',
-      200: '#e2e8f0',
-      300: '#cbd5e1',
-      400: '#94a3b8',
-      500: '#64748b',
-      600: '#475569',
-      700: '#334155',
-      800: '#1e293b',
-      900: '#0f172a',
-    },
-    background: {
-      primary: '#ffffff',
-      secondary: '#f8fafc',
-      tertiary: '#f1f5f9',
-    },
-    glow: {
-      primary: 'rgba(37, 99, 235, 0.15)',
-      secondary: 'rgba(37, 99, 235, 0.08)',
-      accent: 'rgba(59, 130, 246, 0.12)',
-    }
-  },
-  spacing: {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 48,
-  },
-  borderRadius: {
-    sm: 6,
-    md: 8,
-    lg: 12,
-    xl: 16,
-  },
-  shadows: {
-    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-    md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-    xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-    glow: '0 0 20px rgba(37, 99, 235, 0.15), 0 0 40px rgba(37, 99, 235, 0.08)',
-    glowHover: '0 0 30px rgba(37, 99, 235, 0.25), 0 0 60px rgba(37, 99, 235, 0.12)',
-  }
-};
-
-// 优化的主题配置 - 支持光晕效果
-const modernTheme = {
-  token: {
-    colorPrimary: designSystem.colors.primary,
-    colorSuccess: designSystem.colors.success,
-    colorWarning: designSystem.colors.warning,
-    colorError: designSystem.colors.error,
-    colorBgContainer: designSystem.colors.background.primary,
-    colorBgLayout: designSystem.colors.background.secondary,
-    colorText: designSystem.colors.neutral[800],
-    colorTextSecondary: designSystem.colors.neutral[500],
-    colorTextTertiary: designSystem.colors.neutral[400],
-    colorBorder: designSystem.colors.neutral[200],
-    colorBorderSecondary: designSystem.colors.neutral[100],
-    borderRadius: designSystem.borderRadius.md,
-    borderRadiusLG: designSystem.borderRadius.lg,
-    borderRadiusSM: designSystem.borderRadius.sm,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
-    fontSize: 14,
-    fontSizeHeading1: 32,
-    fontSizeHeading2: 24,
-    fontSizeHeading3: 20,
-    fontSizeHeading4: 16,
-    lineHeight: 1.5,
-    lineHeightHeading: 1.2,
-    boxShadow: designSystem.shadows.md,
-    boxShadowSecondary: designSystem.shadows.sm,
-  },
-  components: {
-    Layout: {
-      headerBg: designSystem.colors.background.primary,
-      headerHeight: 64,
-      headerPadding: '0 24px',
-      footerBg: designSystem.colors.background.primary,
-      bodyBg: designSystem.colors.background.secondary,
-    },
-    Button: {
-      borderRadius: designSystem.borderRadius.md,
-      controlHeight: 40,
-      controlHeightLG: 48,
-      fontWeight: 500,
-      primaryShadow: 'none',
-      defaultShadow: 'none',
-    },
-    Card: {
-      borderRadius: designSystem.borderRadius.lg,
-      boxShadow: designSystem.shadows.sm,
-      headerBg: 'transparent',
-      paddingLG: designSystem.spacing.xl,
-    },
-    Input: {
-      borderRadius: designSystem.borderRadius.md,
-      controlHeight: 40,
-      controlHeightLG: 48,
-    },
-    Typography: {
-      titleMarginBottom: '0.5em',
-      titleMarginTop: 0,
-    },
-    Tag: {
-      borderRadius: designSystem.borderRadius.xl,
-      fontWeight: 500,
-    },
-    Statistic: {
-      titleFontSize: 14,
-      contentFontSize: 28,
-      fontFamily: 'inherit',
-    },
-  },
-};
 
 // 页脚链接配置
 const footerLinks = {
@@ -222,7 +89,14 @@ interface HomeClientProps {
   initialStats?: Partial<HomeStats>;
 }
 
-export default function HomeClient({ initialRepositories, initialTotal, initialPage, initialPageSize, initialSearchValue, initialStats }: HomeClientProps) {
+export default function HomeClient({
+  initialRepositories,
+  initialTotal,
+  initialPage,
+  initialPageSize,
+  initialSearchValue,
+  initialStats
+}: HomeClientProps) {
   const repositories = initialRepositories;
   const [formVisible, setFormVisible] = useState(false);
   const [lastRepoModalVisible, setLastRepoModalVisible] = useState(false);
@@ -297,415 +171,373 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
   };
 
   return (
-    <ConfigProvider theme={modernTheme}>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#1677ff',
+          borderRadius: 8,
+          colorBgContainer: '#ffffff',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        },
+      }}
+    >
       <style jsx global>{`
-        /* 光晕动画效果 */
-        @keyframes glow-pulse {
-          0%, 100% {
-            box-shadow: 0 0 20px rgba(37, 99, 235, 0.15), 0 0 40px rgba(37, 99, 235, 0.08);
-          }
-          50% {
-            box-shadow: 0 0 30px rgba(37, 99, 235, 0.25), 0 0 60px rgba(37, 99, 235, 0.12);
-          }
+        * {
+          box-sizing: border-box;
         }
-
-        @keyframes hero-glow {
-          0%, 100% {
-            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
-          }
-          50% {
-            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
-          }
+        
+        .home-layout {
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
         }
-
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        /* 英雄区域光晕背景 */
-        .hero-glow {
-          overflow: hidden;
-        }
-
-        .hero-glow::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
-          animation: hero-glow 6s ease-in-out infinite;
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .hero-content {
-          position: relative;
-          z-index: 1;
-          animation: fadeInUp 0.8s ease-out;
-        }
-
-        /* Logo浮动效果 */
-        .hero-content .ant-avatar {
-          animation: float 3s ease-in-out infinite;
-        }
-
-        /* 统计卡片光晕效果 */
-        .stat-card {
-          position: relative;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          background: rgba(255, 255, 255, 0.9);
+        
+        .header-wrapper {
+          background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(10px);
-          overflow: hidden;
-        }
-
-        .stat-card::before {
-          content: '';
-          position: absolute;
+          position: sticky;
           top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          z-index: 1000;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .header-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 24px;
+          height: 72px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        
+        .logo-section {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+        
+        .nav-section {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-shrink: 0;
+        }
+        
+        .main-content {
+          flex: 1;
+          max-width: 1400px;
+          margin: 0 auto;
+          width: 100%;
+          padding: 0 24px;
+        }
+        
+        .hero-banner {
+          text-align: center;
+          backdrop-filter: blur(10px);
+        }
+        
+        .hero-title {
+          font-size: clamp(36px, 5vw, 56px) !important;
+          font-weight: 700 !important;
+          margin-bottom: 24px !important;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          line-height: 1.2;
+        }
+        
+        .hero-subtitle {
+          font-size: 20px !important;
+          color: #64748b !important;
+          margin-bottom: 40px !important;
+          max-width: 600px;
+          margin-left: auto;
+          margin-right: auto;
+          line-height: 1.6;
+        }
+        
+        .hero-actions {
+          display: flex;
+          gap: 16px;
+          justify-content: center;
+          flex-wrap: nowrap;
+        }
+        
+        .content-section {
+          border-radius: 16px;
+          padding: 32px;
+          margin-bottom: 32px;
+          backdrop-filter: blur(10px);
+        }
+        
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 32px;
+          flex-wrap: wrap;
+          gap: 16px;
+        }
+        
+        .section-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+          min-width: 200px;
+        }
+        
+        .section-actions {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        
+        .search-container {
+          min-width: 300px;
+        }
+        
+        .empty-state {
+          text-align: center;
+          padding: 80px 24px;
+          background: rgba(248, 250, 252, 0.8);
           border-radius: 12px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
-          opacity: 0;
-          transition: opacity 0.3s ease;
-          pointer-events: none;
         }
-
-        .stat-card:hover::before {
-          opacity: 1;
+        
+        .pagination-wrapper {
+          text-align: center;
+          margin-top: 40px;
+          padding-top: 32px;
         }
-
-        .stat-card:hover {
+        
+        .footer-wrapper {
+          background: rgba(255, 255, 255, 0.95);
+          margin-top: 48px;
+          backdrop-filter: blur(10px);
+        }
+        
+        .footer-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 48px 24px 32px;
+        }
+        
+        .sponsors-grid {
+          margin-bottom: 48px;
+        }
+        
+        .sponsor-item {
+          padding: 24px;
+          border-radius: 12px;
+          transition: all 0.3s ease;
+          background: rgba(255, 255, 255, 0.6);
+          text-decoration: none;
+          display: block;
+        }
+        
+        .sponsor-item:hover {
+          background: rgba(255, 255, 255, 0.9);
           transform: translateY(-4px);
-          box-shadow: 0 0 25px rgba(37, 99, 235, 0.15), 0 8px 32px rgba(0, 0, 0, 0.12);
-          border-color: rgba(37, 99, 235, 0.2);
-        }
-
-        /* 特性卡片动画 */
-        .hero-content .ant-card {
-          animation: fadeInUp 0.8s ease-out;
-          animation-fill-mode: both;
-        }
-
-        .hero-content .ant-card:nth-child(1) { animation-delay: 0.1s; }
-        .hero-content .ant-card:nth-child(2) { animation-delay: 0.2s; }
-        .hero-content .ant-card:nth-child(3) { animation-delay: 0.3s; }
-        .hero-content .ant-card:nth-child(4) { animation-delay: 0.4s; }
-
-        /* 主按钮光晕效果 */
-        .glow-button {
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glow-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-          transition: left 0.5s ease;
-        }
-
-        .glow-button:hover::before {
-          left: 100%;
-        }
-
-        .glow-button:hover {
-          box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), 0 0 40px rgba(37, 99, 235, 0.2);
-          transform: translateY(-2px);
-        }
-
-        /* 搜索框光晕效果 */
-        .search-glow .ant-input-affix-wrapper {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          background: rgba(255, 255, 255, 0.9);
-          backdrop-filter: blur(10px);
-        }
-
-        .search-glow .ant-input-affix-wrapper:hover,
-        .search-glow .ant-input-affix-wrapper:focus,
-        .search-glow .ant-input-affix-wrapper-focused {
-          box-shadow: 0 0 15px rgba(37, 99, 235, 0.15), 0 4px 20px rgba(0, 0, 0, 0.08);
-          border-color: rgba(37, 99, 235, 0.3);
-        }
-
-        /* 页脚链接光晕效果 */
-        .footer-link {
-          position: relative;
-          transition: all 0.3s ease;
-        }
-
-        .footer-link::after {
-          content: '';
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          width: 0;
-          height: 2px;
-          background: linear-gradient(90deg, #2563eb, #3b82f6);
-          transition: width 0.3s ease;
-        }
-
-        .footer-link:hover::after {
-          width: 100%;
-        }
-
-        .footer-link:hover {
-          color: #2563eb !important;
-          text-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
-        }
-
-        /* 赞助商卡片悬停效果 */
-        .sponsor-card {
-          transition: all 0.3s ease;
-          border-radius: 12px;
-        }
-
-        .sponsor-card:hover {
-          transform: translateY(-2px);
           box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
-
-        /* 响应式动画优化 */
-        @media (prefers-reduced-motion: reduce) {
-          .stat-card,
-          .glow-button,
-          .search-glow .ant-input-affix-wrapper,
-          .footer-link,
-          .hero-content .ant-avatar {
-            transition: none;
-            animation: none;
-          }
-          
-          .hero-glow::before {
-            animation: none;
-          }
+        
+        .footer-links-grid {
+          margin-bottom: 32px;
         }
-
+        
+        .footer-bottom {
+          padding-top: 32px;
+        }
+        
+        .github-button {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          padding: 8px 16px !important;
+          border-radius: 8px !important;
+          background: rgba(0, 0, 0, 0.04) !important;
+          border: none !important;
+          transition: all 0.2s ease !important;
+        }
+        
+        .github-button:hover {
+          background: rgba(0, 0, 0, 0.08) !important;
+          transform: translateY(-1px) !important;
+        }
+        
+        .star-count {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #64748b;
+          font-size: 14px;
+          font-weight: 500;
+        }
+        
         @media (max-width: 768px) {
-          .stat-card:hover {
-            transform: translateY(-2px);
+          .header-content {
+            padding: 0 16px;
+            height: 64px;
           }
           
-          .glow-button:hover {
-            transform: translateY(-1px);
+          .main-content {
+            padding: 0 16px;
           }
-
-          .hero-content .ant-avatar {
-            animation-duration: 4s;
+          
+          .hero-banner {
+            margin: 16px 0 32px;
+            padding: 48px 24px 40px;
+          }
+          
+          .hero-actions {
+            flex-direction: column;
+            align-items: center;
+          }
+          
+          .content-section {
+            padding: 24px 16px;
+            margin-bottom: 24px;
+          }
+          
+          .section-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          
+          .search-container {
+            min-width: auto;
+            width: 100%;
+          }
+          
+          .footer-content {
+            padding: 32px 16px 24px;
+          }
+          
+          .sponsor-item {
+            padding: 16px;
           }
         }
-
-        /* 滚动条美化 */
-        ::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-
-        ::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
+        
+        @media (max-width: 480px) {
+          .nav-section {
+            gap: 8px;
+          }
+          
+          .hero-title {
+            font-size: 32px !important;
+          }
+          
+          .hero-subtitle {
+            font-size: 16px !important;
+          }
         }
       `}</style>
 
-      <Layout className="min-h-screen bg-slate-50">
-        {/* 现代化头部 */}
-        <Header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-          <div className="max-w-7xl mx-auto flex items-center justify-between h-full">
-            <div className="flex items-center space-x-3">
-              <Avatar
-                src="/logo.png"
-                size={40}
-                className="shadow-sm"
-              />
-              <Title style={{
-                marginTop: 8,
-                fontWeight: 600,
-              }} level={3} className="m-0 text-slate-800 font-semibold">
+      <Layout className="home-layout">
+        {/* 顶部导航 */}
+        <div className="header-wrapper">
+          <div className="header-content">
+            <div className="logo-section">
+              <Avatar src="/logo.png" size={48} />
+              <Title level={2} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>
                 OpenDeepWiki
               </Title>
             </div>
 
-            <Space size="middle" align="center">
+            <div className="nav-section">
               <LanguageSwitcher />
               <Button
-                type="text"
-                icon={<GithubOutlined />}
                 href={homepage}
                 target="_blank"
-                className="text-slate-600 hover:text-slate-800 hover:bg-slate-100"
-                size="large"
-              />
-            </Space>
-          </div>
-        </Header>
-
-        <Content className="flex-1">
-          <div className="max-w-7xl mx-auto px-6 py-12">
-            <div  className="hero-glow text-center mb-20">
-              <div className="hero-content max-w-4xl mx-auto">
-                <Title level={1} className="text-slate-900 mb-6 font-bold text-4xl lg:text-5xl">
-                  {t('home.title')}
-                </Title>
-
-                <Paragraph className="text-xl lg:text-2xl text-slate-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-                  {t('home.subtitle')}
-                </Paragraph>
-
-                <div className="mb-12">
-                  <Space size="large" wrap className="justify-center">
-                    <Button
-                      type="primary"
-                      size="large"
-                      icon={<PlusOutlined />}
-                      onClick={() => setFormVisible(true)}
-                      className="glow-button h-14 px-10 text-lg font-medium"
-                    >
-                      {t('home.add_repo_button')}
-                    </Button>
-                    <Button
-                      size="large"
-                      onClick={handleLastRepoQuery}
-                      className="h-14 px-10 text-lg font-medium border-2"
-                    >
-                      {t('home.query_last_repo_button')}
-                    </Button>
-                  </Space>
+                icon={<GithubOutlined />}
+              >
+                <div className="star-count">
+                  <StarOutlined style={{ color: '#fbbf24' }} />
+                  <span>
+                    {stats.openDeepWikiStars >= 1000
+                      ? stats.openDeepWikiStars >= 10000
+                        ? `${Math.floor(stats.openDeepWikiStars / 1000)}k`
+                        : `${(stats.openDeepWikiStars / 1000).toFixed(1)}k`
+                      : stats.openDeepWikiStars.toString()
+                    }
+                  </span>
                 </div>
-              </div>
+              </Button>
+              <UserAvatar />
+            </div>
+          </div>
+        </div>
+
+        {/* 主要内容 */}
+        <Content>
+          <div className="main-content">
+            {/* Hero 区域 */}
+            <div className="hero-banner">
+              <Title className="hero-title">
+                {t('home.title')}
+              </Title>
+
+              <Paragraph className="hero-subtitle">
+                {t('home.subtitle')}
+              </Paragraph>
+
             </div>
 
-            {/* 统计数据展示区域 */}
-            <div className="mb-16">
-              <Row gutter={[32, 24]} justify="center">
-                <Col xs={24} sm={12} lg={8}>
-                  <Card className="stat-card text-center border-0 shadow-sm">
-                    <Statistic
-                      title={
-                        <Text className="text-slate-600 font-medium">
-                          {t('home.stats.total_repositories')}
-                        </Text>
-                      }
-                      value={stats.totalRepositories}
-                      prefix={<DatabaseOutlined className="text-blue-500" />}
-                      valueStyle={{ 
-                        color: designSystem.colors.primary,
-                        fontWeight: 600,
-                        fontSize: '32px'
-                      }}
-                    />
-                  </Card>
-                </Col>
-                
-                <Col xs={24} sm={12} lg={8}>
-                  <Card className="stat-card text-center border-0 shadow-sm">
-                    <a 
-                      href={homepage}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      <Statistic
-                        title={
-                          <Text className="text-slate-600 font-medium">
-                            {t('home.stats.github_stars')}
-                          </Text>
-                        }
-                        value={stats.openDeepWikiStars}
-                        prefix={<StarOutlined className="text-yellow-500" />}
-                        suffix={
-                          <Space size={4} className="ml-2">
-                            <GithubOutlined className="text-slate-400 text-sm" />
-                          </Space>
-                        }
-                        valueStyle={{ 
-                          color: designSystem.colors.warning,
-                          fontWeight: 600,
-                          fontSize: '32px'
+            {/* 仓库列表区域 */}
+            <div className="content-section">
+              <div className="section-header">
+                <div className="section-actions" style={{ width: '100%', justifyContent: 'center' }}>
+                  <div className="search-container">
+                    <div className="hero-actions">
+                      <SearchBar
+                        placeholder={t('home.repo_list.search_placeholder')}
+                        allowClear
+                        value={searchValue}
+                        onSearch={handleSearch}
+                        onChange={e => setSearchValue(e.target.value)}
+                        size="large"
+                        style={{
+                          width: '100%',
+                          minWidth: '450px'
                         }}
                       />
-                    </a>
-                  </Card>
-                </Col>
-              </Row>
-            </div>
-
-            <Card className="border-0 shadow-sm bg-white/90 backdrop-blur-md">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
-                <div className="flex items-center space-x-3">
-                  <Tag color="blue" className="px-3 py-1 text-sm font-medium">
-                    <RocketOutlined className="mr-1" />
-                    {t('home.repo_list.title')}
-                  </Tag>
-                  <Text className="text-slate-500">
-                    {t('home.repo_list.total', { count: stats.totalRepositories })}
-                  </Text>
-                </div>
-
-                <Space size="middle" wrap>
-                  <div className="search-glow">
-                    <Search
-                      placeholder={t('home.repo_list.search_placeholder')}
-                      allowClear
-                      value={searchValue}
-                      onSearch={handleSearch}
-                      onChange={e => setSearchValue(e.target.value)}
-                      className="w-80"
-                      size="large"
-                    />
+                      <Button
+                        type="primary"
+                        size="large"
+                        onClick={() => setFormVisible(true)}
+                      >
+                        {t('home.add_repo_button')}
+                      </Button>
+                      <Button
+                        size="large"
+                        onClick={handleLastRepoQuery}
+                      >
+                        {t('home.query_last_repo_button')}
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => setFormVisible(true)}
-                    size="large"
-                    className="glow-button font-medium"
-                  >
-                    {t('home.repo_list.add_button')}
-                  </Button>
-                </Space>
+                </div>
               </div>
 
               {repositories.length === 0 ? (
-                <div className="text-center py-16">
+                <div className="empty-state">
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    imageStyle={{ height: 80 }}
                     description={
-                      <Text className="text-slate-500 text-base">
-                        {searchValue ? t('home.repo_list.not_found', { keyword: searchValue }) : t('home.repo_list.empty')}
-                      </Text>
+                      <div>
+                        <Text style={{ color: '#64748b', fontSize: 18, display: 'block', marginBottom: 8 }}>
+                          {searchValue ? t('home.repo_list.not_found', { keyword: searchValue }) : t('home.repo_list.empty')}
+                        </Text>
+                        <Text style={{ color: '#94a3b8', fontSize: 14 }}>
+                          {searchValue ? '尝试调整搜索关键词' : '开始添加您的第一个代码仓库'}
+                        </Text>
+                      </div>
                     }
                   >
                     <Button
@@ -713,7 +545,13 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                       onClick={() => setFormVisible(true)}
                       size="large"
                       icon={<PlusOutlined />}
-                      className="glow-button mt-4"
+                      style={{
+                        marginTop: 16,
+                        height: 48,
+                        padding: '0 32px',
+                        fontSize: 16,
+                        boxShadow: '0 4px 12px rgba(22, 119, 255, 0.3)'
+                      }}
                     >
                       {t('home.repo_list.add_now')}
                     </Button>
@@ -723,7 +561,7 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                 <>
                   <RepositoryList repositories={repositories} />
                   {!searchValue && initialTotal > pageSize && (
-                    <div className="text-center mt-8 pt-6 border-t border-slate-100">
+                    <div className="pagination-wrapper">
                       <Pagination
                         current={currentPage}
                         pageSize={pageSize}
@@ -732,14 +570,15 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                         showSizeChanger
                         showQuickJumper
                         showTotal={(total) => t('home.pagination.total', { total })}
-                        className="font-medium"
+                        size="default"
                       />
                     </div>
                   )}
                 </>
               )}
-            </Card>
+            </div>
 
+            {/* 模态框 */}
             <RepositoryForm
               open={formVisible}
               onCancel={() => setFormVisible(false)}
@@ -753,34 +592,30 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
           </div>
         </Content>
 
-        {/* 现代化页脚 */}
-        <Footer className="bg-white/90 backdrop-blur-md border-t border-slate-200 mt-16">
-          <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* 页脚 */}
+        <Footer className="footer-wrapper">
+          <div className="footer-content">
             {/* 赞助商区域 */}
-            <div className="text-center mb-12">
-              <Title level={4} className="text-slate-800 mb-6">
+            <div className="sponsors-grid">
+              <Title level={3} style={{ textAlign: 'center', marginBottom: 32, color: '#1e293b' }}>
                 {t('home.sponsors.title')}
               </Title>
-              <Row gutter={[32, 16]} justify="center">
+              <Row gutter={[24, 24]} justify="center">
                 {sponsors.map((sponsor, index) => (
-                  <Col key={index}>
+                  <Col key={index} xs={24} sm={12} lg={8}>
                     <a
                       href={sponsor.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-4 rounded-lg hover:bg-slate-50 transition-colors duration-300"
+                      className="sponsor-item"
                     >
-                      <Space direction="vertical" align="center" size="small">
-                        <Avatar
-                          src={sponsor.logo}
-                          size={48}
-                          className="shadow-sm"
-                        />
-                        <div className="text-center">
-                          <Text className="font-medium text-slate-800 block">
+                      <Space direction="vertical" align="center" size="middle" style={{ width: '100%' }}>
+                        <Avatar src={sponsor.logo} size={56} />
+                        <div style={{ textAlign: 'center' }}>
+                          <Text style={{ fontWeight: 600, fontSize: 16, display: 'block', color: '#1e293b' }}>
                             {sponsor.name}
                           </Text>
-                          <Text className="text-slate-500 text-xs">
+                          <Text style={{ color: '#64748b', fontSize: 14 }}>
                             {t(sponsor.descriptionKey)}
                           </Text>
                         </div>
@@ -791,34 +626,31 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               </Row>
             </div>
 
-            <Divider className="my-8 border-slate-200" />
+            <Divider />
 
-            <Row gutter={[48, 32]}>
+            {/* 页脚链接 */}
+            <Row gutter={[48, 32]} className="footer-links-grid">
               <Col xs={24} lg={8}>
-                <div className="mb-6">
-                  <Space align="center" className="mb-4">
-                    <Avatar src="/logo.png" size={32} />
-                    <Title level={4} className="m-0 text-slate-800">
+                <div>
+                  <Space align="center" style={{ marginBottom: 20 }}>
+                    <Avatar src="/logo.png" size={40} />
+                    <Title level={3} style={{ margin: 0, color: '#1e293b' }}>
                       OpenDeepWiki
                     </Title>
                   </Space>
-                  <Paragraph className="text-slate-600 mb-6 max-w-sm">
+                  <Paragraph style={{ color: '#64748b', marginBottom: 20, fontSize: 16, lineHeight: 1.6 }}>
                     {t('description')}
                   </Paragraph>
-                  <Space size="middle">
+                  <Space size="middle" wrap>
                     <Button
                       type="text"
                       icon={<GithubOutlined />}
                       href={homepage}
                       target="_blank"
-                      className="text-slate-500 hover:text-slate-700 p-0"
+                      style={{ color: '#64748b' }}
                     />
-                    <Tag color="blue" className="px-3 py-1">
-                      .NET 9.0
-                    </Tag>
-                    <Tag color="green" className="px-3 py-1">
-                      {t('home.tags.open_source')}
-                    </Tag>
+                    <Tag color="blue" style={{ fontSize: 12 }}>.NET 9.0</Tag>
+                    <Tag color="green" style={{ fontSize: 12 }}>{t('home.tags.open_source')}</Tag>
                   </Space>
                 </div>
               </Col>
@@ -826,12 +658,18 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               <Col xs={24} lg={16}>
                 <Row gutter={[32, 24]}>
                   <Col xs={12} sm={8}>
-                    <Title level={5} className="text-slate-800 mb-4">
+                    <Title level={4} style={{ marginBottom: 20, color: '#1e293b' }}>
                       {t('footer.product')}
                     </Title>
-                    <Space direction="vertical" size="small">
+                    <Space direction="vertical" size="middle">
                       {footerLinks.product.map(link => (
-                        <a key={link.titleKey} href={link.link} className="footer-link text-slate-600 block">
+                        <a
+                          key={link.titleKey}
+                          href={link.link}
+                          style={{ color: '#64748b', fontSize: 14 }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           {t(link.titleKey)}
                         </a>
                       ))}
@@ -839,12 +677,18 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   </Col>
 
                   <Col xs={12} sm={8}>
-                    <Title level={5} className="text-slate-800 mb-4">
+                    <Title level={4} style={{ marginBottom: 20, color: '#1e293b' }}>
                       {t('footer.resources')}
                     </Title>
-                    <Space direction="vertical" size="small">
+                    <Space direction="vertical" size="middle">
                       {footerLinks.resources.map(link => (
-                        <a key={link.titleKey} href={link.link} className="footer-link text-slate-600 block">
+                        <a
+                          key={link.titleKey}
+                          href={link.link}
+                          style={{ color: '#64748b', fontSize: 14 }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           {t(link.titleKey)}
                         </a>
                       ))}
@@ -852,12 +696,18 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
                   </Col>
 
                   <Col xs={12} sm={8}>
-                    <Title level={5} className="text-slate-800 mb-4">
+                    <Title level={4} style={{ marginBottom: 20, color: '#1e293b' }}>
                       {t('footer.company')}
                     </Title>
-                    <Space direction="vertical" size="small">
+                    <Space direction="vertical" size="middle">
                       {footerLinks.company.map(link => (
-                        <a key={link.titleKey} href={link.link} className="footer-link text-slate-600 block">
+                        <a
+                          key={link.titleKey}
+                          href={link.link}
+                          style={{ color: '#64748b', fontSize: 14 }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           {t(link.titleKey)}
                         </a>
                       ))}
@@ -867,34 +717,37 @@ export default function HomeClient({ initialRepositories, initialTotal, initialP
               </Col>
             </Row>
 
-            <Divider className="my-8 border-slate-200" />
+            {/* 页脚底部 */}
+            <div className="footer-bottom">
+              <Row justify="space-between" align="middle" gutter={[16, 16]}>
+                <Col xs={24} sm={12}>
+                  <Space direction="vertical" size={8}>
+                    <Text style={{ color: '#64748b', fontSize: 14 }}>
+                      {t('footer.copyright', { year: new Date().getFullYear() })}
+                    </Text>
+                    <Text style={{ color: '#64748b', fontSize: 14 }}>
+                      {t('footer.powered_by')}
+                      <span style={{ color: '#1677ff', fontWeight: 600, marginLeft: 4 }}>.NET 9.0</span> &
+                      <span style={{ color: '#52c41a', fontWeight: 600, marginLeft: 4 }}>Semantic Kernel</span>
+                    </Text>
+                  </Space>
+                </Col>
 
-            <Row justify="space-between" align="middle" gutter={[16, 16]}>
-              <Col xs={24} sm={12}>
-                <Space direction="vertical" size={2}>
-                  <Text className="text-slate-500 text-sm">
-                    {t('footer.copyright', { year: new Date().getFullYear() })}
-                  </Text>
-                  <Text className="text-slate-500 text-sm">
-                    {t('footer.powered_by')} <span className="text-blue-600 font-medium">.NET 9.0</span> & <span className="text-green-600 font-medium">Semantic Kernel</span>
-                  </Text>
-                </Space>
-              </Col>
-
-              <Col xs={24} sm={12} className="text-left sm:text-right">
-                <Space split={<Divider type="vertical" className="border-slate-300" />}>
-                  <a href="/privacy" className="footer-link text-slate-500 text-sm">
-                    {t('footer.privacy')}
-                  </a>
-                  <a href="/terms" className="footer-link text-slate-500 text-sm">
-                    {t('footer.terms')}
-                  </a>
-                  <Text className="text-slate-400 text-sm">
-                    v2.0.0
-                  </Text>
-                </Space>
-              </Col>
-            </Row>
+                <Col xs={24} sm={12} style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                  <Space split={<Divider type="vertical" />} wrap>
+                    <a href="/privacy" style={{ color: '#64748b', fontSize: 14 }}>
+                      {t('footer.privacy')}
+                    </a>
+                    <a href="/terms" style={{ color: '#64748b', fontSize: 14 }}>
+                      {t('footer.terms')}
+                    </a>
+                    <Text style={{ color: '#94a3b8', fontSize: 14 }}>
+                      v2.0.0
+                    </Text>
+                  </Space>
+                </Col>
+              </Row>
+            </div>
           </div>
         </Footer>
       </Layout>

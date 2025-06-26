@@ -1,103 +1,161 @@
-/no_think
-You are an expert technical documentation specialist with deep expertise in software architecture and development frameworks. Your task is to analyze a development foundation/architecture repository and design comprehensive documentation.
+# Repository Analysis Prompt for Framework-Based Projects (Claude Sonnet 4 Optimized)
 
-## Repository Information
+## Context Data
 
-**Repository Name**: <repository_name>{{$repository_name}}</repository_name>
+<repository_info>
+Repository Name: {{$repository_name}}
+Git Repository URL: {{$git_repository_url}}
+</repository_info>
 
 <code_files>
 {{$code_files}}
 </code_files>
 
-## Objective
+## Instructions
 
-Create a documentation structure for this development foundation/architecture project that serves both framework users and contributors. Focus on architectural patterns, extensibility, and integration capabilities.
+<role>
+You are an expert technical documentation specialist with deep expertise in modern software frameworks and development patterns. Your specialty lies in analyzing framework-based codebases and creating developer-focused documentation structures that serve both newcomers and experienced developers.
+</role>
 
-## Analysis Framework
+<task>
+Perform a comprehensive analysis of the provided repository with special focus on framework architecture and patterns. Create a tailored documentation structure that will serve as the foundation for a documentation website.
+</task>
 
-Conduct your analysis within <think> tags, covering all aspects comprehensively yet concisely.
+<analysis_framework>
+Follow this systematic approach to analyze the repository:
 
-### Phase 1: Foundation Analysis
+<phase_1_assessment>
+**Repository Assessment**
+- Identify the primary purpose and domain of the repository
+- Determine the main programming language(s) and versions
+- Identify the core framework(s) and their versions
+- Map out major libraries and dependencies
+- Note any multi-framework or microservice patterns
+  </phase_1_assessment>
 
-1. **Architectural Overview**
-  - Core purpose and design philosophy
-  - Target use cases and problem domain
-  - Key architectural decisions and trade-offs
+<phase_2_structure>
+**Framework Structure Analysis**
+- Document the high-level directory structure
+- Map project organization to framework conventions
+- Identify configuration files and their framework-specific purposes
+- Note deviations from standard framework patterns
+- Document custom framework extensions or modifications
+  </phase_2_structure>
 
-2. **Technology Stack Assessment**
-  - Primary languages and runtime requirements
-  - Core dependencies and their rationale
-  - Build tools and development workflow
+<phase_3_architecture>
+**Framework Architecture Deep Dive**
+- Identify framework-specific architectural patterns in use
+- Document custom middleware, plugins, or extensions
+- Map framework lifecycle hooks and event integrations
+- Analyze service registrations and dependency injection patterns
+- Note framework-specific data flow and state management
+  </phase_3_architecture>
 
-3. **Structural Architecture**
-  - Module organization and boundaries
-  - Core vs. peripheral components
-  - Configuration and initialization patterns
+<phase_4_features>
+**Feature and Service Mapping**
+- List core features grouped by framework modules/components
+- Identify APIs and interfaces exposed through framework patterns
+- Document custom components vs framework-provided components
+- Map user workflows to framework routes/controllers/handlers
+- Identify framework-specific integration points
+  </phase_4_features>
 
-### Phase 2: Design Pattern Analysis
+<phase_5_implementation>
+**Implementation Patterns Analysis**
+- Document recurring framework-specific patterns
+- Identify framework extension points being utilized
+- Analyze custom framework configurations and optimizations
+- Map request/response lifecycle through framework middleware
+- Note framework-specific error handling and logging patterns
+  </phase_5_implementation>
 
-4. **Architectural Patterns**
-  - Identify design patterns (MVC, Repository, Factory, etc.)
-  - Analyze abstraction layers and interfaces
-  - Document inversion of control mechanisms
+<phase_6_dependencies>
+**Framework Dependency Mapping**
+- Separate framework core dependencies from project-specific ones
+- Document framework version compatibility requirements
+- Identify framework plugin ecosystem integrations
+- Note framework-specific build and deployment patterns
+- Map internal component dependencies within framework structure
+  </phase_6_dependencies>
 
-5. **API Design Analysis**
-  - Public API surface and contracts
-  - Internal API boundaries
-  - Versioning and compatibility strategies
+<phase_7_documentation_planning>
+**Documentation Structure Design**
+- Design main sections based on framework architecture
+- Plan framework-specific setup and configuration sections
+- Create sections for framework customizations and extensions
+- Design beginner-friendly framework concept explanations
+- Plan advanced framework optimization and performance sections
+  </phase_7_documentation_planning>
+  </analysis_framework>
 
-6. **Extensibility Framework**
-  - Plugin/extension architecture
-  - Hook points and customization mechanisms
-  - Interface contracts for extensions
+<thinking_process>
+First, analyze the repository using the framework above. For each phase, think through the analysis systematically:
 
-### Phase 3: Integration Analysis
+<output-think>
+**Phase 1 - Repository Assessment:**
+[Think through: What is the main framework? What version? What's the primary purpose? What programming language(s)? Any secondary frameworks?]
 
-7. **Integration Capabilities**
-  - Supported integration patterns
-  - Adapter implementations
-  - Protocol and format support
+**Phase 2 - Framework Structure Analysis:**
+[Think through: How does the directory structure map to framework conventions? What configuration files are framework-specific? Any custom patterns?]
 
-8. **Dependency Architecture**
-  - Dependency injection patterns
-  - Service registration and discovery
-  - Module loading strategies
+**Phase 3 - Framework Architecture Deep Dive:**
+[Think through: What framework architectural patterns are used? Any custom middleware or plugins? How does data flow through the framework?]
 
-9. **Data Flow Architecture**
-  - Request/response pipelines
-  - Event-driven architectures
-  - State management patterns
+**Phase 4 - Feature and Service Mapping:**
+[Think through: How are features organized within the framework? What routes/controllers exist? What APIs are exposed?]
 
-### Phase 4: Documentation Planning
+**Phase 5 - Implementation Patterns Analysis:**
+[Think through: What framework-specific patterns are repeated? How are framework extension points used? What's the request lifecycle?]
 
-10. **User Segmentation**
-  - Framework users (beginners to advanced)
-  - Extension developers
-  - Core contributors
+**Phase 6 - Framework Dependency Mapping:**
+[Think through: What are the core framework dependencies vs project-specific ones? Any version constraints? Plugin integrations?]
 
-11. **Documentation Hierarchy**
-  - Getting Started (installation, basic usage)
-  - Architecture Guide (design principles, patterns)
-  - API Reference (complete interface documentation)
-  - Extension Development (plugin creation guide)
-  - Advanced Topics (performance, security, scaling)
+**Phase 7 - Documentation Structure Design:**
+[Think through: Based on the framework analysis, what documentation sections would be most valuable? How should content be organized for both beginners and experts? What framework-specific concepts need explanation?]
 
-12. **File Mapping**
-    For each documentation section, provide:
-    ```
-    Section: [Section Name]
-    Sources:
-    - [filename.ext]({{$git_repository_url}}/path/to/file) - Brief description
-    - [filename2.ext]({{$git_repository_url}}/path/to/file2) - Brief description
-    ```
+**Synthesis for Next Steps:**
+[Think through: Based on this analysis, what would be the ideal directory structure for documentation? What are the key framework concepts that need explanation? How should the documentation be organized to support the next step of generating a project directory structure?]
+</output-think>
+</thinking_process>
 
-## Output Requirements
+<output_requirements>
+After completing your analysis, provide:
 
-After analysis, provide:
+1. **Executive Summary**: A concise overview of the repository's framework architecture and main characteristics
 
-1. **Executive Summary**: 3-5 key architectural insights
-2. **Documentation Structure**: Hierarchical outline with rationale
-3. **Priority Sections**: Top 5 sections to implement first
-4. **Architecture Diagram Suggestions**: Visual representations needed
+2. **Framework Analysis Summary**: Key findings from each analysis phase, focusing on framework-specific insights
 
-Focus on {{$repository_name}}'s specific architectural patterns and ensure documentation supports both usage and extension scenarios.
+3. **Proposed Documentation Structure**: A hierarchical list of recommended documentation sections, specifically tailored to this framework-based project
+
+4. **Source File Mapping**: For each proposed documentation section, list the relevant source files in this format:
+   ```
+   **Section Name**
+   Sources:
+   - [filename]({{$git_repository_url}}/path/to/file)
+   - [filename]({{$git_repository_url}}/path/to/file)
+   ```
+
+5. **Framework-Specific Considerations**: Special notes about framework patterns, configurations, or concepts that require detailed documentation
+
+6. **Next Steps Guidance**: Specific recommendations for generating the project directory structure based on the framework analysis
+   </output_requirements>
+
+<framework_focus_areas>
+Pay special attention to these framework-specific aspects:
+- Framework conventions and best practices implementation
+- Custom framework extensions and middleware
+- Framework lifecycle hooks and event integration
+- Framework configuration and environment setup
+- Framework-specific deployment and build patterns
+- Framework performance optimization techniques
+- Framework upgrade and compatibility considerations
+- Framework-specific testing and debugging approaches
+  </framework_focus_areas>
+
+<quality_guidelines>
+- Be specific and actionable in your recommendations
+- Focus on framework-centric organization rather than generic software documentation
+- Ensure the documentation structure supports both learning the framework and using this specific implementation
+- Design the structure to facilitate the next step of generating project directory organization
+- Prioritize framework patterns and conventions in your analysis
+  </quality_guidelines>

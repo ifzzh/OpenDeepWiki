@@ -131,8 +131,6 @@ export default function RepositoryLayoutClient({
     ''
   );
   
-  console.log('Client initialCatalogData:', initialCatalogData?.branchs, 'selectedBranch:', selectedBranch);
-
   const selectedKey = pathname.includes('/') ? 'docs' : 'overview';
 
   // Check if the screen size is mobile

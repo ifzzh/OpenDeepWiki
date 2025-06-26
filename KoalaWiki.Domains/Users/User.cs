@@ -20,11 +20,6 @@ public class User : Entity<string>
     public string Password { get; set; } = string.Empty;
 
     /// <summary>
-    /// 用户角色
-    /// </summary>
-    public string Role { get; set; } = "user";
-
-    /// <summary>
     /// 用户头像
     /// </summary>
     public string Avatar { get; set; } = string.Empty;

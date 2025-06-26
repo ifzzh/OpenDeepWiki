@@ -2,6 +2,7 @@
 using System.Text;
 using KoalaWiki.Domains.MCP;
 using KoalaWiki.Functions;
+using KoalaWiki.Prompts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -13,6 +14,13 @@ namespace KoalaWiki.MCP.Tools;
 
 public sealed class WarehouseTool(IKoalaWikiContext koala)
 {
+    /// <summary>
+    /// 生成仓库文档
+    /// </summary>
+    /// <param name="server"></param>
+    /// <param name="question"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public async Task<string> GenerateDocumentAsync(
         IMcpServer server,
         string question)
@@ -45,7 +53,7 @@ public sealed class WarehouseTool(IKoalaWikiContext koala)
             .Where(x => x.WarehouseId == warehouse.Id && x.Question == question)
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync();
-        
+
         // 如果是3天内的提问，直接返回
         if (similarQuestion != null && (DateTime.Now - similarQuestion.CreatedAt).TotalDays < 3)
         {
@@ -64,10 +72,10 @@ public sealed class WarehouseTool(IKoalaWikiContext koala)
         var fileKernel = KernelFactory.GetKernel(OpenAIOptions.Endpoint,
             OpenAIOptions.ChatApiKey, path, OpenAIOptions.DeepResearchModel, false);
 
-        if (!string.IsNullOrWhiteSpace(OpenAIOptions.EmbeddingsModel))
-        {
-            fileKernel.Plugins.AddFromObject(new RagFunction(warehouse.Id));
-        }
+        // if (!string.IsNullOrWhiteSpace(OpenAIOptions.EmbeddingsModel))
+        // {
+        //     fileKernel.Plugins.AddFromObject(new RagFunction(warehouse.Id));
+        // }
 
         var history = new ChatHistory();
 
@@ -84,10 +92,14 @@ public sealed class WarehouseTool(IKoalaWikiContext koala)
             }
         }
 
-        history.AddUserMessage(Prompt.DeepFirstPrompt
-            .Replace("{{question}}", question)
-            .Replace("{{git_repository_url}}", warehouse.Address.Replace(".git", ""))
-            .Replace("{{catalogue}}", string.Join('\n', catalogue)));
+
+        history.AddUserMessage(await PromptContext.Chat(nameof(PromptConstant.Chat.FirstDeepChat),
+            new KernelArguments()
+            {
+                ["catalogue"] = warehouse.OptimizedDirectoryStructure,
+                ["repository_url"] = warehouse.Address,
+                ["question"] = question,
+            }, OpenAIOptions.ChatModel));
 
         var first = true;
 
@@ -103,7 +115,7 @@ public sealed class WarehouseTool(IKoalaWikiContext koala)
                                {
                                    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                                    MaxTokens = DocumentsService.GetMaxTokens(OpenAIOptions.ChatModel),
-                                   Temperature = 0.5,
+                                   Temperature = 0.5
                                }, fileKernel))
             {
                 // 发送数据

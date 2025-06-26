@@ -1,5 +1,7 @@
-import { Metadata, ResolvingMetadata } from 'next';
-import { notFound } from 'next/navigation';
+
+'use server'
+
+import { Metadata } from 'next';
 import { documentById } from '../../../services/warehouseService';
 import Script from 'next/script';
 
@@ -85,7 +87,7 @@ export async function generateMetadata(
   }
 }
 
-export default function DocumentLayout({
+export default async function DocumentLayout({
   children,
   params
 }: any) {
