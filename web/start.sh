@@ -19,10 +19,7 @@ if [ "$NEXT_PUBLIC_API_URL" != "http://localhost:5085" ]; then
     # 替换服务端渲染文件中的占位符
     find /app -name "server.js" -type f -exec sed -i "s|http://localhost:5085|$NEXT_PUBLIC_API_URL|g" {} \;
     
-    # 创建客户端运行时配置
-    cat > /app/public/runtime-config.js << EOF
-window.__API_URL__ = '$NEXT_PUBLIC_API_URL';
-EOF
+    
     
     echo "NEXT_PUBLIC_API_URL replacement completed"
 else
