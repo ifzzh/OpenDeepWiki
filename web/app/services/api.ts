@@ -159,10 +159,6 @@ async function* fetchSSE(url: string, data: any): AsyncIterableIterator<any> {
     const errorText = await response.text();
     try {
       const json = JSON.parse(errorText);
-      if (!json.success) {
-        console.log(json);
-
-      }
       throw new Error(json.message || 'API请求失败');
     } catch {
       throw new Error(errorText || '网络请求失败');

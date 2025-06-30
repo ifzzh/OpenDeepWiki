@@ -439,3 +439,24 @@ export async function Customsubmitwarehouse(data:{
     body: JSON.stringify(data),
   });
 }
+
+
+
+/**
+ * 获取仓库知识图谱
+ * @param page 页码
+ * @param pageSize 每页数量
+ * @param keyword 搜索关键词
+ * @returns 仓库列表
+ */
+export async function getMiniMap(
+  owner: string,
+  name: string,
+  branch?: string
+): Promise<any> {
+  let url = `${API_URL}/api/Warehouse/minimap?owner=${owner}&name=${name}`;
+  if (branch) {
+    url += `&branch=${encodeURIComponent(branch)}`;
+  }
+  return fetchApi<any>(url);
+}

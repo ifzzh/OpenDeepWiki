@@ -10,10 +10,6 @@ First, review the following information about the repository:
 {{$repository_name}}
 </repository_name>
 
-<additional_analysis>
-{{$think}}
-</additional_analysis>
-
 Your goal is to create a documentation structure specifically tailored to this project, based on careful analysis of the provided code, README, and other project materials. The structure should serve as the foundation for a documentation website, catering to both beginners and experienced developers, with special attention to DevOps workflows and configuration management aspects.
 
 <process>
@@ -35,8 +31,7 @@ Your goal is to create a documentation structure specifically tailored to this p
 10. Address configuration, customization, and extension points with detailed attention.
 11. Include troubleshooting and advanced usage sections where appropriate.
 12. Organize reference material in a logical, accessible manner.
-13. For each section, identify and include the most relevant source files from the project as dependent_file entries.
-14. For DevOps-focused projects, include detailed sections on:
+13. For DevOps-focused projects, include detailed sections on:
     - Infrastructure as Code components
     - CI/CD pipeline configurations
     - Environment management and deployment strategies
@@ -68,13 +63,11 @@ Insert your input content between the <documentation_structure></documentation_s
         {
             "title": "section-identifier",
             "name": "Section Name",
-            "dependent_file": ["path/to/relevant/file1.ext", "path/to/relevant/file2.ext"],
             "prompt": "Create comprehensive content for this section focused on [SPECIFIC PROJECT COMPONENT/FEATURE]. Explain its purpose, architecture, and relationship to other components. Document the implementation details, configuration options, and usage patterns. Include both conceptual overviews for beginners and technical details for experienced developers. Use terminology consistent with the codebase. Provide practical examples demonstrating common use cases. Document public interfaces, parameters, and return values. Include diagrams where appropriate to illustrate key concepts.",
             "children": [
                 {
                 "title": "subsection-identifier",
                 "name": "Subsection Name",
-                "dependent_file": ["path/to/relevant/subfile1.ext", "path/to/relevant/subfile2.ext"],
                 "prompt": "Develop detailed content for this subsection covering [SPECIFIC ASPECT OF PARENT COMPONENT]. Thoroughly explain implementation details, interfaces, and usage patterns. Include concrete examples from the actual codebase. Document configuration options, parameters, and return values. Explain relationships with other components. Address common issues and their solutions. Make content accessible to beginners while providing sufficient technical depth for experienced developers."
                 }
             ]

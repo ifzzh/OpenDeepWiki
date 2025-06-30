@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using KoalaWiki.Domains;
 using KoalaWiki.Domains.DocumentFile;
 using KoalaWiki.Domains.FineTuning;
 using KoalaWiki.Domains.MCP;
+using KoalaWiki.Domains.Statistics;
 using KoalaWiki.Domains.Users;
 using KoalaWiki.Domains.Warehouse;
-using KoalaWiki.Domains.Statistics;
 using KoalaWiki.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,10 +28,6 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
 
     public DbSet<DocumentCommitRecord> DocumentCommitRecords { get; set; }
 
-    public DbSet<ChatShareMessage> ChatShareMessages { get; set; }
-
-    public DbSet<ChatShareMessageItem> ChatShareMessageItems { get; set; }
-
     public DbSet<TrainingDataset> TrainingDatasets { get; set; }
 
     public DbSet<FineTuningTask> FineTuningTasks { get; set; }
@@ -55,6 +47,10 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
     public DbSet<AccessRecord> AccessRecords { get; set; }
 
     public DbSet<DailyStatistics> DailyStatistics { get; set; }
+
+    public DbSet<AppConfig> AppConfigs { get; set; }
+
+    public DbSet<MiniMap> MiniMaps { get; set; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
     {
@@ -121,13 +117,6 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             builder.Property(x => x.WarehouseId).HasComment("所属仓库Id");
             builder.Property(x => x.DucumentId).HasComment("文档Id");
             builder.Property(x => x.IsDeleted).HasComment("是否已删除");
-            builder.Property(x => x.DependentFile)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                    v => string.IsNullOrEmpty(v)
-                        ? new List<string>()
-                        : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null))
-                .HasComment("依赖文件");
             builder.HasIndex(x => x.Name);
             builder.HasIndex(x => x.CreatedAt);
             builder.HasIndex(x => x.ParentId);
@@ -208,32 +197,6 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasIndex(x => x.WarehouseId);
             options.HasIndex(x => x.CommitId);
             options.HasComment("文档提交记录表");
-        });
-
-        modelBuilder.Entity<ChatShareMessage>(options =>
-        {
-            options.HasKey(x => x.Id);
-            options.Property(x => x.Id).HasComment("主键Id");
-            options.Property(x => x.WarehouseId).HasComment("仓库Id");
-            options.HasIndex(x => x.WarehouseId);
-            options.HasComment("聊天分享消息表");
-        });
-
-        modelBuilder.Entity<ChatShareMessageItem>(options =>
-        {
-            options.HasKey(x => x.Id);
-            options.Property(x => x.Id).HasComment("主键Id");
-            options.Property(x => x.ChatShareMessageId).HasComment("聊天分享消息Id");
-            options.Property(x => x.WarehouseId).HasComment("仓库Id");
-            options.Property(x => x.Question).IsRequired().HasComment("问题内容");
-            options.Property(x => x.Files)
-                .HasConversion(x => JsonSerializer.Serialize(x, (JsonSerializerOptions)null),
-                    x => JsonSerializer.Deserialize<List<string>>(x, (JsonSerializerOptions)null))
-                .HasComment("相关文件");
-            options.HasIndex(x => x.ChatShareMessageId);
-            options.HasIndex(x => x.WarehouseId);
-            options.HasIndex(x => x.Question);
-            options.HasComment("聊天分享消息项表");
         });
 
         modelBuilder.Entity<User>(options =>
@@ -385,6 +348,42 @@ public class KoalaWikiContext<TContext>(DbContextOptions<TContext> options)
             options.HasIndex(x => x.Date).IsUnique();
             options.HasIndex(x => x.CreatedAt);
             options.HasComment("每日统计表");
+        });
+
+        modelBuilder.Entity<AppConfig>(options =>
+        {
+            options.HasKey(x => x.Id);
+            options.Property(x => x.Id).HasComment("主键Id");
+            options.Property(x => x.AppId).IsRequired().HasComment("应用ID");
+            options.Property(x => x.Name).IsRequired().HasComment("应用名称");
+            options.Property(x => x.OrganizationName).IsRequired().HasComment("组织名称");
+            options.Property(x => x.RepositoryName).IsRequired().HasComment("仓库名称");
+            options.Property(x => x.AllowedDomainsJson).IsRequired().HasComment("允许的域名列表JSON");
+            options.Property(x => x.EnableDomainValidation).HasComment("是否启用域名验证");
+            options.Property(x => x.Description).HasComment("应用描述");
+            options.Property(x => x.UserId).IsRequired().HasComment("创建用户ID");
+            options.Property(x => x.IsEnabled).HasComment("是否启用");
+            options.Property(x => x.LastUsedAt).HasComment("最后使用时间");
+            options.Property(x => x.CreatedAt).IsRequired().HasComment("创建时间");
+            options.HasIndex(x => x.AppId).IsUnique();
+            options.HasIndex(x => x.Name);
+            options.HasIndex(x => x.OrganizationName);
+            options.HasIndex(x => x.RepositoryName);
+            options.HasIndex(x => x.UserId);
+            options.HasIndex(x => x.IsEnabled);
+            options.HasIndex(x => x.CreatedAt);
+            options.HasIndex(x => new { x.OrganizationName, x.RepositoryName });
+            options.HasComment("应用配置表");
+        });
+        
+        modelBuilder.Entity<MiniMap>(options =>
+        {
+            options.HasKey(x => x.Id);
+            options.Property(x => x.Id).HasComment("主键Id");
+            options.Property(x => x.WarehouseId).IsRequired().HasComment("仓库Id");
+            options.Property(x => x.Value).IsRequired().HasComment("小地图数据");
+            options.HasIndex(x => x.WarehouseId);
+            options.HasComment("小地图表");
         });
     }
 }

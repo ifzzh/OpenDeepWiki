@@ -12,7 +12,7 @@ public class FileFunction(string gitPath)
     /// 获取文件基本信息
     /// </summary>
     /// <returns></returns>
-    [KernelFunction, Description(
+    [KernelFunction(name: "FileInfo"), Description(
          "Before accessing or reading any file content, always use this method to retrieve the basic information for all specified files. Batch as many file paths as possible into a single call to maximize efficiency. Provide file paths as an array. The function returns a JSON object where each key is the file path and each value contains the file's name, size, extension, creation time, last write time, and last access time. Ensure this information is obtained and reviewed before proceeding to any file content operations."
      )]
     [return:
@@ -53,18 +53,10 @@ public class FileFunction(string gitPath)
                     info.Extension,
                     // 返回总行数
                     TotalLine = File.ReadAllLines(fullPath).Length,
-                }, new JsonSerializerOptions()
-                {
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                    WriteIndented = true,
-                });
+                }, JsonSerializerOptions.Web);
             }
 
-            return JsonSerializer.Serialize(dic, new JsonSerializerOptions()
-            {
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                WriteIndented = true,
-            });
+            return JsonSerializer.Serialize(dic, JsonSerializerOptions.Web);
         }
         catch (Exception ex)
         {
@@ -199,7 +191,7 @@ public class FileFunction(string gitPath)
     /// 从指定行数开始读取文件内容
     /// </summary>
     /// <returns></returns>
-    [KernelFunction,
+    [KernelFunction(name: "FileFromLine"),
      Description(
          "Asynchronously reads the specified file and only returns the text content from the starting line to the ending line (inclusive). Suitable for efficiently handling large files, ensuring performance and data security.")]
     [return:
@@ -216,11 +208,7 @@ public class FileFunction(string gitPath)
             dic.Add(item.FilePath, await ReadItem(item.FilePath, item.StartLine, item.EndLine));
         }
 
-        return JsonSerializer.Serialize(dic, new JsonSerializerOptions()
-        {
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            WriteIndented = true,
-        });
+        return JsonSerializer.Serialize(dic, JsonSerializerOptions.Web);
 
         async Task<string> ReadItem(
             [Description(

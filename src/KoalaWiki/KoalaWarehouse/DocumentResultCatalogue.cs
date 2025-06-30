@@ -15,7 +15,5 @@ public class DocumentResultCatalogueItem
     
     public string prompt {get; set;}
     
-    public string[] dependent_file { get; set; }
-    
     public List<DocumentResultCatalogueItem> children { get; set; } = new();
 }

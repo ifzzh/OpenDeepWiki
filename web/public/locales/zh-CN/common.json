@@ -327,6 +327,7 @@
         "failed_message": "导出失败，请稍后再试。"
       },
       "overview": "概览",
+      "mindmap": "思维导图",
       "changelog": "更新日志"
     },
     "update_tooltip": "最近更新: {{time}}"

@@ -3,337 +3,281 @@
 [中文](README.zh-CN.md) | [English](README.md)
 
 <div align="center">
-  <img src="/img/favicon.png" alt="OpenDeepWiki Logo" width="200" />
+  <img src="/img/favicon.png" alt="OpenDeepWiki Logo" width="220" />
   <h3>AI驱动的代码知识库</h3>
 </div>
 
+---
 
-# 赞助
+# 赞助商 Sponsor
 
-[![image](https://github.com/user-attachments/assets/b1bcb56e-38cb-47bf-adfe-7a21d83774b4)](https://share.302.ai/jXcaTv)
+[![302.AI](https://github.com/user-attachments/assets/b1bcb56e-38cb-47bf-adfe-7a21d83774b4)](https://share.302.ai/jXcaTv)
 
+[302.AI](https://share.302.ai/jXcaTv) 是一个按需付费的一站式企业级AI应用平台，提供开放平台和开源生态，助力AI解决各种需求。点击[这里](https://share.302.ai/jXcaTv)获取1美元免费额度！
 
-[302.AI](https://share.302.ai/jXcaTv) 是一个按需付费的一站式企业级AI应用平台，开放平台，开源生态，让AI为每个需求找到答案。现凭邀请码注册，即可领取$1测试额度，快来体验吧！
+---
 
-# 项目介绍
+# 功能 Features
 
-OpenDeepWiki 是参考[DeepWiki](https://deepwiki.com/) 作为灵感，基于 .NET 9 和 Semantic Kernel 开发的开源项目。它旨在帮助开发者更好地理解和使用代码库，提供代码分析、文档生成、知识图谱等功能。
+- **快速转换**：支持将所有GitHub、GitLab、Gitee、Gitea等代码仓库几分钟内转换为知识库。
+- **多语言支持**：支持所有编程语言的代码分析和文档生成。
+- **代码结构图**：自动生成Mermaid图，帮助理解代码结构。
+- **自定义模型支持**：支持自定义模型和自定义API，灵活扩展。
+- **AI智能分析**：基于AI进行代码分析和代码关系理解。
+- **SEO友好**：基于Next.js生成SEO友好型文档和知识库，方便搜索引擎抓取。
+- **对话式交互**：支持与AI对话，获取代码详细信息和使用方法，深入理解代码。
+
+---
+
+# 特性清单 Feature List
+
+- [x] 支持多代码仓库（GitHub、GitLab、Gitee、Gitea等）
+- [x] 支持多编程语言（Python、Java、C#、JavaScript等）
+- [x] 支持仓库管理（增删改查仓库）
+- [x] 支持多AI提供商（OpenAI、AzureOpenAI、Anthropic等）
+- [x] 支持多数据库（SQLite、PostgreSQL、SqlServer等）
+- [x] 支持多语言（中文、英文、法文等）
+- [x] 支持上传ZIP文件和本地文件
+- [x] 提供数据微调平台，生成微调数据集
+- [x] 支持目录级仓库管理，动态生成目录和文档
+- [x] 支持仓库目录修改管理
+- [x] 支持用户管理（增删改查用户）
+- [x] 支持用户权限管理
+- [x] 支持仓库级别生成不同微调框架数据集
+
+---
+
+# 项目介绍 Project Introduction
+
+OpenDeepWiki是一个开源项目，灵感来源于[DeepWiki](https://deepwiki.com/)，基于.NET 9和Semantic Kernel开发。旨在帮助开发者更好地理解和利用代码库，提供代码分析、文档生成和知识图谱构建等功能。
+
+主要功能：
+
 - 分析代码结构
 - 理解仓库核心概念
 - 生成代码文档
-- 自动生成代码README.md
+- 自动生成代码的README.md
+- 支持MCP（Model Context Protocol）协议
 
+---
 
-## 功能
+# MCP支持
 
-- **快速生成：** 只需要几分钟即可将所有的Github，Gitlab，Gitee，Gitea等代码仓库转换为知识库
-- **多语言支持：** 支持所有编程语言的代码分析和文档生成
-- **代码结构：** 自动生存Mermaid图表理解代码结构
-- **自定义模型：** 支持自定义模型和自定义API，可以根据需要进行扩展
-- **AI智能分析：** 基于AI的代码分析和代码关系的理解
-- **轻松SEO:** 生成SEO友好的文档和知识库，使用Next.js构建，让搜索引擎更容易索引
-- **对话式交互：** 支持与AI进行对话式交互，获取代码的详细信息和使用方法，深入理解代码
+OpenDeepWiki支持MCP协议：
 
-功能列表：
-- [x] 支持多种代码仓库（Github，Gitlab，Gitee，Gitea等）
-- [x] 支持多种编程语言（Python，Java，C#，JavaScript等）
-- [x] 支持仓库管理，提供管理管理功能支持增删改查仓库
-- [x] 支持多种AI提供商（OpenAI，AzureOpenAI，Anthropic等）
-- [x] 支持多种数据库（SQLite，PostgreSQL，SqlServer等）
-- [x] 支持多种语言（中文，英文，法文等）
-- [x] 支持上传ZIP文件，支持上传本地文件
-- [x] 提供数据微调平台生成微调数据集
-- [x] 支持仓库目录级别管理，支持自定义目录动态生成文档
-- [x] 支持仓库目录管理，支持修改仓库目录
-- [x] 支持用户级别管理，提供用户管理功能支持增删改查用户
-- [x] 支持用户权限管理，提供用户权限管理功能支持增删改查用户权限
-- [x] 支持对仓库级别的生成不同微调框架的微调数据集
-- 
-## MCP支持
+- 可以作为单仓库的MCPServer，进行仓库分析。
 
-OpenDeepWiki支持MCP（ModelContextProtocol）
-- 支持单仓库提供MCPServer，针对单个仓库进行分析
+示例配置：
 
-使用方式：下面是cursor的使用方式：
 ```json
 {
   "mcpServers": {
     "OpenDeepWiki":{
-       "url": "http://您的OpenDeepWiki服务IP:端口/sse?owner=AIDotNet&name=OpenDeepWiki"
+      "url": "http://Your OpenDeepWiki service IP:port/sse?owner=AIDotNet&name=OpenDeepWiki"
     }
   }
 }
 ```
 
-- owner: 是仓库组织或拥有者的名称
-- name: 是仓库的名称
+- owner：仓库所属组织或拥有者名称
+- name：仓库名称
 
-添加好仓库以后进行测试提问（请注意，再次之前这个仓库需要先保证已经处理完成）：OpenDeepWiki是什么？
-效果如图：![](img/mcp.png)
+添加仓库后，可通过提问测试，如“什么是OpenDeepWiki？”，效果如下图所示：
 
-通过这种方式，您可以将OpenDeepWiki作为MCPServer使用，提供给其他的AI模型进行调用，方便对一个开源项目进行分析和理解。
+![](img/mcp.png)
 
+这样，OpenDeepWiki可作为MCPServer，供其他AI模型调用，方便分析和理解开源项目。
 
-## 🚀 快速开始
+---
 
-1. 克隆代码库
+# 🚀 快速开始 Quick Start
+
+1. 克隆仓库
+
 ```bash
 git clone https://github.com/AIDotNet/OpenDeepWiki.git
 cd OpenDeepWiki
 ```
 
-2. 打开`docker-compose.yml`文件，修改以下环境变量：
+2. 修改 `docker-compose.yml` 中环境变量配置：
 
-Ollama：
+- OpenAI示例：
+
 ```yaml
 services:
   koalawiki:
     environment:
       - KOALAWIKI_REPOSITORIES=/repositories
-      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
-      - CHAT_MODEL=qwen2.5:32b # 必须要支持function的模型
-      - ANALYSIS_MODEL=qwen2.5:32b # 分析模型，用于生成仓库目录结构
-      - CHAT_API_KEY=sk-xxxx # 您GiteeAI的APIkey
-      - LANGUAGE= # 设置生成语言默认为"中文"
-      - ENDPOINT=https://你的OllamaIP:端口/v1
+      - TASK_MAX_SIZE_PER_USER=5 # AI每用户最大并行文档生成任务数
+      - CHAT_MODEL=DeepSeek-V3 # 模型需支持函数调用
+      - ANALYSIS_MODEL= # 用于生成仓库目录结构的分析模型
+      - CHAT_API_KEY= # 你的API Key
+      - LANGUAGE= # 默认生成语言，如“Chinese”
+      - ENDPOINT=https://api.token-ai.cn/v1
       - DB_TYPE=sqlite
-      - MODEL_PROVIDER=OpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
+      - MODEL_PROVIDER=OpenAI # 模型提供商，支持OpenAI、AzureOpenAI、Anthropic
       - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
-      - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
-      - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
-      - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
-      - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
+      - EnableSmartFilter=true # 是否启用智能过滤，影响AI获取仓库文件目录能力
+      - UPDATE_INTERVAL # 仓库增量更新间隔，单位天
+      - MAX_FILE_LIMIT=100 # 上传文件最大限制，单位MB
+      - DEEP_RESEARCH_MODEL= # 深度研究模型，空则使用CHAT_MODEL
       - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
-      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析？这可能会对代码的质量产生影响。
-      - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK=false # 是否启用MCP Prompt生成
-      - ENABLE_WAREHOUSE_DESCRIPTION_TASK=false # 是否启用仓库Description生成
+      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析，可能影响代码质量
 ```
 
-OpenAI：
-```yaml
-services:
-  koalawiki:
-    environment:
-      - KOALAWIKI_REPOSITORIES=/repositories
-      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
-      - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
-      - ANALYSIS_MODEL=DeepSeek-V3 # 分析模型，用于生成仓库目录结构
-      - CHAT_API_KEY= # 您GiteeAI的APIkey
-      - LANGUAGE= # 设置生成语言默认为"中文"
-      - ENDPOINT=https://ai.gitee.com/v1
-      - DB_TYPE=sqlite
-      - MODEL_PROVIDER=OpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
-      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
-      - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
-      - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
-      - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
-      - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
-      - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
-      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析？这可能会对代码的质量产生影响。
-      - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK=false # 是否启用MCP Prompt生成
-      - ENABLE_WAREHOUSE_DESCRIPTION_TASK=false # 是否启用仓库Description生成
-
-```
-
-AzureOpenAI
-```yaml
-services:
-  koalawiki:
-    environment:
-      - KOALAWIKI_REPOSITORIES=/repositories
-      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
-      - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
-      - ANALYSIS_MODEL= # 分析模型，用于生成仓库目录结构
-      - CHAT_API_KEY= # 您的APIkey
-      - LANGUAGE= # 设置生成语言默认为"中文"
-      - ENDPOINT=https://您的Azure地址.openai.azure.com/
-      - DB_TYPE=sqlite
-      - MODEL_PROVIDER=AzureOpenAI # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
-      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
-      - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
-      - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
-      - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
-      - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
-      - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
-      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析？这可能会对代码的质量产生影响。
-      - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK=false # 是否启用MCP Prompt生成
-      - ENABLE_WAREHOUSE_DESCRIPTION_TASK=false # 是否启用仓库Description生成
-```
-
-Anthropic
-```yaml
-services:
-  koalawiki:
-    environment:
-      - KOALAWIKI_REPOSITORIES=/repositories
-      - TASK_MAX_SIZE_PER_USER=5 # 每个用户AI处理文档生成的最大并行数量
-      - CHAT_MODEL=DeepSeek-V3 # 必须要支持function的模型
-      - ANALYSIS_MODEL= # 分析模型，用于生成仓库目录结构
-      - CHAT_API_KEY=您的APIkey
-      - LANGUAGE= # 设置生成语言默认为"中文"
-      - ENDPOINT=https://api.anthropic.com/
-      - DB_TYPE=sqlite
-      - MODEL_PROVIDER=Anthropic # 模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
-      - DB_CONNECTION_STRING=Data Source=/data/KoalaWiki.db
-      - EnableSmartFilter=true # 是否启用智能过滤，这可能影响AI得到仓库的文件目录
-      - UPDATE_INTERVAL=5 # 仓库增量更新间隔，单位天
-      - MAX_FILE_LIMIT=100 # 上传文件的最大限制，单位MB
-      - DEEP_RESEARCH_MODEL= # 深度研究模型，为空使用CHAT_MODEL
-      - ENABLE_INCREMENTAL_UPDATE=true # 是否启用增量更新
-      - ENABLE_CODED_DEPENDENCY_ANALYSIS=false # 是否启用代码依赖分析？这可能会对代码的质量产生影响。
-      - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK=false # 是否启用MCP Prompt生成
-      - ENABLE_WAREHOUSE_DESCRIPTION_TASK=false # 是否启用仓库Description生成
-```
-
-
-> 💡 **如何获取APIKey:**
-> - 获取 Google API key [Google AI Studio](https://makersuite.google.com/app/apikey)
-> - 获取 OpenAI API key [OpenAI Platform](https://platform.openai.com/api-keys)
-> - 获取 CoresHub [CoresHub](https://console.coreshub.cn/xb3/maas/global-keys) [点击这里免费领取5000万token](https://account.coreshub.cn/signup?invite=ZmpMQlZxYVU=)
-> - 获取 TokenAI [TokenAI](https://api.token-ai.cn/)
+- AzureOpenAI和Anthropic配置类似，仅需调整 `ENDPOINT` 和 `MODEL_PROVIDER`。
 
 3. 启动服务
 
-您可以使用提供的Makefile命令轻松管理应用程序：
+使用Makefile命令：
 
 ```bash
 # 构建所有Docker镜像
 make build
 
-# 以后台模式启动所有服务
+# 后台启动所有服务
 make up
 
-# 或以开发模式启动（可查看日志）
+# 开发模式启动（可见日志）
 make dev
 ```
 
-然后访问 http://localhost:8090 即可访问知识库。
+访问 http://localhost:8090 进入知识库页面。
 
-更多命令可查看：
-```bash
-make help
-```
-
-### Windows用户（无make命令）
-
-如果您使用Windows系统且没有安装`make`，可以直接使用以下Docker Compose命令：
+Windows用户无make环境，可直接使用Docker Compose：
 
 ```bash
-# 构建所有Docker镜像
 docker-compose build
-
-# 后台启动所有服务
 docker-compose up -d
-
-# 开发模式启动（可查看日志）
 docker-compose up
-
-# 停止所有服务
 docker-compose down
-
-# 查看日志
 docker-compose logs -f
 ```
 
-针对特定架构或服务的构建命令：
+---
+
+# 部署建议
+
+- 构建特定架构：
 
 ```bash
-# 只构建后端
-docker-compose build koalawiki
-
-# 只构建前端
-docker-compose build koalawiki-web
-
-# 使用架构参数构建
 docker-compose build --build-arg ARCH=arm64
 docker-compose build --build-arg ARCH=amd64
 ```
 
-### 一键部署到 Sealos 通过公网访问
-[![](https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg)](https://cloud.sealos.io/?openapp=system-template%3FtemplateName%3DOpenDeepWiki)
-详情请参考：[使用模板将 OpenDeepWiki 一键部署为 Sealos 应用暴露到公网](scripts/sealos/README.zh-CN.md)
+- 仅构建后端或前端：
 
-## 🔍工作原理
+```bash
+docker-compose build koalawiki
+docker-compose build koalawiki-web
+```
 
-OpenDeepWiki使用AI实现：
- - 克隆代码仓库到本地
- - 根据仓库README.md进行分析
- - 分析代码结构，并且根据需要读取代码文件，然后产生需要生成的目录json数据
- - 根据目录分多个任务进行处理，每一个任务都是一个文档
- - 根据任务开始读取代码文件，分析代码文件，生成代码文档，并且生存Mermaid图表表示代码结构依赖关系
- - 生成最终的知识库文档
- - 通过对话式的方式对仓库进行分析，回复用户的问题
+- 一键部署到Sealos（支持公网访问）：
+
+[![Deploy on Sealos](https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg)](https://bja.sealos.run/?openapp=system-template%3FtemplateName%3DOpenDeepWiki)
+
+详细步骤请参考：[Sealos一键部署OpenDeepWiki](scripts/sealos/README.zh-CN.md)
+
+---
+
+# 🔍 工作原理 How It Works
+
+OpenDeepWiki利用AI实现：
+
+- 克隆代码仓库本地
+- 读取.gitignore配置，忽略无关文件
+- 递归扫描目录获取所有文件和目录
+- 判断文件数量是否超过阈值，超过则调用AI模型智能过滤目录
+- 解析AI返回的目录JSON数据
+- 生成或更新README.md
+- 调用AI模型生成仓库分类信息与项目总览
+- 清理项目分析标签内容并保存项目总览到数据库
+- 调用AI生成思考目录（任务列表）
+- 递归处理目录任务，生成文档目录结构
+- 保存目录结构到数据库
+- 处理未完成的文档任务
+- 若为Git仓库，清理旧提交记录，调用AI生成更新日志并保存
+
+---
+
+# OpenDeepWiki 仓库解析成文档详细流程图
 
 ```mermaid
 graph TD
-    A[克隆代码仓库] --> B[分析README.md]
-    B --> C[分析代码结构]
-    C --> D[生成目录json数据]
-    D --> E[分多个任务进行处理]
-    E --> F[读取代码文件]
-    F --> G[分析代码文件]
-    G --> H[生成代码文档]
-    H --> I[生存Mermaid图表]
-    I --> J[生成知识库文档]
-    J --> K[对话式交互]
+    A[克隆代码仓库] --> B[读取.gitignore配置忽略文件]
+    B --> C[递归扫描目录获取所有文件和目录]
+    C --> D{文件数量是否超过阈值}
+    D -- 否 --> E[直接返回目录结构]
+    D -- 是 --> F[调用AI模型进行目录结构智能过滤]
+    F --> G[解析AI返回的目录JSON数据]
+    E --> G
+    G --> H[生成或更新README.md]
+    H --> I[调用AI模型生成仓库分类信息]
+    I --> J[调用AI模型生成项目总览信息]
+    J --> K[清理项目分析标签内容]
+    K --> L[保存项目总览到数据库]
+    L --> M[调用AI生成思考目录任务列表]
+    M --> N[递归处理目录任务，生成DocumentCatalog]
+    N --> O[保存目录结构到数据库]
+    O --> P[处理未完成的文档任务]
+    P --> Q{仓库类型是否为Git}
+    Q -- 是 --> R[清理旧的提交记录]
+    R --> S[调用AI生成更新日志]
+    S --> T[保存更新日志到数据库]
+    Q -- 否 --> T
 ```
-## 高级配置
 
-### 环境变量
-  - KOALAWIKI_REPOSITORIES  仓库存放路径
-  - TASK_MAX_SIZE_PER_USER  每个用户AI处理文档生成的最大并行数量
-  - CHAT_MODEL  必须要支持function的模型
-  - ENDPOINT  API的Endpoint
-  - ANALYSIS_MODEL  分析模型，用于生成仓库目录结构
-  - CHAT_API_KEY  您的APIkey
-  - LANGUAGE  改变生成的文档的语言
-  - DB_TYPE  数据库类型，默认为sqlite
-  - DB_CONNECTION_STRING  数据库连接字符串
-  - MODEL_PROVIDER  模型提供商，默认为OpenAI 支持AzureOpenAI和Anthropic
-  - EnableSmartFilter 是否启用智能过滤，这可能影响AI得到仓库的文件目录
-  - UPDATE_INTERVAL 仓库增量更新间隔，单位天
-  - MAX_FILE_LIMIT 上传文件的最大限制，单位MB
-  - DEEP_RESEARCH_MODEL 深度研究模型，为空使用CHAT_MODEL
-  - ENABLE_INCREMENTAL_UPDATE 是否启用增量更新
-  - ENABLE_CODED_DEPENDENCY_ANALYSIS 是否启用代码依赖分析？这可能会对代码的质量产生影响。
-  - ENABLE_WAREHOUSE_FUNCTION_PROMPT_TASK # 是否启用MCP Prompt生成
+---
 
-### 针对不同架构的构建
-Makefile提供了针对不同CPU架构构建的命令：
+# 高级配置 Advanced Configuration
+
+## 环境变量 Environment Variables
+
+- `KOALAWIKI_REPOSITORIES`：仓库存储路径
+- `TASK_MAX_SIZE_PER_USER`：AI每用户最大并行文档生成任务数
+- `CHAT_MODEL`：聊天模型（需支持函数调用）
+- `ENDPOINT`：API端点
+- `ANALYSIS_MODEL`：用于生成仓库目录结构的分析模型
+- `CHAT_API_KEY`：API密钥
+- `LANGUAGE`：生成文档语言
+- `DB_TYPE`：数据库类型，默认sqlite
+- `MODEL_PROVIDER`：模型提供商，默认OpenAI，支持AzureOpenAI、Anthropic
+- `DB_CONNECTION_STRING`：数据库连接字符串
+- `EnableSmartFilter`：是否启用智能过滤，影响AI获取仓库目录能力
+- `UPDATE_INTERVAL`：仓库增量更新间隔（天）
+- `MAX_FILE_LIMIT`：上传文件最大限制（MB）
+- `DEEP_RESEARCH_MODEL`：深度研究模型，空则使用CHAT_MODEL
+- `ENABLE_INCREMENTAL_UPDATE`：是否启用增量更新
+- `ENABLE_CODED_DEPENDENCY_ANALYSIS`：是否启用代码依赖分析，可能影响代码质量
+
+## 构建不同架构 Build for Different Architectures
+
+Makefile命令：
 
 ```bash
-# 构建ARM架构的所有镜像
-make build-arm
-
-# 构建AMD架构的所有镜像
-make build-amd
-
-# 只构建ARM架构的后端服务
-make build-backend-arm
-
-# 只构建AMD架构的前端服务
-make build-frontend-amd
+make build-arm    # ARM架构
+make build-amd    # AMD架构
+make build-backend-arm   # 仅后端ARM
+make build-frontend-amd  # 仅前端AMD
 ```
 
-## 👥 贡献者
+---
 
-感谢所有为这个项目做出贡献的开发者！
-<div align="center">
-<a href="https://github.com/AIDotNet/OpenDeepWiki/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=AIDotNet/OpenDeepWiki&max=50&columns=10" />
-</a>
+# 交流社区 Community
 
-## Discord
+- Discord: [join us](https://discord.gg/8sxUNacv)
+- 微信公众号二维码：
 
-[加入我们](https://discord.gg/Y3fvpnGVwt)
+![WeChat QR](/img/wechat.jpg)
 
-## WeChat 
+---
 
-![Image](https://github.com/user-attachments/assets/8262bcfd-0560-44ee-81d5-d03579450149)
+# 📄 许可证 License
 
-## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+本项目采用 MIT 许可证，详情见 [LICENSE](./LICENSE)。
 
-## Star History
+---
+
+# ⭐ Star历史 Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=AIDotNet/OpenDeepWiki&type=Date)](https://www.star-history.com/#AIDotNet/OpenDeepWiki&Date)

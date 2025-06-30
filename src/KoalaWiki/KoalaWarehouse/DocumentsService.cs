@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using KoalaWiki.Domains;
 using KoalaWiki.Domains.Warehouse;
@@ -428,6 +429,18 @@ public partial class DocumentsService
         await dbContext.Warehouses.Where(x => x.Id == warehouse.Id)
             .ExecuteUpdateAsync(x => x.SetProperty(y => y.Classify, classify));
 
+        
+        // 生成MiniMap
+        var miniMap = await MiniMapService.GenerateMiniMap(catalogue, warehouse, path);
+        await dbContext.MiniMaps.Where(x => x.WarehouseId == warehouse.Id)
+            .ExecuteDeleteAsync();
+        await dbContext.MiniMaps.AddAsync(new MiniMap()
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            WarehouseId = warehouse.Id,
+            Value = JsonSerializer.Serialize(miniMap, JsonSerializerOptions.Web)
+        });
+        
         var overview = await OverviewService.GenerateProjectOverview(fileKernel, catalogue, gitRepository,
             warehouse.Branch, readme, classify);
 
@@ -462,15 +475,10 @@ public partial class DocumentsService
             Id = Guid.NewGuid().ToString("N")
         });
 
-        var (result, exception) =
-            await GenerateThinkCatalogueService.GenerateThinkCatalogue(path, catalogue, gitRepository, warehouse,
-                classify);
 
-        if (result == null)
-        {
-            // 尝试多次处理失败直接异常
-            throw new Exception("处理失败，尝试五次无法成功：" + exception?.Message);
-        }
+        var result =
+            await GenerateThinkCatalogueService.GenerateCatalogue(path, gitRepository, catalogue, warehouse,
+                classify);
 
         var documents = new List<DocumentCatalog>();
         // 递归处理目录层次结构
@@ -530,12 +538,7 @@ public partial class DocumentsService
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int? GetMaxTokens(string model)
     {
-        if (model.StartsWith("deepseek-r1"))
-        {
-            return 32768;
-        }
-
-        if (model.StartsWith("DeepSeek-R1"))
+        if (model.StartsWith("deepseek-r1", StringComparison.OrdinalIgnoreCase))
         {
             return 32768;
         }
@@ -569,9 +572,7 @@ public partial class DocumentsService
             "gemini-2.5-pro-preview-05-06" => 32768,
             "gemini-2.5-flash-preview-04-17" => 32768,
             "Qwen3-32B" => 32768,
-            "deepseek-r1" => 32768,
             "deepseek-r1:32b-qwen-distill-fp16" => 32768,
-
             _ => null
         };
     }
@@ -588,7 +589,6 @@ public partial class DocumentsService
             {
                 WarehouseId = warehouse.Id,
                 Description = item.title,
-                DependentFile = item.dependent_file?.ToList() ?? new List<string>(),
                 Id = Guid.NewGuid() + item.title,
                 Name = item.name,
                 Url = item.title,

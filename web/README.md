@@ -206,7 +206,6 @@ web/
 ### 功能组件
 - **MarkdownEditor**: Markdown 编辑器，支持实时预览
 - **DirectoryTree**: 目录树组件，展示文档结构
-- **AIInputBar**: AI 输入栏，支持智能问答
 - **RepositoryForm**: 仓库添加/编辑表单
 
 ## 🌐 国际化

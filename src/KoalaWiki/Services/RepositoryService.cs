@@ -21,7 +21,6 @@ namespace KoalaWiki.Services;
 [Filter(typeof(ResultFilter))]
 public class RepositoryService(
     IKoalaWikiContext dbContext,
-    GitRepositoryService gitRepositoryService,
     ILogger<RepositoryService> logger,
     IUserContext userContext,
     IHttpContextAccessor httpContextAccessor) : FastApi
@@ -97,9 +96,9 @@ public class RepositoryService(
 
         // 检查用户角色是否有该仓库的写入或删除权限（管理权限）
         return await dbContext.WarehouseInRoles
-            .AnyAsync(wr => userRoleIds.Contains(wr.RoleId) && 
-                           wr.WarehouseId == warehouseId && 
-                           (wr.IsWrite || wr.IsDelete));
+            .AnyAsync(wr => userRoleIds.Contains(wr.RoleId) &&
+                            wr.WarehouseId == warehouseId &&
+                            (wr.IsWrite || wr.IsDelete));
     }
 
     /// <summary>
@@ -243,7 +242,8 @@ public class RepositoryService(
     {
         var query = dbContext.Warehouses
             .AsNoTracking()
-            .Where(r => r.OrganizationName == owner && r.Name == name && r.Status == WarehouseStatus.Completed);
+            .Where(r => r.OrganizationName == owner && r.Name == name &&
+                        (r.Status == WarehouseStatus.Completed || r.Status == WarehouseStatus.Processing));
 
         // 如果指定了分支，则按分支筛选
         if (!string.IsNullOrEmpty(branch))

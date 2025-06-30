@@ -15,6 +15,7 @@ import {
 
 // 导入类型
 import { DocumentPageClientProps } from './types';
+import FloatingChat from '../../../chat';
 
 const { useToken } = theme;
 
@@ -105,6 +106,18 @@ export default function DocumentPageClient({
 
       {/* 全局样式 */}
       <DocumentStyles token={token} />
+      <FloatingChat
+        appId={`builtin_${owner}_${name}`}
+        organizationName={owner}
+        repositoryName={name}
+        title={`${name} AI 助手`}
+        theme="light"
+        enableDomainValidation={false}
+        embedded={false}
+        onError={(error) => {
+          console.error('Built-in chat error:', error);
+        }}
+      />
     </main>
   );
 } 

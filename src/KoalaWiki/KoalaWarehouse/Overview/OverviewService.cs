@@ -52,6 +52,7 @@ public class OverviewService
                 },OpenAIOptions.ChatModel);
         }
 
+        history.AddSystemEnhance();
         history.AddUserMessage(prompt);
 
         await foreach (var item in chat.GetStreamingChatMessageContentsAsync(history, settings, kernel))

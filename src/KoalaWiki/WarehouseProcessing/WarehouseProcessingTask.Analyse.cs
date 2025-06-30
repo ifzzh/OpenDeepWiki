@@ -239,7 +239,6 @@ public partial class WarehouseProcessingTask
             {
                 WarehouseId = warehouse.Id,
                 Description = item.title,
-                DependentFile = item.dependent_file.ToList(),
                 Id = item.Id,
                 Name = item.name,
                 Url = item.title,
@@ -282,8 +281,6 @@ public class WareHouseCatalogueItems
     public string name { get; set; }
 
     public string type { get; set; }
-
-    public string[] dependent_file { get; set; }
 
     public string prompt { get; set; }
 

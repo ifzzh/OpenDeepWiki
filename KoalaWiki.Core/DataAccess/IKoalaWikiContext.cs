@@ -27,11 +27,6 @@ public interface IKoalaWikiContext
     public DbSet<DocumentOverview> DocumentOverviews { get; set; }
 
     public DbSet<DocumentCommitRecord> DocumentCommitRecords { get; set; }
-
-    public DbSet<ChatShareMessage> ChatShareMessages { get; set; }
-
-    public DbSet<ChatShareMessageItem> ChatShareMessageItems { get; set; }
-
     /// <summary>
     /// 训练数据集
     /// </summary>
@@ -55,6 +50,10 @@ public interface IKoalaWikiContext
 
     public DbSet<DailyStatistics> DailyStatistics { get; set; }
 
+    public DbSet<AppConfig> AppConfigs { get; set; }
+
+    public DbSet<MiniMap> MiniMaps { get; set; }
+    
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = new());
 
     Task RunMigrateAsync();

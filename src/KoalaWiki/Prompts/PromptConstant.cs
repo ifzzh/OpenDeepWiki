@@ -13,13 +13,17 @@ public class PromptConstant
         GenerateThinkCatalogue = 40,
 
         AnalyzeCatalogue = 50,
+        
+        GenerateMindMap = 60,
     }
 
     public enum Chat
     {
         FirstChat = 10,
 
-        FirstDeepChat = 20
+        FirstDeepChat = 20,
+
+        Responses = 30,
     }
 
     public enum Mem0

@@ -100,9 +100,6 @@ export async function generateMetadata(): Promise<Metadata> {
       languages: {
         'zh-CN': '/zh-CN',
         'en-US': '/en-US',
-        'zh-TW': '/zh-TW',
-        'ja': '/ja',
-        'ko': '/ko',
       },
     },
     openGraph: {
@@ -229,7 +226,7 @@ export default async function RootLayout({
         />
         
         {/* 外部资源 */}
-        <script src="tailwindcss.js"></script>
+        <script src="/tailwindcss.js"></script>
         
         {/* 百度统计 */}
         <Script id="baidu-analytics" strategy="afterInteractive">

@@ -327,6 +327,7 @@
         "failed_message": "Export failed, please try again later."
       },
       "overview": "Overview",
+      "mindmap": "Mind Map",
       "changelog": "Changelog"
     },
     "update_tooltip": "Last Updated: {{time}}"

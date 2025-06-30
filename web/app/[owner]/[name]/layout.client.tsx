@@ -13,7 +13,6 @@ import {
   Card,
   message,
   Tooltip,
-  Steps,
   Collapse,
   Alert,
   Progress,
@@ -23,27 +22,18 @@ import {
 } from 'antd';
 import {
   HomeOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   ApiOutlined,
   CopyOutlined,
   CheckOutlined,
-  BookOutlined,
   RocketOutlined,
   BranchesOutlined,
   GlobalOutlined,
-  BulbOutlined,
-  SearchOutlined,
-  DownloadOutlined,
-  SettingOutlined,
-  InfoCircleOutlined,
+  PartitionOutlined,
 } from '@ant-design/icons';
 import { SaveAll } from 'lucide-react'
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname,  useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import AIInputBar from '../../components/AIInputBar';
-import Image from 'next/image';
 import { ExportMarkdownZip } from '../../services';
 import { useTranslation } from '../../i18n/client';
 
@@ -130,10 +120,7 @@ export default function RepositoryLayoutClient({
     initialCatalogData?.branchs?.[0] || 
     ''
   );
-  
-  const selectedKey = pathname.includes('/') ? 'docs' : 'overview';
 
-  // Check if the screen size is mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -642,6 +629,17 @@ export default function RepositoryLayoutClient({
                   <span className="tree-item-label">{t('repository_layout.sidebar.overview')}</span>
                 </Link>
 
+                <Link
+                  href={selectedBranch ? `/${owner}/${name}/mindmap?branch=${selectedBranch}` : `/${owner}/${name}/mindmap`}
+                  className={`tree-item mindmap-item ${pathname === `/${owner}/${name}/mindmap` ? 'active' : ''}`}
+                  style={{ paddingLeft: '12px' }}
+                >
+                  <span className="tree-item-label">
+                    <PartitionOutlined style={{ marginRight: '8px', fontSize: '14px' }} />
+                    {t('repository_layout.sidebar.mindmap')}
+                  </span>
+                </Link>
+
                 <div className="menu-divider"></div>
 
                 {initialCatalogData?.items?.map(item => renderSidebarItem(item))}
@@ -791,8 +789,9 @@ export default function RepositoryLayoutClient({
           opacity: 1;
         }
         
-        /* 概览和更新日志的特殊样式 */
+        /* 概览、思维导图和更新日志的特殊样式 */
         .tree-item.overview-item,
+        .tree-item.mindmap-item,
         .tree-item.changelog-item {
           font-weight: 500;
           margin: 4px 8px 8px 8px;
@@ -801,11 +800,13 @@ export default function RepositoryLayoutClient({
         }
         
         .tree-item.overview-item:hover,
+        .tree-item.mindmap-item:hover,
         .tree-item.changelog-item:hover {
           background-color: #e2e8f0;
         }
         
         .tree-item.overview-item.active,
+        .tree-item.mindmap-item.active,
         .tree-item.changelog-item.active {
           background-color: #dbeafe;
           border-color: ${minimalistDesign.colors.primary};
@@ -864,30 +865,6 @@ export default function RepositoryLayoutClient({
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
       `}</style>
-
-      {
-        initialCatalogData?.items?.length > 0 && (
-          <AIInputBar
-            owner={owner}
-            name={name}
-            branch={selectedBranch}
-            style={{
-              position: 'fixed',
-              bottom: minimalistDesign.spacing.lg,
-              left: 0,
-              right: 0,
-              margin: '0 auto',
-              maxWidth: isMobile ? '90%' : '60%',
-              width: isMobile ? 'calc(100% - 32px)' : 'auto',
-              zIndex: 1001,
-              boxShadow: minimalistDesign.shadows.lg,
-              borderRadius: minimalistDesign.borderRadius.lg,
-              backdropFilter: 'blur(8px)',
-              border: `1px solid ${minimalistDesign.colors.border}`,
-            }}
-          />
-        )
-      }
     </ConfigProvider >
   );
 }

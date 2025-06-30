@@ -17,105 +17,90 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
 
-            modelBuilder.Entity("KoalaWiki.Domains.ChatShareMessage", b =>
+            modelBuilder.Entity("KoalaWiki.Domains.AppConfig", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT")
                         .HasComment("主键Id");
 
+                    b.Property<string>("AllowedDomainsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasComment("允许的域名列表JSON");
+
+                    b.Property<string>("AppId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT")
+                        .HasComment("应用ID");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasComment("创建时间");
 
-                    b.Property<string>("Ip")
+                    b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasComment("应用描述");
 
-                    b.Property<bool>("IsDeep")
-                        .HasColumnType("INTEGER");
+                    b.Property<bool>("EnableDomainValidation")
+                        .HasColumnType("INTEGER")
+                        .HasComment("是否启用域名验证");
 
-                    b.Property<string>("Question")
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("INTEGER")
+                        .HasComment("是否启用");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("TEXT")
+                        .HasComment("最后使用时间");
+
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasComment("应用名称");
 
-                    b.Property<string>("Title")
+                    b.Property<string>("OrganizationName")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasComment("组织名称");
+
+                    b.Property<string>("RepositoryName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasComment("仓库名称");
 
                     b.Property<string>("UserId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("WarehouseId")
                         .IsRequired()
                         .HasColumnType("TEXT")
-                        .HasComment("仓库Id");
+                        .HasComment("创建用户ID");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WarehouseId");
+                    b.HasIndex("AppId")
+                        .IsUnique();
 
-                    b.ToTable("ChatShareMessages", t =>
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsEnabled");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("OrganizationName");
+
+                    b.HasIndex("RepositoryName");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationName", "RepositoryName");
+
+                    b.ToTable("AppConfigs", t =>
                         {
-                            t.HasComment("聊天分享消息表");
-                        });
-                });
-
-            modelBuilder.Entity("KoalaWiki.Domains.ChatShareMessageItem", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("TEXT")
-                        .HasComment("主键Id");
-
-                    b.Property<string>("Answer")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ChatShareMessageId")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasComment("聊天分享消息Id");
-
-                    b.Property<int>("CompletionToken")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Files")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasComment("相关文件");
-
-                    b.Property<int>("PromptToken")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Question")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasComment("问题内容");
-
-                    b.Property<string>("Think")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("TotalTime")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("WarehouseId")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasComment("仓库Id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChatShareMessageId");
-
-                    b.HasIndex("Question");
-
-                    b.HasIndex("WarehouseId");
-
-                    b.ToTable("ChatShareMessageItems", t =>
-                        {
-                            t.HasComment("聊天分享消息项表");
+                            t.HasComment("应用配置表");
                         });
                 });
 
@@ -179,11 +164,6 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
 
                     b.Property<DateTime?>("DeletedTime")
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("DependentFile")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasComment("依赖文件");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -590,6 +570,35 @@ namespace KoalaWiki.Provider.Sqlite.Migrations
                     b.ToTable("MCPHistories", t =>
                         {
                             t.HasComment("MCP历史记录");
+                        });
+                });
+
+            modelBuilder.Entity("KoalaWiki.Domains.MiniMap", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasComment("主键Id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasComment("小地图数据");
+
+                    b.Property<string>("WarehouseId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasComment("仓库Id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("MiniMaps", t =>
+                        {
+                            t.HasComment("小地图表");
                         });
                 });
 

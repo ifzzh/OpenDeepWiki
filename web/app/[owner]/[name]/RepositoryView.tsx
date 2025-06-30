@@ -7,6 +7,7 @@ import {
 } from 'antd';
 import { useState, useMemo, useEffect } from 'react';
 import { createAnchorItems, DocumentContent, DocumentSidebar, DocumentStyles, extractHeadings, MobileDocumentDrawer } from '../../components/document';
+import FloatingChat from '../../chat/index';
 
 const { useToken } = theme;
 
@@ -65,6 +66,20 @@ export function RepositoryView({ owner, name, document }: RepositoryViewProps) {
       />
       
       <DocumentStyles token={token} />
+      
+      {/* 内置聊天悬浮球 */}
+      <FloatingChat
+        appId={`builtin_${owner}_${name}`}
+        organizationName={owner}
+        repositoryName={name}
+        title={`${name} AI 助手`}
+        theme="light"
+        enableDomainValidation={false}
+        embedded={false}
+        onError={(error) => {
+          console.error('Built-in chat error:', error);
+        }}
+      />
     </div>
   );
 } 

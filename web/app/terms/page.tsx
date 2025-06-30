@@ -124,7 +124,7 @@ OpenDeepWiki 是一个基于 .NET 9 和 Semantic Kernel 开发的开源知识库
 
 如有问题或建议，请联系：
 - 电子邮件：239573049@qq.com
-- GitHub Issues：https://github.com/OpenDeepWiki/OpenDeepWiki/issues
+- GitHub Issues：https://github.com/AIDotNet/OpenDeepWiki/issues
 
 ## 13. 其他条款
 

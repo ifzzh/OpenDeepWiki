@@ -25,7 +25,8 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
         var warehouse = await dbAccess.Warehouses
             .AsNoTracking()
             .Where(x => x.Name == name && x.OrganizationName == organizationName &&
-                        (string.IsNullOrEmpty(branch) || x.Branch == branch) && x.Status == WarehouseStatus.Completed)
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch) && 
+                        (x.Status == WarehouseStatus.Completed || x.Status == WarehouseStatus.Processing))
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
@@ -95,7 +96,8 @@ public class DocumentCatalogService(IKoalaWikiContext dbAccess) : FastApi
         var query = await dbAccess.Warehouses
             .AsNoTracking()
             .Where(x => x.Name == name && x.OrganizationName == owner &&
-                        (string.IsNullOrEmpty(branch) || x.Branch == branch) && x.Status == WarehouseStatus.Completed)
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch) && 
+                        (x.Status == WarehouseStatus.Completed || x.Status == WarehouseStatus.Processing))
             .FirstOrDefaultAsync();
 
         if (query == null)

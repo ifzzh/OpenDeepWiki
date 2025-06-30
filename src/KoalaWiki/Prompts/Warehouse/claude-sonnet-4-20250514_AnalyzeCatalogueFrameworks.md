@@ -45,7 +45,6 @@ Your goal is to create a documentation structure specifically tailored to this p
     - Component lifecycle documentation
     - Troubleshooting and advanced usage sections
 8. Organize reference material in a logical, accessible manner
-9. For each section, identify and include the most relevant source files from the project as dependent_file entries
    </documentation_requirements>
 
 <framework_specific_guidance>
@@ -80,13 +79,11 @@ Use the following format:
         {
             "title": "section-identifier",
             "name": "Section Name",
-            "dependent_file": ["path/to/relevant/file1.ext", "path/to/relevant/file2.ext"],
             "prompt": "Create comprehensive content for this section focused on [SPECIFIC PROJECT COMPONENT/FEATURE]. Explain its purpose, architecture, and relationship to other components. Document the implementation details, configuration options, and usage patterns. Include both conceptual overviews for beginners and technical details for experienced developers. Use terminology consistent with the codebase. Provide practical examples demonstrating common use cases. Document public interfaces, parameters, and return values. Include diagrams where appropriate to illustrate key concepts.",
             "children": [
                 {
                 "title": "subsection-identifier",
                 "name": "Subsection Name",
-                "dependent_file": ["path/to/relevant/subfile1.ext", "path/to/relevant/subfile2.ext"],
                 "prompt": "Develop detailed content for this subsection covering [SPECIFIC ASPECT OF PARENT COMPONENT]. Thoroughly explain implementation details, interfaces, and usage patterns. Include concrete examples from the actual codebase. Document configuration options, parameters, and return values. Explain relationships with other components. Address common issues and their solutions. Make content accessible to beginners while providing sufficient technical depth for experienced developers."
                 }
             ]

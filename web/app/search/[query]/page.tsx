@@ -136,6 +136,56 @@ export default function SearchPage() {
     }
   }
 
+  // 处理发送事件和SSE流
+  const processSendEvent = async (
+    chatShareMessageId: string,
+    question: string,
+    aiMessage: ChatMessage
+  ) => {
+    let aiResponseContent = '';
+    let aiResponseThink = '';
+    let isFirstContent = true; // 标记是否是第一次接收内容
+
+    const stream = fetchSSE(API_URL + '/api/Chat/Completions', {
+      chatShareMessageId,
+      question,
+    });
+
+    for await (const chunk of stream) {
+      if (chunk.type === 'message') {
+        // 第一次收到内容时清空占位文本
+        if (isFirstContent) {
+          aiMessage.content = '';
+          isFirstContent = false;
+        }
+        
+        aiResponseContent += chunk?.content ?? '';
+        aiMessage.content = aiResponseContent;
+        aiMessage.loading = false;
+        setMessages([...messages]);
+      }
+      else if (chunk.type === 'reasoning') {
+        aiResponseThink += chunk.content;
+        aiMessage.loading = false;
+        aiMessage.think = aiResponseThink;
+        setMessages([...messages]);
+      } else if (chunk.type === 'tool') {
+        const files = chunk.content.map((x: string) => {
+          const value = x.split('/');
+          const title = value[value.length - 1];
+          return {
+            path: x,
+            title,
+          }
+        });
+        referenceFiles.push(...files);
+        setReferenceFiles([...referenceFiles]);
+      }
+    }
+
+    return { aiResponseContent, aiResponseThink };
+  };
+
   // 发送消息的处理函数
   const handleSendMessage = async (content: string = message, init: boolean = false) => {
     if (!content.trim() && init == false) return;
@@ -158,50 +208,19 @@ export default function SearchPage() {
     }
 
     const aiMessage: ChatMessage = {
-      content: '',
+      content: '正在思考中...',
       sender: 'ai' as const,
       loading: true
     };
 
     messages.push(aiMessage);
-
     setMessages([...messages]);
     setLoading(true);
     setFileListLoading(true);
 
-    let aiResponseContent = '';
-    let aiResponseThink = '';
     try {
-      const stream = fetchSSE(API_URL + '/api/Chat/Completions', {
-        chatShareMessageId,
-        question: content,
-      });
-
-      for await (const chunk of stream) {
-        if (chunk.type === 'message') {
-          aiResponseContent += chunk?.content ?? '';
-          aiMessage.content = aiResponseContent;
-          aiMessage.loading = false;
-          setMessages([...messages]);
-        }
-        else if (chunk.type === 'reasoning') {
-          aiResponseThink += chunk.content;
-          aiMessage.loading = false;
-          aiMessage.think = aiResponseThink;
-          setMessages([...messages]);
-        } else if (chunk.type === 'tool') {
-          const files = chunk.content.map((x: string) => {
-            const value = x.split('/');
-            const title = value[value.length - 1];
-            return {
-              path: x,
-              title,
-            }
-          });
-          referenceFiles.push(...files);
-          setReferenceFiles([...referenceFiles]);
-        }
-      }
+      // 使用新的事件处理函数
+      await processSendEvent(chatShareMessageId, content, aiMessage);
     } catch (error) {
       messageApi.error('获取回复时发生错误');
     } finally {

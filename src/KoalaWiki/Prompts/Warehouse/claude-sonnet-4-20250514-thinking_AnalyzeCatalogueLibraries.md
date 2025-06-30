@@ -61,9 +61,6 @@ Your documentation structure must meet these comprehensive criteria:
 - Address performance characteristics, optimization guidelines, and best practices
 - Demonstrate common usage patterns with practical, working examples
 - Explain relevant internal architecture that impacts library usage
-
-**File Association:**
-For each documentation section, identify and include the most relevant source files as dependent_file entries. These should include implementation files, configuration files, example code, tests, and any other materials that directly relate to that section's content.
 </documentation_requirements>
 
 Generate your response using this exact JSON structure:
@@ -74,13 +71,11 @@ Generate your response using this exact JSON structure:
       {
          "title": "section-identifier",
          "name": "Section Name",
-         "dependent_file": ["path/to/relevant/file1.ext", "path/to/relevant/file2.ext"],
          "prompt": "[ENHANCED PROMPT CONTENT - See specialized prompt templates below]",
          "children": [
             {
                "title": "subsection-identifier", 
                "name": "Subsection Name",
-               "dependent_file": ["path/to/relevant/subfile1.ext"],
                "prompt": "[ENHANCED SUBSECTION PROMPT - See specialized prompt templates below]"
             }
          ]
@@ -173,7 +168,6 @@ Create documentation that serves as both reference material and practical guide 
 
 **Quality Assurance:**
 - Ensure every section has a clear purpose and covers distinct functionality
-- Verify that dependent_file entries accurately reflect the most relevant source materials
 - Confirm that the overall structure creates a logical learning and reference path
 - Check that library-specific requirements are fully addressed
 - Validate that the structure scales appropriately for both simple and complex projects

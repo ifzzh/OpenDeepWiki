@@ -89,7 +89,7 @@ const privacyContent = `# OpenDeepWiki 隐私政策
 
 如果您对本隐私政策有任何疑问或建议，请通过以下方式联系我们：
 - 电子邮件：239573049@qq.com
-- GitHub Issues：https://github.com/OpenDeepWiki/OpenDeepWiki/issues
+- GitHub Issues：https://github.com/AIDotNet/OpenDeepWiki/issues
 
 ## 12. 法律声明
 

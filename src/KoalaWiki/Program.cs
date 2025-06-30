@@ -51,6 +51,7 @@ builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddMemoryCache();
 
 builder.Services.AddHostedService<StatisticsBackgroundService>();
+builder.Services.AddHostedService<MiniMapBackgroundService>();
 
 // 添加访问日志队列和后台处理服务
 builder.Services.AddSingleton<AccessLogQueue>();
@@ -104,11 +105,11 @@ builder.Services.AddAuthentication(options =>
 
 
 // 添加授权策略
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("admin"));
-    options.AddPolicy("RequireUserRole", policy => policy.RequireRole("user", "admin"));
-});
+builder.Services.AddAuthorizationBuilder()
+             // 添加授权策略
+             .AddPolicy("RequireAdminRole", policy => policy.RequireRole("admin"))
+             // 添加授权策略
+             .AddPolicy("RequireUserRole", policy => policy.RequireRole("user", "admin"));
 
 builder.Services
     .AddCors(options =>

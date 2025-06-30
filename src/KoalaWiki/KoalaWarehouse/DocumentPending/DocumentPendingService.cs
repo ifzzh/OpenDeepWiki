@@ -210,12 +210,8 @@ public class DocumentPendingService
 
         var history = new ChatHistory();
 
+        history.AddSystemEnhance();
         history.AddUserMessage(prompt);
-
-        var fileFunction = new FileFunction(path);
-        history.AddUserMessage(
-            $"The following is the list of contents of the pre-read files <files>{await fileFunction.ReadFilesAsync(catalog.DependentFile.ToArray())}</files>,Now you can continue to generate the document and go all out to produce more detailed document content.");
-
 
         var sr = new StringBuilder();
 
@@ -239,6 +235,7 @@ public class DocumentPendingService
             history.AddAssistantMessage(sr.ToString());
             history.AddUserMessage(
                 """
+                You need to further refine the previous content and provide more detailed information. All the content comes from the code repository and the style of the documentation should be more standardized.
                 Create thorough documentation that:
                 - Covers all key functionality with precise technical details
                 - Includes practical code examples and usage patterns  

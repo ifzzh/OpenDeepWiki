@@ -48,6 +48,4 @@ public class DocumentCatalog : Entity<string>
     public bool IsDeleted { get; set; } = false;
     
     public DateTime? DeletedTime { get; set; } = null;
-    
-    public List<string> DependentFile { get; set; } = new();
 }

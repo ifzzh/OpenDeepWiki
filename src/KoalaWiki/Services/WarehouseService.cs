@@ -21,8 +21,8 @@ namespace KoalaWiki.Services;
 [Tags("仓库管理")]
 [Route("/api/Warehouse")]
 public class WarehouseService(
-    IKoalaWikiContext access, 
-    IMapper mapper, 
+    IKoalaWikiContext access,
+    IMapper mapper,
     GitRepositoryService gitRepositoryService,
     IUserContext userContext,
     IHttpContextAccessor httpContextAccessor)
@@ -99,9 +99,9 @@ public class WarehouseService(
 
         // 检查用户角色是否有该仓库的写入或删除权限（管理权限）
         return await access.WarehouseInRoles
-            .AnyAsync(wr => userRoleIds.Contains(wr.RoleId) && 
-                           wr.WarehouseId == warehouseId && 
-                           (wr.IsWrite || wr.IsDelete));
+            .AnyAsync(wr => userRoleIds.Contains(wr.RoleId) &&
+                            wr.WarehouseId == warehouseId &&
+                            (wr.IsWrite || wr.IsDelete));
     }
 
     /// <summary>
@@ -170,7 +170,7 @@ public class WarehouseService(
         var warehouse = await access.Warehouses
             .AsNoTracking()
             .Where(x => x.Name.ToLower() == name && x.OrganizationName.ToLower() == owner &&
-                        x.Status == WarehouseStatus.Completed)
+                        (x.Status == WarehouseStatus.Completed || x.Status == WarehouseStatus.Processing))
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
@@ -676,7 +676,8 @@ public class WarehouseService(
         var warehouse = await access.Warehouses
             .AsNoTracking()
             .Where(x => x.Name.ToLower() == name && x.OrganizationName.ToLower() == owner &&
-                        (string.IsNullOrEmpty(branch) || x.Branch == branch) && x.Status == WarehouseStatus.Completed)
+                        (string.IsNullOrEmpty(branch) || x.Branch == branch) &&
+                        (x.Status == WarehouseStatus.Completed || x.Status == WarehouseStatus.Processing))
             .FirstOrDefaultAsync();
 
         // 如果没有找到仓库，返回空列表
@@ -720,6 +721,79 @@ public class WarehouseService(
             title = overview.Title
         });
     }
+
+
+    /// <summary>
+    /// 获取知识图谱
+    /// </summary>
+    /// <returns></returns>
+    [EndpointSummary("仓库管理：获取思维导图")]
+    [AllowAnonymous]
+    public async Task<ResultDto<MiniMapResult>> GetMiniMapAsync(
+        string owner,
+        string name,
+        string? branch = "")
+    {
+        var warehouse = await access.Warehouses
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.OrganizationName == owner && r.Name == name &&
+                                      (r.Status == WarehouseStatus.Completed ||
+                                       r.Status == WarehouseStatus.Processing) &&
+                                      (string.IsNullOrEmpty(branch) || r.Branch == branch));
+
+        var miniMap = await access.MiniMaps
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.WarehouseId.ToLower() == warehouse.Id.ToLower());
+
+        if (miniMap == null)
+        {
+            return new ResultDto<MiniMapResult>(200, "没有找到知识图谱", new MiniMapResult());
+        }
+
+        var result = JsonSerializer.Deserialize<MiniMapResult>(miniMap.Value, JsonSerializerOptions.Web);
+
+        // 组成点击跳转地址
+        var address = warehouse.Address = warehouse.Address.Replace(".git", "").TrimEnd('/').ToLower();
+
+        if (address.Contains("github.com"))
+        {
+            address += "/tree/" + warehouse.Branch + "/";
+        }
+        else if (address.Contains("gitee.com"))
+        {
+            address += "/tree/" + warehouse.Branch + "/";
+        }
+
+        // TODO: 需要根据仓库类型判断跳转地址
+
+        foreach (var v in result.Nodes)
+        {
+            // 使用递归修改v.Url
+            void UpdateUrl(MiniMapResult node)
+            {
+                if (node.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 应该删除前缀
+                    node.Url = node.Url.Replace(warehouse.Address, string.Empty, StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (node.Url != null && !node.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    node.Url = address + node.Url.TrimStart('/');
+                }
+
+                foreach (var child in node.Nodes)
+                {
+                    UpdateUrl(child);
+                }
+            }
+
+            UpdateUrl(v);
+        }
+
+        return new ResultDto<MiniMapResult>(200, "获取知识图谱成功", result);
+    }
+
 
     /// <summary>
     /// 获取仓库列表的异步方法，支持分页和关键词搜索。
